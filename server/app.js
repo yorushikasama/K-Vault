@@ -113,6 +113,33 @@ function createApp() {
     }
   });
 
+  // Bound the request body before any handler buffers it. See the note on
+  // declaredBodyCapBytes() for why the cap tracks UPLOAD_MAX_SIZE.
+  app.use('*', async (c, next) => {
+    const method = c.req.method;
+    if (method !== 'POST' && method !== 'PUT' && method !== 'PATCH') {
+      return next();
+    }
+    if (!declaresOversizedBody(c)) {
+      return next();
+    }
+
+    // Discard the body: buffering it is exactly what we are avoiding here. The
+    // client can therefore see the connection end mid-upload, which is why the
+    // web UI also checks the file size locally before it submits.
+    try {
+      c.req.raw.body?.cancel?.();
+    } catch {
+      // The socket may already be gone; nothing to clean up.
+    }
+
+    if (c.req.path.startsWith('/api/v1/')) {
+      return apiV1Error('FILE_TOO_LARGE', 'File exceeds upload size limit.', 413);
+    }
+    const limitMb = Math.floor((Number(container.config.uploadMaxSize) || 0) / 1024 / 1024);
+    return jsonError(c, 413, 'FILE_TOO_LARGE', '文件超过上传大小限制。', `上传上限为 ${limitMb}MB。`);
+  });
+
   function getServices(c) {
     return c.get('container');
   }
@@ -125,6 +152,34 @@ function createApp() {
     const client = String(c.req.header('X-KVault-Client') || '').toLowerCase();
     const accept = String(c.req.header('accept') || '').toLowerCase();
     return client === 'app-v2' || accept.includes('application/vnd.kvault.v2+json');
+  }
+
+  // The upload handlers buffer the whole multipart body before they can check the
+  // file size, and the JSON handlers parse their body before validating it. A
+  // single oversized request therefore costs several times its own size on the
+  // heap, and V8 does not hand those pages back to the OS afterwards, so the
+  // process stays at that high-water mark until it restarts. Rejecting on the
+  // declared Content-Length instead allocates nothing and keeps the documented
+  // JSON error contract.
+  //
+  // The cap tracks UPLOAD_MAX_SIZE because no legitimate body can exceed an
+  // upload: files are bounded by that limit, while settings, tokens, paste text
+  // and a single 5MB chunk part are all far smaller. Requests sent without a
+  // Content-Length (chunked) keep the existing post-buffer check, and nginx's
+  // client_max_body_size is the hard backstop for those.
+  const DECLARED_BODY_MARGIN = 64 * 1024;
+
+  function declaredBodyCapBytes() {
+    const limit = Number(container.config.uploadMaxSize) || 0;
+    return limit > 0 ? limit + DECLARED_BODY_MARGIN : 0;
+  }
+
+  function declaresOversizedBody(c) {
+    const cap = declaredBodyCapBytes();
+    if (cap <= 0) return false;
+    const declared = Number(c.req.header('content-length'));
+    if (!Number.isFinite(declared)) return false;
+    return declared > cap;
   }
 
   function jsonError(c, statusCode, code, message, detail, retriable = false, extra = {}) {
