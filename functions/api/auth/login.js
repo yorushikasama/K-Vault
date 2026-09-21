@@ -78,7 +78,8 @@ export async function onRequestGet(context) {
   const { env } = context;
   
   return new Response(JSON.stringify({
-    authRequired: isAuthRequired(env)
+    // 纵深防御：显式布尔化，防止上游返回非布尔值时把敏感值序列化出去
+    authRequired: Boolean(isAuthRequired(env))
   }), {
     headers: { 'Content-Type': 'application/json' }
   });

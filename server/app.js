@@ -1372,8 +1372,9 @@ function createApp() {
 
   app.get('/api/auth/login', (c) => {
     const { authService } = getServices(c);
+    // 纵深防御：显式布尔化，禁止把 BASIC_PASS 等敏感值序列化进响应
     return c.json({
-      authRequired: authService.isAuthRequired(),
+      authRequired: Boolean(authService.isAuthRequired()),
     });
   });
 

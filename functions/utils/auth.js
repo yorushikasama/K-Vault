@@ -132,9 +132,13 @@ export function createLegacyClearSessionCookieHeader() {
 
 /**
  * 检查是否需要认证
+ *
+ * 必须返回严格布尔值：`&&` 会返回最后一个操作数的「值」而非布尔值，
+ * 直接 return env.BASIC_USER && env.BASIC_PASS 会把 BASIC_PASS 明文
+ * 泄漏给任何序列化该返回值的调用方（历史漏洞：GET /api/auth/login）。
  */
 export function isAuthRequired(env) {
-  return env.BASIC_USER && env.BASIC_PASS;
+  return Boolean(env?.BASIC_USER && env?.BASIC_PASS);
 }
 
 /**
