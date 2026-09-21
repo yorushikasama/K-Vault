@@ -31,6 +31,13 @@ class StorageConfigRepository {
       config: includeSecrets ? decrypted : this.maskSensitiveFields(row.type, decrypted),
     };
 
+    // Telegram storage profiles persisted by the settings UI only store
+    // botToken/chatId, so without this the adapter would silently fall back to
+    // the cloud API and ignore CUSTOM_BOT_API_URL (a self-hosted Bot API server).
+    if (result.type === 'telegram' && !result.config.apiBase && this.appConfig.telegramApiBase) {
+      result.config.apiBase = this.appConfig.telegramApiBase;
+    }
+
     return result;
   }
 

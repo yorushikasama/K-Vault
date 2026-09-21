@@ -7,8 +7,9 @@ const { GitHubStorageAdapter } = require('./adapters/github');
 const { normalizeStorageType } = require('./common');
 
 class StorageFactory {
-  constructor() {
+  constructor(appConfig = {}) {
     this.adapterCache = new Map();
+    this.appConfig = appConfig;
   }
 
   createAdapter(storageConfig) {
@@ -26,7 +27,11 @@ class StorageFactory {
 
     let adapter;
     if (type === 'telegram') {
-      adapter = new TelegramStorageAdapter(config);
+      adapter = new TelegramStorageAdapter({
+        ...config,
+        apiBase: config.apiBase || this.appConfig.telegramApiBase,
+        maxUploadSizeBytes: config.maxUploadSizeBytes || this.appConfig.telegramMaxUploadSize,
+      });
     } else if (type === 'r2') {
       adapter = new S3CompatAdapter(config, 'r2');
     } else if (type === 's3') {

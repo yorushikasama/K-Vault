@@ -1,4 +1,79 @@
-﻿const { getExtension } = require('../common');
+﻿const fs = require('node:fs');
+const path = require('node:path');
+const { Readable } = require('node:stream');
+const { getExtension } = require('../common');
+
+// Cloud Bot API caps uploads at 50MB and downloads at 20MB. A self-hosted Bot
+// API server started with --local lifts both (downloads up to 2000MB). What is
+// reachable here is still bounded by memory, because the upload path buffers
+// the whole file before handing it to fetch().
+const CLOUD_MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+const LOCAL_MAX_UPLOAD_BYTES = 2000 * 1024 * 1024;
+
+function isLocalApiBase(raw) {
+  try {
+    const { hostname } = new URL(String(raw || ''));
+    return hostname === 'localhost' || hostname.startsWith('127.') || hostname === '[::1]' || hostname === '::1';
+  } catch {
+    return false;
+  }
+}
+
+function resolveMaxUploadBytes(config) {
+  const explicit = Number(config?.maxUploadSizeBytes);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  return isLocalApiBase(config?.apiBase) ? LOCAL_MAX_UPLOAD_BYTES : CLOUD_MAX_UPLOAD_BYTES;
+}
+
+// A self-hosted Bot API server in --local mode answers getFile with an absolute
+// filesystem path and does not serve /file/ over HTTP at all, so the bytes have
+// to be read off disk. Mirrors the Range semantics of the HTTP file endpoint.
+function parseRangeHeader(range, size) {
+  const match = /^bytes=(\d*)-(\d*)$/.exec(String(range || '').trim());
+  if (!match) return null;
+  const [, rawStart, rawEnd] = match;
+  if (rawStart === '' && rawEnd === '') return null;
+
+  let start;
+  let end;
+  if (rawStart === '') {
+    const suffix = Number(rawEnd);
+    if (!Number.isFinite(suffix) || suffix <= 0) return null;
+    start = Math.max(0, size - suffix);
+    end = size - 1;
+  } else {
+    start = Number(rawStart);
+    end = rawEnd === '' ? size - 1 : Number(rawEnd);
+  }
+
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start > end || start >= size) return null;
+  return { start, end: Math.min(end, size - 1) };
+}
+
+function buildLocalFileResponse(filePath, range) {
+  let stat;
+  try {
+    stat = fs.statSync(filePath);
+  } catch {
+    throw new Error('本地 Bot API 未缓存该文件，请重试或检查 telegram-bot-api 数据目录权限。');
+  }
+
+  const total = stat.size;
+  const parsed = parseRangeHeader(range, total);
+  const headers = new Headers({
+    'Accept-Ranges': 'bytes',
+    'Content-Length': String(parsed ? parsed.end - parsed.start + 1 : total),
+  });
+  if (parsed) {
+    headers.set('Content-Range', `bytes ${parsed.start}-${parsed.end}/${total}`);
+  }
+
+  const stream = fs.createReadStream(filePath, parsed ? { start: parsed.start, end: parsed.end } : undefined);
+  return new Response(Readable.toWeb(stream), {
+    status: parsed ? 206 : 200,
+    headers,
+  });
+}
 
 function normalizeApiBase(raw) {
   if (!raw) return 'https://api.telegram.org';
@@ -50,6 +125,7 @@ class TelegramStorageAdapter {
       botToken: config.botToken,
       chatId: config.chatId,
       apiBase: config.apiBase,
+      maxUploadSizeBytes: config.maxUploadSizeBytes,
     };
   }
 
@@ -79,11 +155,11 @@ class TelegramStorageAdapter {
   async upload({ buffer, fileName, mimeType, fileSize }) {
     this.validate();
 
-    // Telegram Bot API practical limits: upload 50MB (default cloud bot api), download 20MB.
-    // We choose stability-first: enforce 50MB upload ceiling here.
-    const maxSize = 50 * 1024 * 1024;
+    // Stability-first on the cloud API (50MB up); a --local Bot API server
+    // raises that ceiling to 2000MB.
+    const maxSize = resolveMaxUploadBytes(this.config);
     if (fileSize > maxSize) {
-      throw new Error('Telegram 上传超过 50MB 上限。');
+      throw new Error(`Telegram 上传超过 ${Math.floor(maxSize / 1024 / 1024)}MB 上限。`);
     }
 
     const { method, field } = pickUploadMethod(mimeType);
@@ -148,7 +224,15 @@ class TelegramStorageAdapter {
     const headers = {};
     if (range) headers.Range = range;
 
-    const response = await fetch(buildFileUrl(this.config, infoJson.result.file_path), {
+    const filePath = infoJson.result.file_path;
+
+    // In --local mode file_path is an absolute path on this host and the HTTP
+    // /file/ endpoint is not served, so read the cached file directly.
+    if (path.isAbsolute(filePath)) {
+      return buildLocalFileResponse(filePath, range);
+    }
+
+    const response = await fetch(buildFileUrl(this.config, filePath), {
       method: 'GET',
       headers,
     });

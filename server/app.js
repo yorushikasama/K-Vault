@@ -394,7 +394,7 @@ function createApp() {
   const IMPORT_STORAGE_LIMITS = {
     discord: 25 * 1024 * 1024,
     huggingface: 35 * 1024 * 1024,
-    telegram: 50 * 1024 * 1024,
+    telegram: Number(container.config.telegramMaxUploadSize || 50 * 1024 * 1024),
   };
   const DEDUP_MAX_BYTES = 25 * 1024 * 1024;
   const IMPORT_IMAGE_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'image/bmp', 'image/x-icon']);
@@ -1159,12 +1159,14 @@ function createApp() {
     const directThreshold = Number(container.config.uploadSmallFileThreshold || 20 * mb);
     const maxUploadSize = Number(container.config.uploadMaxSize || 100 * mb);
 
+    const telegramMaxBytes = Number(container.config.telegramMaxUploadSize || 50 * mb);
+
     return {
       telegram: {
-        maxBytes: Math.min(maxUploadSize, 50 * mb),
+        maxBytes: Math.min(maxUploadSize, telegramMaxBytes),
         directThreshold,
         supportsChunkUpload: true,
-        message: 'Docker 运行时的 Telegram Bot API 上传上限为 50MB。较大的文件请使用 R2、S3、WebDAV、GitHub，或通过 Telegram 客户端上传后使用 Webhook 回链。',
+        message: `当前 Telegram 上传上限为 ${Math.floor(Math.min(maxUploadSize, telegramMaxBytes) / mb)}MB。自建 Bot API (--local) 可支持更大文件；云端 Bot API 固定为 50MB。`,
       },
       r2: {
         maxBytes: maxUploadSize,

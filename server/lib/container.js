@@ -19,7 +19,7 @@ function createContainer(env = process.env) {
   const fileRepo = new FileRepository(db);
   const apiTokenRepo = new ApiTokenRepository(db);
   const pasteRepo = new PasteRepository(db);
-  const storageFactory = new StorageFactory();
+  const storageFactory = new StorageFactory(config);
   const settingsStore = createSettingsStore({ db, config });
 
   storageRepo.ensureBootstrapStorage();

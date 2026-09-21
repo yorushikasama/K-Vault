@@ -45,6 +45,23 @@ function pickEnvAlias(env, aliases = [], fallback = '') {
   return { value: normalizeEnvString(fallback), source: '' };
 }
 
+// The cloud Bot API only accepts 50MB uploads; a self-hosted server running
+// with --local accepts up to 2000MB. TELEGRAM_MAX_UPLOAD_SIZE overrides both.
+function resolveTelegramMaxUploadSize(env, apiBase) {
+  const explicit = toInt(env.TELEGRAM_MAX_UPLOAD_SIZE, 0);
+  if (explicit > 0) return explicit;
+
+  let isLocal = false;
+  try {
+    const { hostname } = new URL(String(apiBase || ''));
+    isLocal = hostname === 'localhost' || hostname.startsWith('127.') || hostname === '[::1]' || hostname === '::1';
+  } catch {
+    isLocal = false;
+  }
+
+  return isLocal ? 2000 * 1024 * 1024 : 50 * 1024 * 1024;
+}
+
 function loadConfig(env = process.env) {
   const dataDir = env.DATA_DIR
     ? path.resolve(normalizeEnvString(env.DATA_DIR))
@@ -87,6 +104,7 @@ function loadConfig(env = process.env) {
     settingsRedisConnectTimeoutMs: toInt(env.SETTINGS_REDIS_CONNECT_TIMEOUT_MS, 5000),
 
     telegramApiBase: telegramApiBase.value,
+    telegramMaxUploadSize: resolveTelegramMaxUploadSize(env, telegramApiBase.value),
 
     // Optional bootstrap default storage from env.
     bootstrapDefaultStorage: {
