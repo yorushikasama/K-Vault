@@ -22,11 +22,24 @@ function normalizeRequestHeaders(input) {
   return normalized;
 }
 
+// Only used for storage backends that cannot stream at all; every streaming path
+// avoids materialising the file.
+async function collectStream(stream) {
+  const chunks = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
+}
+
 class UploadService {
-  constructor({ storageRepo, fileRepo, storageFactory }) {
+  constructor({ storageRepo, fileRepo, storageFactory, config = null }) {
     this.storageRepo = storageRepo;
     this.fileRepo = fileRepo;
     this.storageFactory = storageFactory;
+    // Ceiling for backends that can only accept a whole in-memory file. 0 = no
+    // extra cap beyond the global upload limit.
+    this.bufferedBackendMaxSize = Number(config?.bufferedBackendMaxSize) || 0;
   }
 
   resolveStorage({ storageId, storageMode }) {
@@ -37,20 +50,12 @@ class UploadService {
     return storageConfig;
   }
 
-  async uploadFile({
-    fileName,
-    mimeType,
-    fileSize,
-    buffer,
-    storageId,
-    storageMode,
-    folderPath,
-  }) {
-    const storageConfig = this.resolveStorage({ storageId, storageMode });
-    const adapter = this.storageFactory.createAdapter(storageConfig);
+  // Storage key layout is backend-specific (HuggingFace nests under uploads/), and
+  // both upload paths have to agree on it — a second copy of this is exactly how
+  // the two would silently diverge.
+  prepareTarget(storageConfig, fileName, mimeType, folderPath) {
     const storageType = normalizeStorageType(storageConfig.type);
     const normalizedFolderPath = normalizeFolderPath(folderPath);
-
     const publicId = buildPublicFileId(storageType, fileName, mimeType);
 
     let adapterStorageKey = normalizedFolderPath ? `${normalizedFolderPath}/${publicId}` : publicId;
@@ -60,14 +65,11 @@ class UploadService {
         : `uploads/${publicId}`;
     }
 
-    const uploadResult = await adapter.upload({
-      storageKey: adapterStorageKey,
-      fileName,
-      mimeType,
-      fileSize,
-      buffer,
-    });
+    return { storageType, normalizedFolderPath, publicId, adapterStorageKey };
+  }
 
+  persistResult({ storageConfig, target, uploadResult, fileName, fileSize, mimeType }) {
+    const { storageType, normalizedFolderPath, publicId, adapterStorageKey } = target;
     const storageKey = uploadResult.storageKey || adapterStorageKey;
 
     const fileRecord = this.fileRepo.create({
@@ -91,6 +93,82 @@ class UploadService {
         type: storageType,
       },
     };
+  }
+
+  async uploadFile({
+    fileName,
+    mimeType,
+    fileSize,
+    buffer,
+    storageId,
+    storageMode,
+    folderPath,
+  }) {
+    const storageConfig = this.resolveStorage({ storageId, storageMode });
+    const adapter = this.storageFactory.createAdapter(storageConfig);
+    const target = this.prepareTarget(storageConfig, fileName, mimeType, folderPath);
+
+    const uploadResult = await adapter.upload({
+      storageKey: target.adapterStorageKey,
+      fileName,
+      mimeType,
+      fileSize,
+      buffer,
+    });
+
+    return this.persistResult({ storageConfig, target, uploadResult, fileName, fileSize, mimeType });
+  }
+
+  /**
+   * Upload from a re-openable stream instead of a Buffer.
+   *
+   * `openStream` is a factory rather than a stream: the Telegram adapter may send
+   * the same file twice (the sendAudio -> sendDocument fallback), and a consumed
+   * stream cannot be replayed.
+   *
+   * Adapters that cannot stream fall back to buffering, but only up to
+   * `bufferedBackendMaxSize`. HuggingFace and GitHub are in that group for a hard
+   * reason — both require the content base64-encoded inside a JSON body, which
+   * needs a whole in-memory copy (1.33x, at that). Refusing loudly past the limit
+   * is what stops a raised UPLOAD_MAX_SIZE from becoming an OOM budget.
+   */
+  async uploadStream({
+    openStream,
+    fileSize,
+    fileName,
+    mimeType,
+    storageId,
+    storageMode,
+    folderPath,
+  }) {
+    const storageConfig = this.resolveStorage({ storageId, storageMode });
+    const adapter = this.storageFactory.createAdapter(storageConfig);
+    const target = this.prepareTarget(storageConfig, fileName, mimeType, folderPath);
+
+    const shared = {
+      storageKey: target.adapterStorageKey,
+      fileName,
+      mimeType,
+      fileSize,
+    };
+
+    let uploadResult;
+    if (adapter.supportsStreamingUpload === true) {
+      uploadResult = await adapter.upload({ ...shared, openStream });
+    } else {
+      const limit = Number(this.bufferedBackendMaxSize) || 0;
+      if (limit > 0 && fileSize > limit) {
+        const error = new Error(
+          `当前存储后端需要把文件整块读入内存，暂不支持超过 ${Math.floor(limit / 1024 / 1024)}MB 的文件。`
+        );
+        error.code = 'BUFFERED_BACKEND_TOO_LARGE';
+        error.status = 413;
+        throw error;
+      }
+      uploadResult = await adapter.upload({ ...shared, buffer: await collectStream(openStream()) });
+    }
+
+    return this.persistResult({ storageConfig, target, uploadResult, fileName, fileSize, mimeType });
   }
 
   async uploadFromUrl({

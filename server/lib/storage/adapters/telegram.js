@@ -1,5 +1,6 @@
 ﻿const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { Readable } = require('node:stream');
 const { getExtension } = require('../common');
 
@@ -23,6 +24,59 @@ function resolveMaxUploadBytes(config) {
   const explicit = Number(config?.maxUploadSizeBytes);
   if (Number.isFinite(explicit) && explicit > 0) return explicit;
   return isLocalApiBase(config?.apiBase) ? LOCAL_MAX_UPLOAD_BYTES : CLOUD_MAX_UPLOAD_BYTES;
+}
+
+// Quotes and CR/LF would break out of the Content-Disposition header, so strip
+// them rather than try to encode: this is only a display name.
+function escapeDispositionValue(value) {
+  return String(value || '').replace(/["\r\n\\]/g, '_').slice(0, 200);
+}
+
+/**
+ * Builds a multipart body where the file part is produced by `source()` instead of
+ * being handed a Buffer.
+ *
+ * FormData would be far simpler to write, but it needs the whole Blob in memory —
+ * which is precisely the ~4x high-water mark this exists to avoid. The file bytes
+ * are pulled straight off disk and forwarded, so the resident cost is one chunk.
+ *
+ * Content-Length is computed up front, so this is a normal fixed-length body
+ * rather than chunked transfer-encoding — fewer unknowns on the wire.
+ */
+function buildMultipartStream({ boundary, fields, file }) {
+  const parts = [];
+  let headerBytes = 0;
+
+  for (const [name, value] of Object.entries(fields)) {
+    const buffer = Buffer.from(
+      `--${boundary}\r\n` +
+      `Content-Disposition: form-data; name="${escapeDispositionValue(name)}"\r\n\r\n` +
+      `${value}\r\n`,
+      'utf8'
+    );
+    parts.push(buffer);
+    headerBytes += buffer.length;
+  }
+
+  const fileHead = Buffer.from(
+    `--${boundary}\r\n` +
+    `Content-Disposition: form-data; name="${escapeDispositionValue(file.name)}"; filename="${escapeDispositionValue(file.fileName)}"\r\n` +
+    `Content-Type: ${file.mimeType || 'application/octet-stream'}\r\n\r\n`,
+    'utf8'
+  );
+  const tail = Buffer.from(`\r\n--${boundary}--\r\n`, 'utf8');
+
+  const stream = Readable.from((async function* generateBody() {
+    for (const part of parts) yield part;
+    yield fileHead;
+    for await (const chunk of file.source()) yield chunk;
+    yield tail;
+  })());
+
+  return {
+    stream,
+    contentLength: headerBytes + fileHead.length + file.size + tail.length,
+  };
 }
 
 // A self-hosted Bot API server in --local mode answers getFile with an absolute
@@ -119,6 +173,10 @@ function pickFileId(result) {
 }
 
 class TelegramStorageAdapter {
+  // Lets UploadService hand us a re-openable stream instead of a Buffer, so a
+  // file that already lives on disk never has to be pulled into the heap.
+  supportsStreamingUpload = true;
+
   constructor(config) {
     this.type = 'telegram';
     this.config = {
@@ -152,7 +210,7 @@ class TelegramStorageAdapter {
     };
   }
 
-  async upload({ buffer, fileName, mimeType, fileSize }) {
+  async upload({ buffer, fileName, mimeType, fileSize, openStream }) {
     this.validate();
 
     // Stability-first on the cloud API (50MB up); a --local Bot API server
@@ -165,6 +223,13 @@ class TelegramStorageAdapter {
     const { method, field } = pickUploadMethod(mimeType);
     const extension = getExtension(fileName, mimeType, 'bin');
     const normalizedName = fileName || `upload.${extension}`;
+
+    // Preferred path when the caller has the file on disk: forward the bytes and
+    // leave the heap alone. Falls through to the FormData path only for callers
+    // that genuinely hold a Buffer (the browser upload routes).
+    if (typeof openStream === 'function') {
+      return this.uploadStreamed({ openStream, method, field, normalizedName, mimeType, fileSize });
+    }
 
     const formData = new FormData();
     formData.append('chat_id', this.config.chatId);
@@ -187,6 +252,63 @@ class TelegramStorageAdapter {
         body: fallbackForm,
       });
       json = await response.json().catch(() => ({}));
+    }
+
+    if (!response.ok || !json.ok) {
+      throw new Error(json.description || `Telegram upload failed (${response.status})`);
+    }
+
+    const fileId = pickFileId(json.result);
+    if (!fileId) {
+      throw new Error('Telegram 已接收文件，但未返回可用的 file_id。');
+    }
+
+    return {
+      storageKey: fileId,
+      metadata: {
+        telegramFileId: fileId,
+        telegramMessageId: json.result?.message_id || null,
+      },
+    };
+  }
+
+  async uploadStreamed({ openStream, method, field, normalizedName, mimeType, fileSize }) {
+    // Each attempt gets a fresh boundary and a fresh stream: the sendAudio ->
+    // sendDocument fallback sends the same file twice, and a consumed stream
+    // cannot be replayed.
+    const sendOnce = async (botMethod, fieldName) => {
+      const boundary = `----kvault${crypto.randomBytes(16).toString('hex')}`;
+      const { stream, contentLength } = buildMultipartStream({
+        boundary,
+        fields: { chat_id: this.config.chatId },
+        file: {
+          name: fieldName,
+          fileName: normalizedName,
+          mimeType,
+          source: openStream,
+          size: fileSize,
+        },
+      });
+
+      const response = await fetch(buildBotApiUrl(this.config, botMethod), {
+        method: 'POST',
+        headers: {
+          'content-type': `multipart/form-data; boundary=${boundary}`,
+          'content-length': String(contentLength),
+        },
+        body: Readable.toWeb(stream),
+        // Node's fetch insists on being told that a streamed body is half-duplex.
+        duplex: 'half',
+      });
+      const json = await response.json().catch(() => ({}));
+      return { response, json };
+    };
+
+    let { response, json } = await sendOnce(method, field);
+
+    // Fallback audio to document when Telegram media type checks reject.
+    if ((!response.ok || !json.ok) && method === 'sendAudio') {
+      ({ response, json } = await sendOnce('sendDocument', 'document'));
     }
 
     if (!response.ok || !json.ok) {

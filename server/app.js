@@ -2858,17 +2858,20 @@ function createApp() {
       }
 
       try {
-        const buffer = await fs.readFile(downloaded.filePath);
         const safeTitle = String(item.title || item.id || 'video')
           .replace(/[^\w\u4e00-\u9fa5.-]+/g, '_')
           .replace(/^[._]+/, '')
           .slice(0, 80);
 
-        result = await uploadService.uploadFile({
+        // The video is already on disk (yt-dlp just wrote it), so forward the
+        // bytes straight into the storage adapter. Reading it into a Buffer first
+        // was the single most expensive step on this path: it duplicated the file
+        // several times over and put the whole thing on the heap at once.
+        result = await uploadService.uploadStream({
+          openStream: () => fs.createReadStream(downloaded.filePath),
+          fileSize: downloaded.bytes,
           fileName: `${safeTitle || 'video'}.${item.ext || 'mp4'}`,
           mimeType: 'video/mp4',
-          fileSize: downloaded.bytes,
-          buffer,
           storageId,
           storageMode,
           folderPath,

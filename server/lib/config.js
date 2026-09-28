@@ -75,6 +75,16 @@ function resolveTelegramMaxUploadSize(env, apiBase) {
   return isLocal ? 2000 * 1024 * 1024 : 50 * 1024 * 1024;
 }
 
+// Storage backends that must see the entire file in memory (HuggingFace and
+// GitHub both want it base64-encoded inside a JSON body) cannot follow a raised
+// UPLOAD_MAX_SIZE without becoming an OOM risk. 100MB is today's de facto limit,
+// so it stays the default until an operator opts out explicitly.
+function resolveBufferedBackendMaxSize(env) {
+  const explicit = toInt(env.BUFFERED_BACKEND_MAX_SIZE, 0);
+  if (explicit > 0) return explicit;
+  return Math.min(toInt(env.UPLOAD_MAX_SIZE, 100 * 1024 * 1024), 100 * 1024 * 1024);
+}
+
 function loadConfig(env = process.env) {
   const dataDir = env.DATA_DIR
     ? path.resolve(normalizeEnvString(env.DATA_DIR))
@@ -109,6 +119,10 @@ function loadConfig(env = process.env) {
     // peak at one upload's cost. Two concurrent 100MB uploads sit at roughly 830MB
     // against a 896MB MemoryMax, which is an OOM kill waiting to happen.
     uploadMaxConcurrency: toInt(env.UPLOAD_MAX_CONCURRENCY, 2),
+    // Ceiling for storage backends that can only accept a whole in-memory file.
+    // Defaults to 100MB so nothing regresses today, and so that raising
+    // UPLOAD_MAX_SIZE later cannot silently turn those backends into an OOM risk.
+    bufferedBackendMaxSize: resolveBufferedBackendMaxSize(env),
 
     configEncryptionKey: normalizeEnvString(env.CONFIG_ENCRYPTION_KEY) || normalizeEnvString(env.FILE_URL_SECRET) || normalizeEnvString(env.SESSION_SECRET) || '',
     sessionSecret: normalizeEnvString(env.SESSION_SECRET) || normalizeEnvString(env.FILE_URL_SECRET) || normalizeEnvString(env.CONFIG_ENCRYPTION_KEY) || '',

@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { Readable } = require('node:stream');
 const { run, get, all } = require('../../db');
 const { normalizeFolderPath } = require('../repos/file-repo');
 
@@ -99,22 +100,33 @@ class ChunkUploadService {
       throw new Error('Invalid chunk task metadata.');
     }
 
-    const chunks = [];
+    const fileSize = Number(task.file_size) || 0;
+    const parts = [];
     for (let i = 0; i < totalChunks; i += 1) {
       const chunkFile = this.chunkPath(uploadId, i);
       if (!fs.existsSync(chunkFile)) {
         throw new Error(`Chunk ${i} is missing.`);
       }
-      chunks.push(fs.readFileSync(chunkFile));
+      fileSize += fs.statSync(chunkFile).size;
+      parts.push(chunkFile);
     }
 
-    const combined = Buffer.concat(chunks);
+    // The parts are already on disk, so the assembled file is simply their bytes
+    // in order. Streaming them one after another is byte-identical to
+    // Buffer.concat, but never materialises the whole file on the heap — which is
+    // what used to make every >20MB web upload cost ~4x its size in RAM.
+    const openStream = () => Readable.from((async function* streamParts() {
+      for (const part of parts) {
+        const stream = fs.createReadStream(part);
+        for await (const chunk of stream) yield chunk;
+      }
+    })());
 
-    const result = await this.uploadService.uploadFile({
+    const result = await this.uploadService.uploadStream({
+      openStream,
+      fileSize,
       fileName: task.file_name,
       mimeType: task.file_type,
-      fileSize: combined.byteLength,
-      buffer: combined,
       storageMode: task.storage_mode,
       storageId: task.storage_config_id,
       folderPath: normalizeFolderPath(task.folder_path),

@@ -31,6 +31,7 @@ function createContainer(env = process.env) {
     storageRepo,
     fileRepo,
     storageFactory,
+    config,
   });
 
   const chunkService = new ChunkUploadService({
