@@ -1,13 +1,29 @@
 function normalizeErrorMessage(error, fallback = 'Unknown storage error') {
   if (!error) return fallback;
-  if (typeof error === 'string') return error;
-  if (error instanceof Error && error.message) return error.message;
-  if (typeof error.message === 'string' && error.message) return error.message;
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return fallback;
+  let message;
+  if (typeof error === 'string') {
+    message = error;
+  } else if (error instanceof Error && error.message) {
+    message = error.message;
+  } else if (typeof error.message === 'string' && error.message) {
+    message = error.message;
+  } else {
+    try {
+      message = JSON.stringify(error);
+    } catch {
+      return fallback;
+    }
   }
+
+  // undici hides the real reason in `cause`: a failed upload reports
+  // "fetch failed", which is useless without knowing whether it was ECONNRESET,
+  // a premature body close or something else entirely.
+  const cause = error && error.cause;
+  if (cause) {
+    const causeText = cause.code || cause.message || String(cause);
+    if (causeText) message += ` (cause: ${causeText})`;
+  }
+  return message;
 }
 
 function classifyStorageError(error, status) {
