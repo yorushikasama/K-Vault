@@ -623,7 +623,7 @@ sudo chmod +x /usr/local/bin/yt-dlp
 | `MEDIA_RESOLVE_PROXY` | 访问平台时使用的代理，如 `http://127.0.0.1:7890` | - |
 | `MEDIA_RESOLVE_EXTRA_HOSTS` | 追加到内置站点白名单的域名（逗号或空格分隔） | - |
 | `MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS` | 允许任意站点（默认关闭，避免被当作通用请求转发器） | `false` |
-| `URL_IMPORT_MAX_SIZE` | 解析转存 / 远程 URL 导入的单文件体积上限（字节） | `UPLOAD_SMALL_FILE_THRESHOLD`（20MB） |
+| `URL_IMPORT_MAX_SIZE` | 解析转存 / 远程 URL 导入的单文件体积上限（字节） | `UPLOAD_MAX_SIZE` |
 
 ### 实测行为与注意事项
 
@@ -632,6 +632,7 @@ sudo chmod +x /usr/local/bin/yt-dlp
 - **User-Agent 必须不是浏览器样式。** B站对形如 `Mozilla/5.0 ...` 的 UA 一律返回 **412 Precondition Failed**（它期待完整的浏览器签名），而对 `yt-dlp`、`curl`、`wget` 这类 UA 正常放行。默认值 `yt-dlp` 正是为此选的，**不要改成浏览器 UA**，否则 B站 直接不可用。
 - **B站 / YouTube 只有分离流，必须靠 ffmpeg 合并。** 实测某 B站 1080P 视频，yt-dlp 给出 15 个格式（3 条纯音频 + 12 条纯视频），合流格式为 **0**；YouTube 同样（53 个格式，0 合流）。
 - **CDN 防盗链也看 UA，但不影响 yt-dlp。** 部分 B站 CDN 节点（如 `upos-*.akamaized.net`）对非浏览器 UA 返回 403，而 yt-dlp 下载时会自带完整请求头，实测正常：某 1080P 视频约 55MB，约 20 秒完成，速率约 2.3MB/s。**所以请让 yt-dlp 自己下载，不要自己拿直链去拉 CDN。**
+- **转存上限取三者最小值**：`min(URL_IMPORT_MAX_SIZE, UPLOAD_MAX_SIZE, 目标存储后端上限)`。`URL_IMPORT_MAX_SIZE` 默认跟随 `UPLOAD_MAX_SIZE`，所以**调 `UPLOAD_MAX_SIZE` 一处即可同时约束普通上传与解析转存**；`MEDIA_RESOLVE_MAX_FILE_SIZE` 是另一条独立的解析期护栏（`0` 表示不限）。注意 `UPLOAD_MAX_SIZE` 必须与 `MemoryMax` 同步（转存同上传一样会把整个文件缓冲进内存），因此 2GB 这类上限只在内存足够时成立；实际部署中常先按服务器性能把它压到一个较小的值（例如 100MB），存储后端与 Bot API 侧的能力并不会因此改变。
 - **下载会占用磁盘。** 视频先落到 `MEDIA_RESOLVE_TEMP_DIR`（默认 `DATA_DIR/tmp`），入库后立即删除；请确保该分区能容纳至少一个视频。
 - **systemd 部署建议显式设置 `MEDIA_RESOLVE_TEMP_DIR`。** 单元文件里常见的 `PrivateTmp=true` 会让服务看到的 `/tmp` 变成私有挂载 —— 从宿主机既看不见也清理不了，排查问题时极具误导性。放在 `DATA_DIR` 下最省事，因为该路径通常已在 `ReadWritePaths` 中。
 - **孤儿文件有兜底清理。** 下载中途被强杀（OOM、重启）时 `finally` 不会执行，文件会留在临时目录。服务启动时会强制清扫一次，运行期间每 30 分钟一次，**只清 2 小时以上、且文件名以 `kv-resolve-` 开头的文件** —— 进行中的下载和其他人的文件都不会被误删。若清扫因权限不足失败，启动日志会出现 `media-resolve: N stale temp file(s) could not be removed`，说明该目录不属于服务账号。
@@ -716,7 +717,7 @@ curl -u admin:your_password -X POST http://127.0.0.1:8787/api/resolve-url \
 | `UPLOAD_MAX_SIZE` | 最大上传大小（字节） | `104857600` |
 | `UPLOAD_SMALL_FILE_THRESHOLD` | 直传/分片策略阈值（字节） | `20971520` |
 | `CHUNK_SIZE` | 分片大小（字节） | `5242880` |
-| `URL_IMPORT_MAX_SIZE` | 远程 URL 导入 / 解析转存的单文件体积上限（字节） | `UPLOAD_SMALL_FILE_THRESHOLD` |
+| `URL_IMPORT_MAX_SIZE` | 远程 URL 导入 / 解析转存的单文件体积上限（字节） | `UPLOAD_MAX_SIZE` |
 | `MEDIA_RESOLVE_ENABLED` | 启用 yt-dlp 视频链接解析 | `true` |
 | `MEDIA_RESOLVE_YTDLP_PATH` | yt-dlp 可执行文件绝对路径 | `PATH` 中的 `yt-dlp` |
 | `MEDIA_RESOLVE_FFMPEG_PATH` | ffmpeg 可执行文件绝对路径（合并音视频必需） | `PATH` 中的 `ffmpeg` |
@@ -764,7 +765,8 @@ curl -u admin:your_password -X POST http://127.0.0.1:8787/api/resolve-url \
 | 存储后端 | 单文件最大大小 |
 | :--- | :--- |
 | Telegram（Cloudflare Pages 网页上传） | 20MB；更大的 Telegram 文件建议通过 Telegram 客户端发送，再由 Webhook 回链 |
-| Telegram（Docker 网页上传） | 50MB（受 Bot API 上传限制影响） |
+| Telegram（Docker 网页上传，云端 Bot API） | 50MB（Bot API 硬限制） |
+| Telegram（Docker 网页上传，自部署 Bot API `--local`） | 由 `UPLOAD_MAX_SIZE` 决定；Bot API 侧可达 2GB，实际受服务器内存约束（见 `MemoryMax` 说明） |
 | Telegram（自部署 Bot API + Telegram 客户端 + Webhook） | 受 Bot API 与部署环境影响，常见可达 2GB |
 | Cloudflare R2 | 100MB（分片上传） |
 | S3 兼容存储 | 100MB（分片上传） |
@@ -772,7 +774,7 @@ curl -u admin:your_password -X POST http://127.0.0.1:8787/api/resolve-url \
 | Discord（Level 2+） | 50-100MB |
 | HuggingFace | 35MB（普通）/ 50GB（LFS） |
 
-> 说明：`/api/upload-from-url` 默认按 `UPLOAD_SMALL_FILE_THRESHOLD`（20MB）限制，可用 `URL_IMPORT_MAX_SIZE` 调整；`/api/resolve-url` 的转存沿用同一上限。
+> 说明：`/api/upload-from-url` 与 `/api/resolve-url` 的转存共用同一上限，默认取 `UPLOAD_MAX_SIZE`（部署的实际容量），可用 `URL_IMPORT_MAX_SIZE` 单独指定。最终还会再取一次**目标存储后端**的上限：Telegram 云端 Bot API 50MB、自部署 Bot API（`--local`）可达 2GB、Discord 25MB 等。
 
 ---
 

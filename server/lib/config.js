@@ -45,15 +45,17 @@ function pickEnvAlias(env, aliases = [], fallback = '') {
   return { value: normalizeEnvString(fallback), source: '' };
 }
 
-// /api/upload-from-url buffers the entire remote body in memory before the
-// size check runs, so its cap deliberately tracks the small-file threshold by
-// default and the historical 20MB behaviour is preserved when unset. Raising
-// URL_IMPORT_MAX_SIZE opts into larger remote imports (parsed media); the
-// operator then owns keeping MemoryMax in step with UPLOAD_MAX_SIZE.
+// Remote imports (parsed media, /api/upload-from-url) buffer the whole body in
+// memory before the size check runs, so the natural ceiling is the deployment's
+// own capacity knob: UPLOAD_MAX_SIZE. UPLOAD_SMALL_FILE_THRESHOLD only picks the
+// direct-vs-chunked transport and says nothing about what the server can hold,
+// so it is deliberately not used here. The effective cap can still end up lower,
+// because the target storage backend is applied on top of it (Telegram cloud
+// 50MB, Discord 25MB, ...). Set URL_IMPORT_MAX_SIZE to pin it explicitly.
 function resolveUrlImportMaxSize(env) {
   const explicit = toInt(env.URL_IMPORT_MAX_SIZE, 0);
   if (explicit > 0) return explicit;
-  return toInt(env.UPLOAD_SMALL_FILE_THRESHOLD, 20 * 1024 * 1024);
+  return toInt(env.UPLOAD_MAX_SIZE, 100 * 1024 * 1024);
 }
 
 // The cloud Bot API only accepts 50MB uploads; a self-hosted server running

@@ -1216,13 +1216,20 @@ function createApp() {
     const maxUploadSize = Number(container.config.uploadMaxSize || 100 * mb);
 
     const telegramMaxBytes = Number(container.config.telegramMaxUploadSize || 50 * mb);
+    // Name whichever constraint is actually binding. A self-hosted deployment
+    // that is merely capped by UPLOAD_MAX_SIZE must not read as "50MB", which is
+    // only the cloud Bot API ceiling.
+    const telegramEffective = Math.min(maxUploadSize, telegramMaxBytes);
+    const telegramLimitedByBackend = telegramMaxBytes < maxUploadSize;
 
     return {
       telegram: {
-        maxBytes: Math.min(maxUploadSize, telegramMaxBytes),
+        maxBytes: telegramEffective,
         directThreshold,
         supportsChunkUpload: true,
-        message: `当前 Telegram 上传上限为 ${Math.floor(Math.min(maxUploadSize, telegramMaxBytes) / mb)}MB。自建 Bot API (--local) 可支持更大文件；云端 Bot API 固定为 50MB。`,
+        message: telegramLimitedByBackend
+          ? `当前 Telegram 上传上限为 ${Math.floor(telegramEffective / mb)}MB，受 Bot API 限制（云端固定 50MB；自建 Bot API 加 --local 可达 2GB）。`
+          : `当前 Telegram 上传上限为 ${Math.floor(telegramEffective / mb)}MB，由 UPLOAD_MAX_SIZE 决定（自建 Bot API 侧可用到 2GB）。`,
       },
       r2: {
         maxBytes: maxUploadSize,
@@ -2744,8 +2751,10 @@ function createApp() {
 
     // A resolved video ends up in storage exactly like an upload, so it has to
     // obey the same ceilings: the remote-import cap, the global upload cap, and
-    // whatever the target backend itself accepts (Telegram 50MB on the cloud
-    // Bot API, Discord 25MB, ...).
+    // whatever the target backend itself accepts. For Telegram that number is
+    // telegramMaxUploadSize, which is derived from the configured API base: 50MB
+    // against the cloud Bot API, up to 2GB against a self-hosted --local server.
+    // Discord / HuggingFace are fixed platform limits.
     const storageLimits = getUploadLimits();
     let importCap = Math.min(container.config.urlImportMaxSize, container.config.uploadMaxSize);
     try {
