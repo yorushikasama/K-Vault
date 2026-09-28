@@ -94,6 +94,31 @@ function isStreamPresent(codec) {
   return Boolean(codec) && codec !== 'none';
 }
 
+// Same resolution often ships as several codecs. avc1 (H.264) wins because it
+// plays everywhere, including Telegram's in-app player, so it is what the
+// quality picker offers by default.
+function codecRank(codec) {
+  const text = String(codec || '').toLowerCase();
+  if (text.startsWith('avc1') || text.startsWith('h264')) return 0;
+  if (text.startsWith('hvc1') || text.startsWith('hev1')) return 1;
+  if (text.startsWith('av01')) return 2;
+  if (text.startsWith('vp9') || text.startsWith('vp09')) return 3;
+  return 4;
+}
+
+function sizeOfFormat(format) {
+  return format
+    ? (toByteCount(format.filesize) || toByteCount(format.filesize_approx))
+    : 0;
+}
+
+// Lower is better: preferred codec first, then the larger file.
+function compareVariants(a, b) {
+  const rankDiff = codecRank(a.vcodec) - codecRank(b.vcodec);
+  if (rankDiff !== 0) return rankDiff;
+  return sizeOfFormat(b) - sizeOfFormat(a);
+}
+
 function newlineList(value) {
   return String(value || '')
     .split(/[\s,]+/)
@@ -151,12 +176,44 @@ function pickBestFormat(formats) {
 // When only separate DASH streams are offered (Bilibili, YouTube), the bytes
 // that actually land on disk are video + audio put together.
 function estimateTotalBytes(formats) {
-  const sizeOf = (format) => (format
-    ? (toByteCount(format.filesize) || toByteCount(format.filesize_approx))
-    : 0);
   const videoOnly = formats.filter((f) => isStreamPresent(f.vcodec) && !isStreamPresent(f.acodec));
   const audioOnly = formats.filter((f) => isStreamPresent(f.acodec) && !isStreamPresent(f.vcodec));
-  return sizeOf(pickBestFormat(videoOnly)) + sizeOf(pickBestFormat(audioOnly));
+  return sizeOfFormat(pickBestFormat(videoOnly)) + sizeOfFormat(pickBestFormat(audioOnly));
+}
+
+// One entry per distinct resolution so the caller can offer a quality picker
+// instead of always taking the largest stream. Sizes include the audio track
+// that has to be fetched alongside a video-only stream.
+function buildVariants(formats) {
+  const audioBytes = sizeOfFormat(
+    pickBestFormat(formats.filter((f) => isStreamPresent(f.acodec) && !isStreamPresent(f.vcodec)))
+  );
+
+  const byHeight = new Map();
+  for (const format of formats) {
+    if (!isStreamPresent(format.vcodec)) continue;
+    const height = Number(format.height) || 0;
+    if (height <= 0) continue;
+    const current = byHeight.get(height);
+    if (!current || compareVariants(format, current) < 0) byHeight.set(height, format);
+  }
+
+  return Array.from(byHeight.entries())
+    .sort((a, b) => b[0] - a[0])
+    .map((entry) => {
+      const format = entry[1];
+      const needsAudio = !isStreamPresent(format.acodec);
+      return {
+        height: entry[0],
+        formatId: String(format.format_id || ''),
+        ext: String(format.ext || ''),
+        vcodec: String(format.vcodec || ''),
+        fps: Number(format.fps) || 0,
+        needsAudio,
+        filesize: sizeOfFormat(format) + (needsAudio ? audioBytes : 0),
+      };
+    })
+    .filter((variant) => variant.formatId);
 }
 
 function firstEntry(info) {
@@ -427,11 +484,16 @@ class MediaResolveService {
     return [...this.buildCommonArgs(), '--dump-single-json', '--skip-download', '--', url];
   }
 
-  buildDownloadArgs(url, destination, hasFfmpeg) {
+  buildDownloadArgs(url, destination, hasFfmpeg, formatSelector) {
     const args = this.buildCommonArgs();
-    // bv*+ba asks yt-dlp for the best video plus the best audio and muxes them,
-    // which needs ffmpeg. Without ffmpeg only a single-file format will do.
-    args.push('-f', hasFfmpeg ? 'bv*+ba/b' : 'b');
+    // An explicit selector comes from the quality picker; otherwise ask for the
+    // best video plus the best audio and let yt-dlp mux them (needs ffmpeg).
+    // Without ffmpeg only a single-file format can be used at all.
+    let selector = formatSelector;
+    if (!selector) {
+      selector = hasFfmpeg ? 'bv*+ba/b' : 'b';
+    }
+    args.push('-f', selector);
     if (hasFfmpeg) {
       args.push('--merge-output-format', 'mp4');
     }
@@ -584,6 +646,9 @@ class MediaResolveService {
         ? direct.http_headers
         : null,
       requiresMerge: !direct,
+      // Selectable resolutions, largest first. Hand one back as formatId to
+      // download() to pin the quality instead of taking the largest stream.
+      variants: buildVariants(formats),
     };
   }
 
@@ -658,7 +723,7 @@ class MediaResolveService {
   // Downloads the media with yt-dlp, letting it mux separate tracks through
   // ffmpeg when they cannot be fetched as one file. The caller owns the
   // returned path and must remove it once it has been stored.
-  async download({ url, maxBytes = 0, timeoutMs = 0, requireMerge = false }) {
+  async download({ url, maxBytes = 0, timeoutMs = 0, requireMerge = false, formatId = '', needsAudio = false }) {
     if (!this.enabled) {
       throw new MediaResolveError('MEDIA_RESOLVE_DISABLED', '视频解析功能未启用。', {
         status: 503,
@@ -684,6 +749,19 @@ class MediaResolveService {
       });
     }
 
+    // The format id comes back from the client, so it is validated before it
+    // can ever reach the command line.
+    let formatSelector = '';
+    if (formatId) {
+      if (!/^[A-Za-z0-9._+-]{1,64}$/.test(String(formatId))) {
+        throw new MediaResolveError('MEDIA_RESOLVE_BAD_FORMAT', '指定的清晰度无效。', {
+          status: 400,
+          detail: 'formatId contains characters yt-dlp would not accept.',
+        });
+      }
+      formatSelector = needsAudio ? `${formatId}+ba` : String(formatId);
+    }
+
     await fs.promises.mkdir(this.tempDir, { recursive: true });
 
     const destination = path.join(
@@ -695,7 +773,7 @@ class MediaResolveService {
     try {
       await this.runProcessWith(
         this.resolveBinaryPath(),
-        this.buildDownloadArgs(parsed.href, destination, ffmpeg.available),
+        this.buildDownloadArgs(parsed.href, destination, ffmpeg.available, formatSelector),
         Math.max(this.timeoutMs, Number(timeoutMs) || this.downloadTimeoutMs)
       );
 

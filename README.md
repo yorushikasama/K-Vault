@@ -573,12 +573,20 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 
 **因此 ffmpeg 是实际使用中的必需依赖** —— 缺了它，B站 / YouTube 这类视频无法转存。`GET /api/resolve-url/status` 的 `mergeSupported` 字段会反映当前是否具备合并能力。
 
+### 清晰度选择
+
+解析结果里的 `variants` 是按分辨率去重后的可选档位（从高到低），每项带 `height`、`formatId`、`needsAudio` 和预估体积（已含需要一并下载的音轨）。
+
+前端流程是：先用不带 `upload` 的请求拿到 `variants` → 弹出清晰度选择 → 把选中的 `formatId` + `needsAudio` 连同 `upload: true` 一起提交。只剩一个可用档位时会跳过选择直接转存；超过体积上限的档位在选择器里置灰不可选。
+
+同一分辨率常有 avc1 / hvc1 / av01 多种编码，服务端按 **avc1（H.264）优先**去重，因为它兼容性最好、Telegram 内置播放器也能直接播。**不带 `formatId` 时由 yt-dlp 取最佳清晰度**，所以接口调用方也可以完全跳过选择这一步。
+
 ### 接口
 
 1. `GET /api/resolve-url/status` — 探测 yt-dlp / ffmpeg 是否可用，并返回允许解析的站点列表（前端据此决定是否启用解析）。
 2. `POST /api/resolve-url` — 解析分享链接：
-   - `{"url": "<分享链接>"}` → 只解析，返回元数据（标题、作者、时长、体积、缩略图）与 `downloadUrl` / `requiresMerge`。
-   - `{"url": "<分享链接>", "upload": true, "storageMode": "...", "folderPath": "..."}` → 解析并直接入库：有合流直链则直接转存，否则下载合并后入库。响应格式与 `/api/upload-from-url` 一致（`[{ src }]`）。
+   - `{"url": "<分享链接>"}` → 只解析，返回元数据（标题、作者、时长、体积、缩略图）与 `downloadUrl` / `requiresMerge` / `variants`。
+   - `{"url": "<分享链接>", "upload": true, "storageMode": "...", "folderPath": "...", "formatId": "30064", "needsAudio": true}` → 解析并直接入库：有合流直链则直接转存，否则下载合并后入库。`formatId` / `needsAudio` 来自上一次解析返回的 `variants`，用于指定清晰度；省略则由 yt-dlp 取最佳。响应格式与 `/api/upload-from-url` 一致（`[{ src }]`）。
 
 两个接口与网页上传共用同一套鉴权（登录用户，或满足限制的访客）。
 

@@ -2777,6 +2777,9 @@ function createApp() {
         height: item.height,
         maxImportBytes: importCap,
         exceedsImportLimit: item.filesize > 0 && item.filesize > importCap,
+        // Largest first. Hand one back as {formatId, needsAudio} with
+        // upload:true to pin a quality instead of taking the biggest stream.
+        variants: item.variants,
       };
 
       if (prefersV2Envelope(c)) {
@@ -2824,6 +2827,8 @@ function createApp() {
           url: sourceUrl,
           maxBytes: importCap,
           requireMerge: item.requiresMerge,
+          formatId: asString(payload.formatId),
+          needsAudio: payload.needsAudio === true,
         });
       } catch (error) {
         if (error instanceof MediaResolveError) {

@@ -2759,6 +2759,98 @@
             >
           </div>
 
+          <!-- 视频清晰度选择 -->
+          <el-dialog
+            title="选择清晰度"
+            :visible.sync="qualityPicker.visible"
+            width="380px"
+            append-to-body
+            :close-on-click-modal="false"
+          >
+            <div
+              v-if="qualityPicker.loading"
+              style="
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                color: #909399;
+                font-size: 0.9rem;
+              "
+            >
+              <i class="fas fa-spinner fa-spin"></i>
+              <span>正在解析可用清晰度...</span>
+            </div>
+            <template v-else>
+              <p
+                :title="qualityPicker.title"
+                style="
+                  margin: 0 0 12px;
+                  font-size: 0.9rem;
+                  color: #606266;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  white-space: nowrap;
+                "
+              >
+                {{ qualityPicker.title || "未命名视频" }}
+              </p>
+              <label
+                v-for="item in qualityPicker.variants"
+                :key="item.formatId"
+                :style="{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '10px 12px',
+                  marginBottom: '8px',
+                  border:
+                    '1px solid ' +
+                    (qualityPicker.selected === item.formatId
+                      ? '#409eff'
+                      : '#dcdfe6'),
+                  borderRadius: '8px',
+                  cursor: isVariantDisabled(item) ? 'not-allowed' : 'pointer',
+                  opacity: isVariantDisabled(item) ? 0.45 : 1,
+                  background:
+                    qualityPicker.selected === item.formatId
+                      ? '#ecf5ff'
+                      : '#ffffff',
+                }"
+              >
+                <input
+                  type="radio"
+                  :value="item.formatId"
+                  v-model="qualityPicker.selected"
+                  :disabled="isVariantDisabled(item)"
+                />
+                <span style="font-weight: 600; color: #303133"
+                  >{{ item.height }}P</span
+                >
+                <span
+                  style="
+                    margin-left: auto;
+                    font-size: 0.85rem;
+                    color: #909399;
+                  "
+                  >{{ formatBytes(item.filesize) }}</span
+                >
+              </label>
+              <p style="margin: 4px 0 0; font-size: 0.8rem; color: #c0c4cc">
+                超过上限的档位不可选（当前上限
+                {{ formatBytes(qualityPicker.maxBytes) }}）
+              </p>
+            </template>
+            <span slot="footer">
+              <el-button @click="qualityPicker.visible = false">取消</el-button>
+              <el-button
+                type="primary"
+                :disabled="qualityPicker.loading || !qualityPicker.selected"
+                @click="confirmQualityAndUpload"
+                >转存</el-button
+              >
+            </span>
+          </el-dialog>
+
           <!-- 上传进度列表 -->
           <div class="upload-list" v-if="uploadingFiles.length > 0">
             <div
@@ -3393,6 +3485,16 @@
             allowedHosts: [],
             loaded: false,
           },
+          // 分享链接的清晰度选择；variants 由服务端 yt-dlp 的格式清单按分辨率去重得到
+          qualityPicker: {
+            visible: false,
+            loading: false,
+            title: "",
+            variants: [],
+            selected: "",
+            maxBytes: 0,
+            sourceUrl: "",
+          },
           pendingUploadBatch: null,
           pendingCompressionChoice: "original",
           pasteUploadNotice: null,
@@ -4007,16 +4109,14 @@
             this.mediaResolve.loaded = true;
           },
 
-          // 服务端解析并直接入库，返回与普通上传一致的 [{ src }]
-          async resolveMediaShareLink(rawUrl) {
+          // 仅解析：拿元数据与可选清晰度，不落库
+          async fetchMediaInfo(rawUrl) {
             const response = await fetch(`${this.baseURL}/api/resolve-url`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 url: rawUrl,
-                upload: true,
                 storageMode: this.storageMode,
-                folderPath: this.normalizeFolderPath(this.folderPath),
               }),
               credentials: "include",
             });
@@ -4026,6 +4126,128 @@
               throw new Error(data.errorDetail || data.error || "视频解析失败");
             }
             return data;
+          },
+
+          // 解析并入库；variant 为空时由服务端取最佳清晰度
+          async submitMediaUpload(rawUrl, variant) {
+            const response = await fetch(`${this.baseURL}/api/resolve-url`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                url: rawUrl,
+                upload: true,
+                storageMode: this.storageMode,
+                folderPath: this.normalizeFolderPath(this.folderPath),
+                formatId: variant ? variant.formatId : "",
+                needsAudio: variant ? variant.needsAudio === true : false,
+              }),
+              credentials: "include",
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+              throw new Error(data.errorDetail || data.error || "视频转存失败");
+            }
+            return data;
+          },
+
+          formatBytes(bytes) {
+            const value = Number(bytes) || 0;
+            if (value <= 0) return "大小未知";
+            if (value >= 1024 * 1024 * 1024) {
+              return (value / 1024 / 1024 / 1024).toFixed(2) + " GB";
+            }
+            return Math.round(value / 1024 / 1024) + " MB";
+          },
+
+          // 已知体积且超过上限的档位不可选；体积未知时放行，交给服务端判定
+          isVariantDisabled(variant) {
+            const maxBytes = Number(this.qualityPicker.maxBytes) || 0;
+            const size = Number(variant && variant.filesize) || 0;
+            return Boolean(maxBytes && size && size > maxBytes);
+          },
+
+          // 打开清晰度选择；只剩一个可用档位时直接转存，省掉多余点击
+          async openQualityPicker(rawUrl) {
+            this.qualityPicker.visible = true;
+            this.qualityPicker.loading = true;
+            this.qualityPicker.title = "";
+            this.qualityPicker.variants = [];
+            this.qualityPicker.selected = "";
+            this.qualityPicker.maxBytes = 0;
+            this.qualityPicker.sourceUrl = rawUrl;
+
+            let info;
+            try {
+              info = await this.fetchMediaInfo(rawUrl);
+            } catch (err) {
+              this.qualityPicker.visible = false;
+              this.qualityPicker.loading = false;
+              this.showToast("解析失败：" + err.message, "error");
+              return;
+            }
+
+            const maxBytes = Number(info.maxImportBytes) || 0;
+            const variants = (info.variants || []).filter((item) => item.formatId);
+            const usable = variants.filter(
+              (item) => !maxBytes || !item.filesize || item.filesize <= maxBytes,
+            );
+
+            this.qualityPicker.loading = false;
+            this.qualityPicker.title = info.title || "";
+            this.qualityPicker.maxBytes = maxBytes;
+            this.qualityPicker.variants = variants;
+
+            if (usable.length <= 1) {
+              this.qualityPicker.visible = false;
+              await this.runMediaUpload(rawUrl, usable[0] || null);
+              return;
+            }
+
+            this.qualityPicker.selected = usable[0].formatId;
+          },
+
+          async confirmQualityAndUpload() {
+            const variant = this.qualityPicker.variants.find(
+              (item) => item.formatId === this.qualityPicker.selected,
+            );
+            const sourceUrl = this.qualityPicker.sourceUrl;
+            this.qualityPicker.visible = false;
+            await this.runMediaUpload(sourceUrl, variant || null);
+          },
+
+          async runMediaUpload(rawUrl, variant) {
+            this.urlResolving = true;
+            this.urlUploading = true;
+            try {
+              const data = await this.submitMediaUpload(rawUrl, variant);
+              if (Array.isArray(data) && data[0]?.src) {
+                this.registerUploadedUrlFile(data[0].src, rawUrl);
+              }
+              this.urlToUpload = "";
+            } catch (err) {
+              this.showToast("转存失败：" + err.message, "error");
+            }
+            this.urlUploading = false;
+            this.urlResolving = false;
+          },
+
+          registerUploadedUrlFile(src, sourceUrl) {
+            const fileName =
+              String(sourceUrl || "").split("/").pop().split("?")[0] || "url_file";
+            const uploadedFile = {
+              name: fileName,
+              fileName: fileName,
+              url: `${this.baseURL}${src}`,
+              path: src,
+              size: 0, // URL上传无法预知大小
+              selected: false,
+              uploadTime: Date.now(),
+            };
+
+            this.uploadedFiles.unshift(uploadedFile);
+            this.addToHistory(uploadedFile);
+            this.showToast(`成功从URL上传到 ${this.storageTarget}`, "success");
           },
 
           async uploadPlainUrlToServer(rawUrl) {
@@ -4068,52 +4290,27 @@
               return;
             }
 
-            // 分享链接由服务端解析成直链后入库：既避免浏览器端 CORS，
-            // 也不受 20MB 直传阈值影响（解析接口使用 URL 导入上限）
-            const shareLink = this.isMediaShareLink(this.urlToUpload);
-            const submittedUrl = this.urlToUpload;
+            // 分享链接：交给服务端解析，先把可选清晰度摆出来让用户定，再转存
+            if (this.isMediaShareLink(this.urlToUpload)) {
+              await this.openQualityPicker(this.urlToUpload);
+              return;
+            }
 
-            this.urlResolving = shareLink;
+            const submittedUrl = this.urlToUpload;
             this.urlUploading = true;
             try {
-              const data = shareLink
-                ? await this.resolveMediaShareLink(submittedUrl)
-                : await this.uploadPlainUrlToServer(submittedUrl);
+              const data = await this.uploadPlainUrlToServer(submittedUrl);
 
               // 处理成功响应 - 后端返回格式与普通上传一致 [{ src: '/file/xxx' }]
               if (Array.isArray(data) && data[0]?.src) {
-                const src = data[0].src;
-                // 从URL提取文件名
-                const fileName =
-                  submittedUrl.split("/").pop().split("?")[0] || "url_image";
-
-                const uploadedFile = {
-                  name: fileName,
-                  fileName: fileName,
-                  url: `${this.baseURL}${src}`,
-                  path: src,
-                  size: 0, // URL上传无法预知大小
-                  selected: false,
-                  uploadTime: Date.now(),
-                };
-
-                this.uploadedFiles.unshift(uploadedFile);
-                this.addToHistory(uploadedFile);
-                this.showToast(
-                  `成功从URL上传到 ${this.storageTarget}`,
-                  "success",
-                );
+                this.registerUploadedUrlFile(data[0].src, submittedUrl);
               }
 
               this.urlToUpload = "";
             } catch (err) {
-              this.showToast(
-                (shareLink ? "解析失败：" : "URL上传失败：") + err.message,
-                "error",
-              );
+              this.showToast("URL上传失败：" + err.message, "error");
             }
             this.urlUploading = false;
-            this.urlResolving = false;
           },
 
           createUploadContext() {
