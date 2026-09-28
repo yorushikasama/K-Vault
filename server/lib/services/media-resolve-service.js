@@ -65,6 +65,11 @@ const PROBE_TIMEOUT_MS = 5000;
 const PROBE_OK_TTL_MS = 5 * 60 * 1000;
 const PROBE_FAIL_TTL_MS = 15 * 1000;
 const QUEUE_LIMIT_FACTOR = 4;
+// Temp-file housekeeping. A download that is killed mid-flight (OOM, restart)
+// never reaches its own cleanup, so orphans get swept opportunistically.
+const SWEEP_INTERVAL_MS = 30 * 60 * 1000;
+const SWEEP_MIN_AGE_MS = 2 * 60 * 60 * 1000;
+const TEMP_FILE_PREFIX = 'kv-resolve-';
 
 // Timeouts, capacity pressure and a missing binary can all be fixed by
 // retrying later; everything else is a property of the request itself.
@@ -286,6 +291,7 @@ class MediaResolveService {
     this.waiters = [];
     this.probeCache = null;
     this.ffmpegCache = null;
+    this.lastSweepAt = 0;
   }
 
   resolveBinaryPath() {
@@ -762,6 +768,9 @@ class MediaResolveService {
       formatSelector = needsAudio ? `${formatId}+ba` : String(formatId);
     }
 
+    // Opportunistically reclaim files orphaned by earlier interrupted runs.
+    void this.sweepTempDir();
+
     await fs.promises.mkdir(this.tempDir, { recursive: true });
 
     const destination = path.join(
@@ -815,6 +824,43 @@ class MediaResolveService {
     } finally {
       this.release();
     }
+  }
+
+  // Reclaims temp files left behind by interrupted downloads (process killed,
+  // OOM, restart). Throttled and strictly best-effort: it never throws, and it
+  // skips files young enough to still belong to an in-flight download.
+  // Returns the counts so the caller can surface permission problems instead of
+  // letting them disappear into the catch.
+  async sweepTempDir({ force = false } = {}) {
+    const now = Date.now();
+    if (!force && now - this.lastSweepAt < SWEEP_INTERVAL_MS) {
+      return { removed: 0, failed: 0, skipped: true };
+    }
+    this.lastSweepAt = now;
+
+    let entries;
+    try {
+      entries = await fs.promises.readdir(this.tempDir);
+    } catch {
+      return { removed: 0, failed: 0, skipped: false }; // Never created, or gone.
+    }
+
+    let removed = 0;
+    let failed = 0;
+    for (const name of entries) {
+      if (!name.startsWith(TEMP_FILE_PREFIX)) continue;
+      const target = path.join(this.tempDir, name);
+      try {
+        const stats = await fs.promises.stat(target);
+        if (!stats.isFile()) continue;
+        if (now - stats.mtimeMs < SWEEP_MIN_AGE_MS) continue;
+        await fs.promises.unlink(target);
+        removed += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    return { removed, failed, skipped: false };
   }
 
   // Temp files belong to the caller; this keeps the unlink best-effort so a

@@ -134,7 +134,11 @@ function loadConfig(env = process.env) {
       maxDurationSeconds: toInt(env.MEDIA_RESOLVE_MAX_DURATION_SECONDS, 0),
       maxFileSizeBytes: toInt(env.MEDIA_RESOLVE_MAX_FILE_SIZE, 0),
       maxUrlLength: toInt(env.MEDIA_RESOLVE_MAX_URL_LENGTH, 2048),
-      tempDir: normalizeEnvString(env.MEDIA_RESOLVE_TEMP_DIR),
+      // Land temp downloads under DATA_DIR by default: the systemd unit ships
+      // PrivateTmp=true, which turns the service's /tmp into a private mount
+      // that the host can neither see nor clean, and DATA_DIR is already
+      // writable (and usually a volume) on both Docker and bare-metal setups.
+      tempDir: normalizeEnvString(env.MEDIA_RESOLVE_TEMP_DIR) || path.join(dataDir, 'tmp'),
       cookiesFile: normalizeEnvString(env.MEDIA_RESOLVE_COOKIES_FILE),
       proxy: normalizeEnvString(env.MEDIA_RESOLVE_PROXY),
       allowUnknownHosts: toBool(env.MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS, false),
