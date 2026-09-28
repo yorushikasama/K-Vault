@@ -1,5 +1,9 @@
 const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
+// createReadStream lives on the callback API, not on fs/promises — the streaming
+// upload path needs it, and silently calling it on the promises namespace would
+// surface only as a runtime TypeError deep inside an upload.
+const { createReadStream } = require('node:fs');
 const path = require('node:path');
 const { Hono } = require('hono');
 const { cors } = require('hono/cors');
@@ -2868,7 +2872,7 @@ function createApp() {
         // was the single most expensive step on this path: it duplicated the file
         // several times over and put the whole thing on the heap at once.
         result = await uploadService.uploadStream({
-          openStream: () => fs.createReadStream(downloaded.filePath),
+          openStream: () => createReadStream(downloaded.filePath),
           fileSize: downloaded.bytes,
           fileName: `${safeTitle || 'video'}.${item.ext || 'mp4'}`,
           mimeType: 'video/mp4',

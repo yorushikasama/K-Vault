@@ -100,7 +100,10 @@ class ChunkUploadService {
       throw new Error('Invalid chunk task metadata.');
     }
 
-    const fileSize = Number(task.file_size) || 0;
+    // Declared size first, then the real on-disk total: the client's number is
+    // advisory, while Telegram rejects a multipart whose Content-Length disagrees
+    // with the bytes actually sent.
+    let fileSize = Number(task.file_size) || 0;
     const parts = [];
     for (let i = 0; i < totalChunks; i += 1) {
       const chunkFile = this.chunkPath(uploadId, i);
