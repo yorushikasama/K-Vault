@@ -6011,7 +6011,6 @@
           this.loadImageCompressSettings();
           this.syncImageCompressState();
           this.detectImageCompressionSupport();
-          this.loadMediaResolveStatus();
 
           try {
             this.folderPath = this.normalizeFolderPath(
@@ -6024,6 +6023,9 @@
           // 检查认证状态（优先执行）
           const shouldContinue = await this.checkAuth();
           if (!shouldContinue) return;
+
+          // 认证通过后再探测解析能力：未登录时该接口必然返回 401，没必要发
+          this.loadMediaResolveStatus();
 
           // 检查存储目标
           await this.checkStorageTarget();

@@ -2801,7 +2801,12 @@ function createApp() {
 
     let result;
 
-    if (item.directUrl) {
+    // An explicit quality choice must win: the direct-URL path can only serve
+    // whatever single file the platform offers, so it is bypassed once the
+    // caller pinned a format.
+    const pinnedFormat = asString(payload.formatId);
+
+    if (item.directUrl && !pinnedFormat) {
       // Single-file format: reuse the existing remote importer, which already
       // enforces the size cap and the SSRF rules. The headers yt-dlp reported
       // carry whichever Referer the CDN asks for.
@@ -2821,13 +2826,19 @@ function createApp() {
     } else {
       // Separate video/audio tracks (Bilibili, YouTube, ...): yt-dlp has to
       // fetch them and mux, which needs ffmpeg on the host.
+      // Resolve the pinned variant so requireMerge reflects the actual choice
+      // rather than the default best-format assumption.
+      const chosenVariant = pinnedFormat
+        ? (item.variants || []).find((variant) => variant.formatId === pinnedFormat)
+        : null;
+
       let downloaded;
       try {
         downloaded = await mediaResolveService.download({
           url: sourceUrl,
           maxBytes: importCap,
-          requireMerge: item.requiresMerge,
-          formatId: asString(payload.formatId),
+          requireMerge: chosenVariant ? chosenVariant.needsAudio : item.requiresMerge,
+          formatId: pinnedFormat,
           needsAudio: payload.needsAudio === true,
         });
       } catch (error) {
