@@ -100,10 +100,11 @@ class ChunkUploadService {
       throw new Error('Invalid chunk task metadata.');
     }
 
-    // Declared size first, then the real on-disk total: the client's number is
-    // advisory, while Telegram rejects a multipart whose Content-Length disagrees
-    // with the bytes actually sent.
-    let fileSize = Number(task.file_size) || 0;
+    // The real on-disk total is authoritative: the size the client declared at
+    // init is advisory, and Telegram refuses a multipart whose Content-Length
+    // disagrees with the bytes actually sent. (Adding the declared size on top of
+    // the part sizes was the bug that produced UND_ERR_REQ_CONTENT_LENGTH_MISMATCH.)
+    let fileSize = 0;
     const parts = [];
     for (let i = 0; i < totalChunks; i += 1) {
       const chunkFile = this.chunkPath(uploadId, i);
