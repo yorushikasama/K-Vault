@@ -21,6 +21,37 @@ function normalizeRequestHeaders(input) {
   return normalized;
 }
 
+// The remote body is accumulated on the heap, so the cap has to be enforced
+// while reading rather than after it: pulling a 1GB file only to reject it would
+// already have cost a gigabyte. Mirrors the streaming import in app.js.
+// Note the per-chunk copy: handing out a view would alias the runtime's buffer,
+// and a silent aliasing bug is far worse than one transient 64KB copy.
+async function readBodyWithCap(response, maxBytes, buildError) {
+  if (!response.body) return Buffer.alloc(0);
+
+  const reader = response.body.getReader();
+  const chunks = [];
+  let received = 0;
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      received += value.byteLength;
+      if (received > maxBytes) throw buildError();
+      chunks.push(Buffer.from(value));
+    }
+  } finally {
+    try {
+      await reader.cancel();
+    } catch {
+      // Already closed by the reader or the peer.
+    }
+  }
+
+  return Buffer.concat(chunks);
+}
+
 class UploadService {
   constructor({ storageRepo, fileRepo, storageFactory }) {
     this.storageRepo = storageRepo;
@@ -128,14 +159,34 @@ class UploadService {
     }
 
     const contentType = response.headers.get('content-type') || 'application/octet-stream';
-    const arrayBuffer = await response.arrayBuffer();
+    const limitText = `${Math.floor(maxBytes / 1024 / 1024)}MB`;
+    // Carries an explicit status so the error classifier reports a size problem
+    // (413 / QUOTA_EXCEEDED) instead of falling through to a retriable 502.
+    const tooLarge = () => {
+      const error = new Error(`远程文件超过大小限制（${limitText}）。`);
+      error.status = 413;
+      return error;
+    };
 
-    if (arrayBuffer.byteLength === 0) {
-      throw new Error('目标 URL 返回了空文件。');
+    // Reject on the advertised length before reading a single byte. The body is
+    // buffered here and the storage adapter copies it again, so buffering first
+    // and checking afterwards costs several times the file size for nothing.
+    const declared = Number(response.headers.get('content-length'));
+    if (Number.isFinite(declared) && declared > maxBytes) {
+      try {
+        await response.body?.cancel();
+      } catch {
+        // The socket may already be gone.
+      }
+      throw tooLarge();
     }
 
-    if (arrayBuffer.byteLength > maxBytes) {
-      throw new Error(`远程文件超过大小限制（${Math.floor(maxBytes / 1024 / 1024)}MB）。`);
+    // A body that lies about (or omits) Content-Length still cannot push the
+    // heap past the cap: the read is abandoned the moment the total crosses it.
+    const bytes = await readBodyWithCap(response, maxBytes, tooLarge);
+
+    if (bytes.byteLength === 0) {
+      throw new Error('目标 URL 返回了空文件。');
     }
 
     let fileName = decodeURIComponent(parsedUrl.pathname.split('/').pop() || '').trim();
@@ -151,8 +202,8 @@ class UploadService {
     return this.uploadFile({
       fileName,
       mimeType: contentType,
-      fileSize: arrayBuffer.byteLength,
-      buffer: arrayBuffer,
+      fileSize: bytes.byteLength,
+      buffer: bytes,
       storageId,
       storageMode,
       folderPath,
