@@ -2,6 +2,7 @@
 const { loadConfig } = require('./config');
 const { AuthService } = require('./utils/auth');
 const { GuestService } = require('./utils/guest');
+const { createSemaphore } = require('./utils/semaphore');
 const { StorageFactory } = require('./storage/factory');
 const { StorageConfigRepository } = require('./repos/storage-config-repo');
 const { FileRepository } = require('./repos/file-repo');
@@ -40,6 +41,26 @@ function createContainer(env = process.env) {
 
   const authService = new AuthService(db, config);
   const guestService = new GuestService(db, config);
+
+  // Gates the two endpoints that buffer an entire file on the heap (/upload and
+  // the chunked reassembly). Upload bodies are read whole, so without this the
+  // peak grows with the number of simultaneous uploads: two 100MB uploads land
+  // near 830MB against a 896MB MemoryMax. The queue is deliberately short —
+  // queued requests have not had their body read yet, but a long line of them is
+  // still a load spike waiting to happen.
+  const uploadGate = createSemaphore({
+    limit: config.uploadMaxConcurrency,
+    queueLimit: config.uploadMaxConcurrency * 4,
+    buildBusyError: ({ limit, queued }) => {
+      const error = new Error('服务器正在处理其他上传，请稍后重试。');
+      error.code = 'UPLOAD_BUSY';
+      error.status = 503;
+      error.detail = `已达到同时上传上限 ${limit}，当前排队 ${queued} 个。`;
+      error.retriable = true;
+      return error;
+    },
+  });
+
   const mediaResolveService = new MediaResolveService({ config });
   // Clear anything a previous run left behind when it was killed mid-download.
   // Deliberately not awaited: startup must not wait on housekeeping. A non-zero
@@ -70,6 +91,7 @@ function createContainer(env = process.env) {
     uploadService,
     chunkService,
     mediaResolveService,
+    uploadGate,
   };
 }
 

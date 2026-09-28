@@ -337,6 +337,20 @@
       init.body = JSON.stringify({ config: config });
     }
 
+    // A wall-clock cap is safe here because this only ever moves a small JSON
+    // document — unlike file uploads, where any fixed cap would abort legitimate
+    // large transfers. Without it a stalled request left the save button spinning
+    // forever, since the loading flag only resets when the promise settles.
+    // The timer is deliberately not cleared: aborting an already-settled request
+    // is a no-op, and clearing it would mean restructuring the promise chain below.
+    if (typeof AbortController === "function") {
+      var uiConfigController = new AbortController();
+      init.signal = uiConfigController.signal;
+      setTimeout(function () {
+        uiConfigController.abort();
+      }, 30000);
+    }
+
     return fetch(url, init).then(function (response) {
       return response
         .text()

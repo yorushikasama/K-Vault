@@ -24,6 +24,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const { assertSafeRemoteUrl } = require('../utils/ssrf-guard');
+const { createSemaphore } = require('../utils/semaphore');
 
 // Hosts we are willing to hand to yt-dlp. Suffix-matched, so "bilibili.com"
 // also covers "www.bilibili.com" and "m.bilibili.com".
@@ -287,8 +288,17 @@ class MediaResolveService {
     // removes each file in a finally block.
     this.tempDir = String(settings.tempDir || '').trim() || path.join(os.tmpdir(), 'k-vault-resolve');
 
-    this.active = 0;
-    this.waiters = [];
+    // Shared implementation (lib/utils/semaphore.js). This class used to carry its
+    // own copy of the acquire/release dance — which is precisely how the upload
+    // paths ended up with no limit at all while this one had one.
+    this.gate = createSemaphore({
+      limit: this.maxConcurrency,
+      queueLimit: this.maxConcurrency * QUEUE_LIMIT_FACTOR,
+      buildBusyError: () => new MediaResolveError('MEDIA_RESOLVE_BUSY', '解析队列已满，请稍后重试。', {
+        status: 503,
+        detail: 'Too many concurrent resolve requests.',
+      }),
+    });
     this.probeCache = null;
     this.ffmpegCache = null;
     this.lastSweepAt = 0;
@@ -430,30 +440,11 @@ class MediaResolveService {
   }
 
   acquire() {
-    if (this.active < this.maxConcurrency) {
-      this.active += 1;
-      return Promise.resolve();
-    }
-
-    if (this.waiters.length >= this.maxConcurrency * QUEUE_LIMIT_FACTOR) {
-      return Promise.reject(new MediaResolveError('MEDIA_RESOLVE_BUSY', '解析队列已满，请稍后重试。', {
-        status: 503,
-        detail: 'Too many concurrent resolve requests.',
-      }));
-    }
-
-    return new Promise((resolve) => {
-      this.waiters.push(resolve);
-    });
+    return this.gate.acquire();
   }
 
   release() {
-    const next = this.waiters.shift();
-    if (next) {
-      next();
-      return;
-    }
-    this.active = Math.max(0, this.active - 1);
+    this.gate.release();
   }
 
   buildCommonArgs() {

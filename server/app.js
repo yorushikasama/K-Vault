@@ -2409,6 +2409,9 @@ function createApp() {
       },
       guestUpload: guestService.getConfig(),
       uploadLimits: getUploadLimits(),
+      // Live gate state, so an operator can tell "busy" from "hung" when a client
+      // reports a 503.
+      uploadConcurrency: container.uploadGate.snapshot(),
       settings: { connected: false, message: 'Unknown' },
       diagnostics: {},
     };
@@ -2527,6 +2530,42 @@ function createApp() {
   });
 
   // --- Upload ---
+  // Concurrency gate for the two endpoints that buffer a whole file in memory:
+  // /upload and the chunked reassembly. Implemented as middleware rather than an
+  // inline acquire/release per handler, because those handlers have a dozen
+  // early-return paths and one missed release would permanently shrink the pool.
+  const uploadGateMiddleware = async (c, next) => {
+    const gate = container.uploadGate;
+    try {
+      await gate.acquire();
+    } catch (error) {
+      // Refuse before reading the body: there is no point downloading a file that
+      // will not be accepted, and the client may still have bytes in flight.
+      try {
+        await c.req.raw.body?.cancel();
+      } catch {
+        // Already gone.
+      }
+      c.header('Retry-After', '10');
+      return jsonError(
+        c,
+        error.status || 503,
+        error.code || 'UPLOAD_BUSY',
+        error.message || '服务器繁忙，请稍后重试。',
+        error.detail || '',
+        error.retriable === true
+      );
+    }
+    try {
+      await next();
+    } finally {
+      gate.release();
+    }
+  };
+
+  app.use('/upload', uploadGateMiddleware);
+  app.use('/api/chunked-upload/complete', uploadGateMiddleware);
+
   app.post('/upload', async (c) => {
     const { authService, guestService, uploadService } = getServices(c);
     const auth = authService.checkAuthentication(c.req.raw);

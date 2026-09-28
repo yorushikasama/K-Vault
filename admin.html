@@ -4755,7 +4755,23 @@ curl -X POST "{SITE_URL}/api/v1/import" \
           fileInput.addEventListener('change', async () => {
             const file = fileInput.files?.[0];
             if (!file) return;
-            const loading = this.$message({ message: '正在上传背景图...', duration: 0 });
+            // duration:0 is right — a large upload has no predictable length — but
+            // the notice used to have no close button either, so a stalled request
+            // left a permanent 「正在上传背景图...」 that only a page reload could
+            // clear. showClose gives the user an exit, and the counter distinguishes
+            // "still working" from "hung".
+            // Deliberately NO timeout here: a 100MB upload legitimately takes about
+            // 3 minutes on this host, so any fixed cap would abort valid uploads.
+            const startedAt = Date.now();
+            const loading = this.$message({
+              message: '正在上传背景图...',
+              duration: 0,
+              showClose: true
+            });
+            const loadingTicker = setInterval(() => {
+              const seconds = Math.round((Date.now() - startedAt) / 1000);
+              loading.message = `正在上传背景图... 已等待 ${seconds} 秒（大文件较慢，可关闭此提示）`;
+            }, 1000);
             try {
               const url = await this.uploadUiDesignBackgroundFile(file);
               targetInput.value = url;
@@ -4764,6 +4780,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
             } catch (error) {
               this.$message.error(`上传失败：${error.message || error}`);
             } finally {
+              clearInterval(loadingTicker);
               loading.close();
               fileInput.value = '';
             }

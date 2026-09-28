@@ -105,6 +105,10 @@ function loadConfig(env = process.env) {
     uploadSmallFileThreshold: toInt(env.UPLOAD_SMALL_FILE_THRESHOLD, 20 * 1024 * 1024),
     chunkSize: toInt(env.CHUNK_SIZE, 5 * 1024 * 1024),
     urlImportMaxSize: resolveUrlImportMaxSize(env),
+    // Upload bodies are buffered whole, so one upload at a time is what keeps the
+    // peak at one upload's cost. Two concurrent 100MB uploads sit at roughly 830MB
+    // against a 896MB MemoryMax, which is an OOM kill waiting to happen.
+    uploadMaxConcurrency: toInt(env.UPLOAD_MAX_CONCURRENCY, 2),
 
     configEncryptionKey: normalizeEnvString(env.CONFIG_ENCRYPTION_KEY) || normalizeEnvString(env.FILE_URL_SECRET) || normalizeEnvString(env.SESSION_SECRET) || '',
     sessionSecret: normalizeEnvString(env.SESSION_SECRET) || normalizeEnvString(env.FILE_URL_SECRET) || normalizeEnvString(env.CONFIG_ENCRYPTION_KEY) || '',
