@@ -14,12 +14,8 @@ const {
   VALID_STORAGES,
 } = require('./lib/repos/api-token-repo');
 const { run: dbRun, get: dbGet } = require('./db');
-const {
-  assertSafeRemoteUrl,
-  validateRedirectLocation,
-  sniffImageMime,
-  MAX_REDIRECTS,
-} = require('./lib/utils/ssrf-guard');
+const { sniffImageMime } = require('./lib/utils/ssrf-guard');
+const { fetchRemote, readBodyWithLimit } = require('./lib/utils/remote-fetch');
 const { MediaResolveError } = require('./lib/services/media-resolve-service');
 const { AUDIT_EVENTS, writeAuditLog, listAuditLogs } = require('./lib/utils/audit');
 const { safeLogError } = require('./lib/utils/redact');
@@ -481,118 +477,58 @@ function createApp() {
   }
 
   // Requirement #6: SSRF-validated remote fetch for /api/v1/import.
-  // Every redirect hop is re-validated (DNS + literal rules); the body is
-  // streamed with a hard size cap; Content-Length alone is never trusted.
+  //
+  // The transport concerns — per-hop SSRF re-validation, manual redirect
+  // following, transport timeout, and the size cap enforced while reading — now
+  // live in lib/utils/remote-fetch.js, because /api/upload-from-url needs
+  // exactly the same guarantees and previously had none of them. What stays here
+  // is the image-only contract: this endpoint sniffs image magic bytes instead of
+  // trusting the remote Content-Type.
+  const importTooLarge = () => {
+    const error = new Error('Remote file exceeds the import size limit.');
+    error.code = 'FILE_TOO_LARGE';
+    error.status = 413;
+    return error;
+  };
+
   async function fetchRemoteImport(rawUrl, maxBytes) {
-    let currentUrl = String(rawUrl || '').trim();
+    const { response, finalUrl } = await fetchRemote({ url: rawUrl, timeoutMs: 30000 });
 
-    for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
-      const safety = await assertSafeRemoteUrl(currentUrl);
-      if (!safety.ok) {
-        const error = new Error(safety.message || 'Unsafe remote URL.');
-        error.code = safety.code || 'SSRF_BLOCKED';
-        error.status = safety.code === 'INVALID_URL' ? 400 : 403;
-        throw error;
-      }
-
-      let response;
-      try {
-        response = await fetch(currentUrl, { redirect: 'manual', signal: AbortSignal.timeout(30000) });
-      } catch (error) {
-        const wrapped = new Error(`Failed to fetch remote URL: ${error?.message || 'network error'}`);
-        wrapped.code = 'IMPORT_FETCH_FAILED';
-        wrapped.status = 502;
-        throw wrapped;
-      }
-
-      if (response.status >= 300 && response.status < 400) {
-        const location = response.headers.get('location') || '';
-        if (!location) {
-          const e = new Error('Remote server returned a redirect without a location.');
-          e.code = 'IMPORT_REDIRECT_INVALID';
-          e.status = 502;
-          throw e;
-        }
-        const redirectCheck = validateRedirectLocation(location, currentUrl);
-        if (!redirectCheck.ok) {
-          const e = new Error(redirectCheck.message || 'Unsafe redirect target.');
-          e.code = redirectCheck.code || 'SSRF_BLOCKED';
-          e.status = redirectCheck.code === 'INVALID_REDIRECT' ? 502 : 403;
-          throw e;
-        }
-        currentUrl = redirectCheck.url.href;
-        continue;
-      }
-
-      if (!response.ok) {
-        const e = new Error(`Remote server responded ${response.status}.`);
-        e.code = 'IMPORT_REMOTE_ERROR';
-        e.status = 502;
-        throw e;
-      }
-
-      const headerMime = String(response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
-      const contentLength = Number(response.headers.get('content-length') || 0);
-      if (Number.isFinite(contentLength) && contentLength > maxBytes) {
-        const e = new Error('Remote file exceeds the import size limit.');
-        e.code = 'FILE_TOO_LARGE';
-        e.status = 413;
-        throw e;
-      }
-
-      const reader = response.body.getReader();
-      const chunks = [];
-      let received = 0;
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          received += value.byteLength;
-          if (received > maxBytes) {
-            const e = new Error('Remote file exceeds the import size limit.');
-            e.code = 'FILE_TOO_LARGE';
-            e.status = 413;
-            throw e;
-          }
-          chunks.push(Buffer.from(value));
-        }
-      } finally {
-        try { await reader.cancel(); } catch { /* already closed */ }
-      }
-
-      const bytes = Buffer.concat(chunks);
-
-      // SVG is rejected by default (XSS risk); sniff both header and bytes.
-      if (headerMime.includes('svg') || bytes.subarray(0, 512).toString('latin1').trimStart().startsWith('<svg')) {
-        const e = new Error('SVG files are not allowed for remote import.');
-        e.code = 'UNSUPPORTED_MEDIA_TYPE';
-        e.status = 415;
-        throw e;
-      }
-
-      const sniffed = sniffImageMime(bytes.subarray(0, 32));
-      if (!sniffed || !IMPORT_IMAGE_MIMES.has(sniffed)) {
-        const e = new Error('Remote content is not a supported image type.');
-        e.code = 'UNSUPPORTED_MEDIA_TYPE';
-        e.status = 415;
-        throw e;
-      }
-      if (headerMime.startsWith('image/') && headerMime !== sniffed && headerMime !== 'image/x-icon') {
-        const e = new Error(`Content-Type (${headerMime}) does not match detected content (${sniffed}).`);
-        e.code = 'MIME_MISMATCH';
-        e.status = 415;
-        throw e;
-      }
-
-      const fileName = buildImportFileName(currentUrl, sniffed);
-      const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
-      return { bytes, buffer: arrayBuffer, mime: sniffed, fileName, finalUrl: currentUrl };
+    if (!response.ok) {
+      const e = new Error(`Remote server responded ${response.status}.`);
+      e.code = 'IMPORT_REMOTE_ERROR';
+      e.status = 502;
+      throw e;
     }
 
-    const e = new Error(`Too many redirects (max ${MAX_REDIRECTS}).`);
-    e.code = 'IMPORT_TOO_MANY_REDIRECTS';
-    e.status = 502;
-    throw e;
+    const headerMime = String(response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    const bytes = await readBodyWithLimit(response, maxBytes, importTooLarge);
+
+    // SVG is rejected by default (XSS risk); sniff both header and bytes.
+    if (headerMime.includes('svg') || bytes.subarray(0, 512).toString('latin1').trimStart().startsWith('<svg')) {
+      const e = new Error('SVG files are not allowed for remote import.');
+      e.code = 'UNSUPPORTED_MEDIA_TYPE';
+      e.status = 415;
+      throw e;
+    }
+
+    const sniffed = sniffImageMime(bytes.subarray(0, 32));
+    if (!sniffed || !IMPORT_IMAGE_MIMES.has(sniffed)) {
+      const e = new Error('Remote content is not a supported image type.');
+      e.code = 'UNSUPPORTED_MEDIA_TYPE';
+      e.status = 415;
+      throw e;
+    }
+    if (headerMime.startsWith('image/') && headerMime !== sniffed && headerMime !== 'image/x-icon') {
+      const e = new Error(`Content-Type (${headerMime}) does not match detected content (${sniffed}).`);
+      e.code = 'MIME_MISMATCH';
+      e.status = 415;
+      throw e;
+    }
+
+    const fileName = buildImportFileName(finalUrl, sniffed);
+    const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+    return { bytes, buffer: arrayBuffer, mime: sniffed, fileName, finalUrl };
   }
 
   function apiV1Success(payload = {}, status = 200, headers = {}) {
@@ -2657,6 +2593,21 @@ function createApp() {
     return uploadSuccessResponse(c, result);
   });
 
+  // The remote-fetch helper reports in English (it is shared with the API v1
+  // endpoint, whose contract is English). This route backs the web UI, so map the
+  // codes to something the user can act on while keeping the original text as the
+  // detail field for diagnostics.
+  const REMOTE_FETCH_MESSAGES = {
+    SSRF_BLOCKED: '该地址不允许导入（内网、回环或云元数据地址已阻止）。',
+    INVALID_URL: 'URL 无效或不受支持。',
+    INVALID_REDIRECT: '目标地址返回了无效的跳转。',
+    IMPORT_TOO_MANY_REDIRECTS: '目标地址跳转次数过多。',
+    IMPORT_FETCH_FAILED: '无法访问目标地址。',
+    IMPORT_REMOTE_ERROR: '目标地址响应异常。',
+    FILE_TOO_LARGE: '远程文件超过大小限制。',
+    REMOTE_FILE_EMPTY: '目标地址返回了空文件。',
+  };
+
   app.post('/api/upload-from-url', async (c) => {
     const { authService, guestService, uploadService } = getServices(c);
     const auth = authService.checkAuthentication(c.req.raw);
@@ -2683,6 +2634,15 @@ function createApp() {
         maxBytes: Math.min(container.config.urlImportMaxSize, container.config.uploadMaxSize),
       });
     } catch (error) {
+      // Remote-import failures now carry a code and a status of their own
+      // (SSRF_BLOCKED 403, FILE_TOO_LARGE 413, ...). Passing those through keeps
+      // the client from being told "502, retry" for something that will never
+      // succeed, and it is what finally makes the SSRF refusal visible.
+      const status = Number(error?.status);
+      if (typeof error?.code === 'string' && Number.isInteger(status) && status >= 400 && status < 600) {
+        const message = REMOTE_FETCH_MESSAGES[error.code] || error.message;
+        return jsonError(c, status, error.code, message, error.message);
+      }
       const normalized = normalizeUploadError(c, error, 502);
       return c.json({ ...normalized, traceId: getTraceId(c) }, 502);
     }

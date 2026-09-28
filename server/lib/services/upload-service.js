@@ -1,5 +1,6 @@
 const { buildPublicFileId, normalizeStorageType } = require('../storage/common');
 const { normalizeFolderPath } = require('../repos/file-repo');
+const { fetchRemote, readBodyWithLimit } = require('../utils/remote-fetch');
 
 // Resolved media URLs occasionally need the platform's own Referer or
 // User-Agent to clear the CDN's hotlink check. Only well-formed string values
@@ -19,37 +20,6 @@ function normalizeRequestHeaders(input) {
     normalized[name] = text;
   }
   return normalized;
-}
-
-// The remote body is accumulated on the heap, so the cap has to be enforced
-// while reading rather than after it: pulling a 1GB file only to reject it would
-// already have cost a gigabyte. Mirrors the streaming import in app.js.
-// Note the per-chunk copy: handing out a view would alias the runtime's buffer,
-// and a silent aliasing bug is far worse than one transient 64KB copy.
-async function readBodyWithCap(response, maxBytes, buildError) {
-  if (!response.body) return Buffer.alloc(0);
-
-  const reader = response.body.getReader();
-  const chunks = [];
-  let received = 0;
-
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      received += value.byteLength;
-      if (received > maxBytes) throw buildError();
-      chunks.push(Buffer.from(value));
-    }
-  } finally {
-    try {
-      await reader.cancel();
-    } catch {
-      // Already closed by the reader or the peer.
-    }
-  }
-
-  return Buffer.concat(chunks);
 }
 
 class UploadService {
@@ -132,64 +102,77 @@ class UploadService {
     headers = null,
     timeoutMs = 30000,
   }) {
-    const parsedUrl = new URL(url);
-    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-      throw new Error('仅支持 HTTP/HTTPS URL。');
-    }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), Math.max(1000, Number(timeoutMs) || 30000));
-    let response;
-
+    // A malformed or unsupported URL is a client error, so it must not fall
+    // through to the generic 502 the upload error classifier produces. Without
+    // an explicit code/status the caller is told "network error, retry" for
+    // something that can never succeed.
+    let parsedUrl;
     try {
-      response = await fetch(url, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'K-Vault/2.0 (+https://github.com/katelya77/K-Vault)',
-          Accept: '*/*',
-          ...normalizeRequestHeaders(headers),
-        },
-      });
-    } finally {
-      clearTimeout(timeout);
+      parsedUrl = new URL(String(url || '').trim());
+    } catch {
+      const error = new Error('请输入有效的 URL。');
+      error.code = 'INVALID_URL';
+      error.status = 400;
+      throw error;
+    }
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      const error = new Error('仅支持 HTTP/HTTPS URL。');
+      error.code = 'INVALID_URL';
+      error.status = 400;
+      throw error;
     }
 
-    if (!response.ok) {
-      throw new Error(`目标 URL 响应异常：${response.status}。`);
-    }
-
-    const contentType = response.headers.get('content-type') || 'application/octet-stream';
     const limitText = `${Math.floor(maxBytes / 1024 / 1024)}MB`;
     // Carries an explicit status so the error classifier reports a size problem
     // (413 / QUOTA_EXCEEDED) instead of falling through to a retriable 502.
     const tooLarge = () => {
       const error = new Error(`远程文件超过大小限制（${limitText}）。`);
+      error.code = 'FILE_TOO_LARGE';
       error.status = 413;
       return error;
     };
 
-    // Reject on the advertised length before reading a single byte. The body is
-    // buffered here and the storage adapter copies it again, so buffering first
-    // and checking afterwards costs several times the file size for nothing.
-    const declared = Number(response.headers.get('content-length'));
-    if (Number.isFinite(declared) && declared > maxBytes) {
-      try {
-        await response.body?.cancel();
-      } catch {
-        // The socket may already be gone.
-      }
-      throw tooLarge();
+    // SSRF-checked and redirect-aware: every hop is re-validated, so a public URL
+    // cannot bounce us onto the internal network. The helper also owns the
+    // transport timeout (the previous AbortController is gone with it).
+    const { response, finalUrl } = await fetchRemote({
+      url: parsedUrl.href,
+      timeoutMs,
+      headers: {
+        'User-Agent': 'K-Vault/2.0 (+https://github.com/katelya77/K-Vault)',
+        Accept: '*/*',
+        ...normalizeRequestHeaders(headers),
+      },
+    });
+
+    if (!response.ok) {
+      const error = new Error(`目标 URL 响应异常：${response.status}。`);
+      error.code = 'IMPORT_REMOTE_ERROR';
+      error.status = 502;
+      throw error;
     }
 
-    // A body that lies about (or omits) Content-Length still cannot push the
-    // heap past the cap: the read is abandoned the moment the total crosses it.
-    const bytes = await readBodyWithCap(response, maxBytes, tooLarge);
+    const contentType = response.headers.get('content-type') || 'application/octet-stream';
+
+    // Enforces the cap while reading: an oversize body is refused on its declared
+    // length before allocation, and abandoned mid-read if the length lied.
+    const bytes = await readBodyWithLimit(response, maxBytes, tooLarge);
 
     if (bytes.byteLength === 0) {
-      throw new Error('目标 URL 返回了空文件。');
+      const error = new Error('目标 URL 返回了空文件。');
+      error.code = 'REMOTE_FILE_EMPTY';
+      error.status = 422;
+      throw error;
     }
 
-    let fileName = decodeURIComponent(parsedUrl.pathname.split('/').pop() || '').trim();
+    // Derive the name from the URL we actually ended up at, not the one we were
+    // asked for — after a redirect those differ.
+    let fileName = '';
+    try {
+      fileName = decodeURIComponent(new URL(finalUrl).pathname.split('/').pop() || '').trim();
+    } catch {
+      fileName = '';
+    }
     if (!fileName) {
       fileName = `url_${Date.now()}`;
     }
