@@ -45,6 +45,17 @@ function pickEnvAlias(env, aliases = [], fallback = '') {
   return { value: normalizeEnvString(fallback), source: '' };
 }
 
+// /api/upload-from-url buffers the entire remote body in memory before the
+// size check runs, so its cap deliberately tracks the small-file threshold by
+// default and the historical 20MB behaviour is preserved when unset. Raising
+// URL_IMPORT_MAX_SIZE opts into larger remote imports (parsed media); the
+// operator then owns keeping MemoryMax in step with UPLOAD_MAX_SIZE.
+function resolveUrlImportMaxSize(env) {
+  const explicit = toInt(env.URL_IMPORT_MAX_SIZE, 0);
+  if (explicit > 0) return explicit;
+  return toInt(env.UPLOAD_SMALL_FILE_THRESHOLD, 20 * 1024 * 1024);
+}
+
 // The cloud Bot API only accepts 50MB uploads; a self-hosted server running
 // with --local accepts up to 2000MB. TELEGRAM_MAX_UPLOAD_SIZE overrides both.
 function resolveTelegramMaxUploadSize(env, apiBase) {
@@ -91,6 +102,7 @@ function loadConfig(env = process.env) {
     uploadMaxSize: toInt(env.UPLOAD_MAX_SIZE, 100 * 1024 * 1024),
     uploadSmallFileThreshold: toInt(env.UPLOAD_SMALL_FILE_THRESHOLD, 20 * 1024 * 1024),
     chunkSize: toInt(env.CHUNK_SIZE, 5 * 1024 * 1024),
+    urlImportMaxSize: resolveUrlImportMaxSize(env),
 
     configEncryptionKey: normalizeEnvString(env.CONFIG_ENCRYPTION_KEY) || normalizeEnvString(env.FILE_URL_SECRET) || normalizeEnvString(env.SESSION_SECRET) || '',
     sessionSecret: normalizeEnvString(env.SESSION_SECRET) || normalizeEnvString(env.FILE_URL_SECRET) || normalizeEnvString(env.CONFIG_ENCRYPTION_KEY) || '',
@@ -105,6 +117,29 @@ function loadConfig(env = process.env) {
 
     telegramApiBase: telegramApiBase.value,
     telegramMaxUploadSize: resolveTelegramMaxUploadSize(env, telegramApiBase.value),
+
+    // Optional media resolution via yt-dlp. Exclusive to the Docker/self-hosted
+    // (Hono/Node) runtime: Cloudflare Pages Functions has no child_process, so
+    // the Pages deployment simply never exposes these endpoints.
+    mediaResolve: {
+      enabled: toBool(env.MEDIA_RESOLVE_ENABLED, true),
+      binaryPath: normalizeEnvString(env.MEDIA_RESOLVE_YTDLP_PATH),
+      ffmpegPath: normalizeEnvString(env.MEDIA_RESOLVE_FFMPEG_PATH),
+      // Bilibili rejects any "Mozilla/..." UA that lacks a browser-grade
+      // signature, so the default must not look like a browser.
+      userAgent: normalizeEnvString(env.MEDIA_RESOLVE_USER_AGENT, 'yt-dlp'),
+      timeoutMs: toInt(env.MEDIA_RESOLVE_TIMEOUT_MS, 60000),
+      downloadTimeoutMs: toInt(env.MEDIA_RESOLVE_DOWNLOAD_TIMEOUT_MS, 600000),
+      maxConcurrency: toInt(env.MEDIA_RESOLVE_MAX_CONCURRENCY, 2),
+      maxDurationSeconds: toInt(env.MEDIA_RESOLVE_MAX_DURATION_SECONDS, 0),
+      maxFileSizeBytes: toInt(env.MEDIA_RESOLVE_MAX_FILE_SIZE, 0),
+      maxUrlLength: toInt(env.MEDIA_RESOLVE_MAX_URL_LENGTH, 2048),
+      tempDir: normalizeEnvString(env.MEDIA_RESOLVE_TEMP_DIR),
+      cookiesFile: normalizeEnvString(env.MEDIA_RESOLVE_COOKIES_FILE),
+      proxy: normalizeEnvString(env.MEDIA_RESOLVE_PROXY),
+      allowUnknownHosts: toBool(env.MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS, false),
+      extraHosts: normalizeEnvString(env.MEDIA_RESOLVE_EXTRA_HOSTS),
+    },
 
     // Optional bootstrap default storage from env.
     bootstrapDefaultStorage: {

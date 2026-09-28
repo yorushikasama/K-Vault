@@ -42,6 +42,7 @@
 - **多格式支持** - 图片、视频、音频、文档、压缩包等
 - **在线预览** - 支持图片、视频、音频、文档（pdf、docx、txt）格式的预览
 - **分片上传** - 支持最大 100MB 文件（建议配合 R2/S3/WebDAV/GitHub，Telegram 网页上传按平台限制处理）
+- **视频链接解析** - Docker/自托管模式集成 yt-dlp，粘贴抖音 / B站 / YouTube 等分享链接即可解析并转存
 - **访客上传** - 可选的访客上传功能，支持文件大小和每日次数限制
 - **API Token 认证** - 支持 `curl` / ShareX / 脚本等程序化上传与调用
 - **多种视图** - 网格、列表、瀑布流多种管理界面
@@ -560,6 +561,94 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 
 ---
 
+## 视频链接解析（yt-dlp）
+
+在 Web 上传页的「URL 上传」中输入框里直接粘贴视频分享链接（抖音、B站、快手、微博、小红书、YouTube、TikTok 等），服务端会调用 yt-dlp 解析出平台 CDN 的直链并转存到当前存储后端。
+
+> **仅 Docker / 自托管运行时可用。** Cloudflare Pages Functions 没有 `child_process`，因此 Pages 部署不会注册这两个接口，前端会自动隐藏解析相关提示。
+
+### 两条转存路径
+
+`POST /api/resolve-url` 返回的 `downloadUrl` 只有在平台提供「音视频已合流」的单一文件时才非空。主流平台现在基本只提供分离的 DASH 音视频轨（B站、YouTube 实测合流格式为 0），这时 `requiresMerge` 为 `true`，需要通过 `upload: true` 让服务端用 yt-dlp 拉取并用 **ffmpeg** 合并后再入库。
+
+**因此 ffmpeg 是实际使用中的必需依赖** —— 缺了它，B站 / YouTube 这类视频无法转存。`GET /api/resolve-url/status` 的 `mergeSupported` 字段会反映当前是否具备合并能力。
+
+### 接口
+
+1. `GET /api/resolve-url/status` — 探测 yt-dlp / ffmpeg 是否可用，并返回允许解析的站点列表（前端据此决定是否启用解析）。
+2. `POST /api/resolve-url` — 解析分享链接：
+   - `{"url": "<分享链接>"}` → 只解析，返回元数据（标题、作者、时长、体积、缩略图）与 `downloadUrl` / `requiresMerge`。
+   - `{"url": "<分享链接>", "upload": true, "storageMode": "...", "folderPath": "..."}` → 解析并直接入库：有合流直链则直接转存，否则下载合并后入库。响应格式与 `/api/upload-from-url` 一致（`[{ src }]`）。
+
+两个接口与网页上传共用同一套鉴权（登录用户，或满足限制的访客）。
+
+### 安装依赖
+
+- **Docker**：官方镜像已内置 yt-dlp 与 ffmpeg。构建时可用 `--build-arg YTDLP_VERSION=2026.09.05` 固定 yt-dlp 版本；其下载失败不会中断构建，此时功能会报告为不可用。
+- **裸机 / 自托管**：
+
+```bash
+sudo apt install -y ffmpeg            # 合并音视频，必需
+sudo curl -fsSL -o /usr/local/bin/yt-dlp \
+  https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux
+sudo chmod +x /usr/local/bin/yt-dlp
+```
+
+  二进制不在 `PATH` 时，用 `MEDIA_RESOLVE_YTDLP_PATH` / `MEDIA_RESOLVE_FFMPEG_PATH` 指定绝对路径。
+
+### 配置
+
+| 变量名 | 说明 | 默认值 |
+| :--- | :--- | :--- |
+| `MEDIA_RESOLVE_ENABLED` | 启用视频解析功能 | `true` |
+| `MEDIA_RESOLVE_YTDLP_PATH` | yt-dlp 可执行文件绝对路径（留空则用 `PATH` 中的 `yt-dlp`） | - |
+| `MEDIA_RESOLVE_FFMPEG_PATH` | ffmpeg 可执行文件绝对路径（留空则用 `PATH` 中的 `ffmpeg`） | - |
+| `MEDIA_RESOLVE_USER_AGENT` | 解析/下载使用的 UA，**不能是浏览器样式** | `yt-dlp` |
+| `MEDIA_RESOLVE_TIMEOUT_MS` | 单次解析（取元数据）超时（毫秒） | `60000` |
+| `MEDIA_RESOLVE_DOWNLOAD_TIMEOUT_MS` | 单次下载合并超时（毫秒） | `600000` |
+| `MEDIA_RESOLVE_MAX_CONCURRENCY` | 同时解析的最大并发数 | `2` |
+| `MEDIA_RESOLVE_MAX_DURATION_SECONDS` | 允许解析的最大视频时长（秒），`0` 不限制 | `0` |
+| `MEDIA_RESOLVE_MAX_FILE_SIZE` | 允许解析的最大文件体积（字节），`0` 不限制 | `0` |
+| `MEDIA_RESOLVE_MAX_URL_LENGTH` | 分享链接最大长度 | `2048` |
+| `MEDIA_RESOLVE_TEMP_DIR` | 下载临时目录（入库后自动删除） | `<系统临时目录>/k-vault-resolve` |
+| `MEDIA_RESOLVE_COOKIES_FILE` | cookies.txt 路径，用于解锁需登录的内容 | - |
+| `MEDIA_RESOLVE_PROXY` | 访问平台时使用的代理，如 `http://127.0.0.1:7890` | - |
+| `MEDIA_RESOLVE_EXTRA_HOSTS` | 追加到内置站点白名单的域名（逗号或空格分隔） | - |
+| `MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS` | 允许任意站点（默认关闭，避免被当作通用请求转发器） | `false` |
+| `URL_IMPORT_MAX_SIZE` | 解析转存 / 远程 URL 导入的单文件体积上限（字节） | `UPLOAD_SMALL_FILE_THRESHOLD`（20MB） |
+
+### 实测行为与注意事项
+
+以下结论来自在自托管服务器（Ubuntu 24.04，海外机房）上的实测：
+
+- **User-Agent 必须不是浏览器样式。** B站对形如 `Mozilla/5.0 ...` 的 UA 一律返回 **412 Precondition Failed**（它期待完整的浏览器签名），而对 `yt-dlp`、`curl`、`wget` 这类 UA 正常放行。默认值 `yt-dlp` 正是为此选的，**不要改成浏览器 UA**，否则 B站 直接不可用。
+- **B站 / YouTube 只有分离流，必须靠 ffmpeg 合并。** 实测某 B站 1080P 视频，yt-dlp 给出 15 个格式（3 条纯音频 + 12 条纯视频），合流格式为 **0**；YouTube 同样（53 个格式，0 合流）。
+- **CDN 防盗链也看 UA，但不影响 yt-dlp。** 部分 B站 CDN 节点（如 `upos-*.akamaized.net`）对非浏览器 UA 返回 403，而 yt-dlp 下载时会自带完整请求头，实测正常：某 1080P 视频约 55MB，约 20 秒完成，速率约 2.3MB/s。**所以请让 yt-dlp 自己下载，不要自己拿直链去拉 CDN。**
+- **下载会占用磁盘。** 视频先落到 `MEDIA_RESOLVE_TEMP_DIR`（默认系统临时目录下的 `k-vault-resolve`），入库后立即删除；请确保该分区能容纳至少一个视频。
+- **B站 1080P+ 与抖音部分内容需要 Cookie。** 导出 Netscape 格式的 `cookies.txt`，通过 `MEDIA_RESOLVE_COOKIES_FILE` 指定；否则可能只解析到试看片段或直接失败。
+- **直链是带签名的临时地址**（通常 24 小时内有效），因此「解析」与「转存」应在同一次请求内完成，不建议取到直链后留存稍后再用。
+- 默认只允许白名单内的站点。需要其他站点时用 `MEDIA_RESOLVE_EXTRA_HOSTS` 追加；开放 `MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS` 会让服务端能够请求任意公网地址（仍受 SSRF 防护约束），请谨慎评估。
+- 请遵守各平台服务条款与版权规定，仅用于个人合法用途。
+
+### 调用示例
+
+```bash
+# 探测解析能力
+curl -u admin:your_password http://127.0.0.1:8787/api/resolve-url/status
+
+# 仅解析，不落库
+curl -u admin:your_password -X POST http://127.0.0.1:8787/api/resolve-url \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://www.bilibili.com/video/BV1xxxxxxxxx"}'
+
+# 解析并转存到 Telegram
+curl -u admin:your_password -X POST http://127.0.0.1:8787/api/resolve-url \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://v.douyin.com/xxxxxxx/","upload":true,"storageMode":"telegram"}'
+```
+
+---
+
 ## 访客上传功能
 
 允许未登录用户上传文件，站长可自行配置是否开启及限制规则。
@@ -617,6 +706,17 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 | `UPLOAD_MAX_SIZE` | 最大上传大小（字节） | `104857600` |
 | `UPLOAD_SMALL_FILE_THRESHOLD` | 直传/分片策略阈值（字节） | `20971520` |
 | `CHUNK_SIZE` | 分片大小（字节） | `5242880` |
+| `URL_IMPORT_MAX_SIZE` | 远程 URL 导入 / 解析转存的单文件体积上限（字节） | `UPLOAD_SMALL_FILE_THRESHOLD` |
+| `MEDIA_RESOLVE_ENABLED` | 启用 yt-dlp 视频链接解析 | `true` |
+| `MEDIA_RESOLVE_YTDLP_PATH` | yt-dlp 可执行文件绝对路径 | `PATH` 中的 `yt-dlp` |
+| `MEDIA_RESOLVE_FFMPEG_PATH` | ffmpeg 可执行文件绝对路径（合并音视频必需） | `PATH` 中的 `ffmpeg` |
+| `MEDIA_RESOLVE_USER_AGENT` | 解析/下载 UA，不能是浏览器样式 | `yt-dlp` |
+| `MEDIA_RESOLVE_TIMEOUT_MS` | 单次解析超时（毫秒） | `60000` |
+| `MEDIA_RESOLVE_DOWNLOAD_TIMEOUT_MS` | 下载合并超时（毫秒） | `600000` |
+| `MEDIA_RESOLVE_MAX_CONCURRENCY` | 最大并发解析数 | `2` |
+| `MEDIA_RESOLVE_TEMP_DIR` | 下载临时目录（入库后自动删除） | 系统临时目录下 `k-vault-resolve` |
+| `MEDIA_RESOLVE_COOKIES_FILE` | cookies.txt 路径（解锁 B站 1080P+ / 抖音） | - |
+| `MEDIA_RESOLVE_PROXY` | 访问平台时使用的代理 | - |
 | `DEFAULT_STORAGE_TYPE` | 启动时默认存储类型（`telegram`/`r2`/`s3`/`discord`/`huggingface`/`webdav`/`github`） | `telegram` |
 | `SETTINGS_STORE` | 基础设置存储后端（`sqlite` 或 `redis`） | `sqlite` |
 | `SETTINGS_REDIS_URL` | Redis URL（Upstash/Redis/KVrocks，`SETTINGS_STORE=redis` 时必填） | - |
@@ -662,7 +762,7 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 | Discord（Level 2+） | 50-100MB |
 | HuggingFace | 35MB（普通）/ 50GB（LFS） |
 
-> 说明：`/api/upload-from-url` 当前仍按 20MB 限制处理 Telegram 上传。
+> 说明：`/api/upload-from-url` 默认按 `UPLOAD_SMALL_FILE_THRESHOLD`（20MB）限制，可用 `URL_IMPORT_MAX_SIZE` 调整；`/api/resolve-url` 的转存沿用同一上限。
 
 ---
 
@@ -732,6 +832,22 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 | `SETTINGS_REDIS_PREFIX` | Docker 自托管设置存储 Redis 键前缀 | 可选 |
 | `SETTINGS_REDIS_CONNECT_TIMEOUT_MS` | Docker 自托管 Redis 连接/心跳超时（毫秒） | 可选 |
 | `WEB_PORT` | `docker compose` 对外 Web 端口 | 可选 |
+| `URL_IMPORT_MAX_SIZE` | 远程 URL 导入 / 解析转存体积上限（字节） | 可选 |
+| `MEDIA_RESOLVE_ENABLED` | 启用 yt-dlp 视频链接解析 | 可选 |
+| `MEDIA_RESOLVE_YTDLP_PATH` | yt-dlp 可执行文件绝对路径 | 可选 |
+| `MEDIA_RESOLVE_FFMPEG_PATH` | ffmpeg 可执行文件绝对路径（合并音视频必需） | 可选 |
+| `MEDIA_RESOLVE_USER_AGENT` | 解析/下载 UA，不能是浏览器样式 | 可选 |
+| `MEDIA_RESOLVE_TIMEOUT_MS` | 单次解析超时（毫秒） | 可选 |
+| `MEDIA_RESOLVE_DOWNLOAD_TIMEOUT_MS` | 下载合并超时（毫秒） | 可选 |
+| `MEDIA_RESOLVE_MAX_CONCURRENCY` | 最大并发解析数 | 可选 |
+| `MEDIA_RESOLVE_TEMP_DIR` | 下载临时目录 | 可选 |
+| `MEDIA_RESOLVE_MAX_DURATION_SECONDS` | 允许解析的最大视频时长（秒），`0` 不限制 | 可选 |
+| `MEDIA_RESOLVE_MAX_FILE_SIZE` | 允许解析的最大文件体积（字节），`0` 不限制 | 可选 |
+| `MEDIA_RESOLVE_MAX_URL_LENGTH` | 分享链接最大长度 | 可选 |
+| `MEDIA_RESOLVE_COOKIES_FILE` | cookies.txt 路径（解锁 B站 1080P+ / 抖音） | 可选 |
+| `MEDIA_RESOLVE_PROXY` | 访问平台时使用的代理 | 可选 |
+| `MEDIA_RESOLVE_EXTRA_HOSTS` | 追加到内置站点白名单的域名 | 可选 |
+| `MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS` | 允许任意站点解析（默认仅白名单） | 可选 |
 
 ---
 

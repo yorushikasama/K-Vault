@@ -20,6 +20,7 @@ const {
   sniffImageMime,
   MAX_REDIRECTS,
 } = require('./lib/utils/ssrf-guard');
+const { MediaResolveError } = require('./lib/services/media-resolve-service');
 const { AUDIT_EVENTS, writeAuditLog, listAuditLogs } = require('./lib/utils/audit');
 const { safeLogError } = require('./lib/utils/redact');
 const { toStorageErrorPayload } = require('./lib/utils/storage-error');
@@ -2672,11 +2673,188 @@ function createApp() {
         storageMode: asString(payload.storageMode || payload.storage),
         storageId: asString(payload.storageId || payload.storage_config_id),
         folderPath: normalizeFolderPath(payload.folderPath || payload.folder || ''),
-        maxBytes: Math.min(container.config.uploadSmallFileThreshold, container.config.uploadMaxSize),
+        maxBytes: Math.min(container.config.urlImportMaxSize, container.config.uploadMaxSize),
       });
     } catch (error) {
       const normalized = normalizeUploadError(c, error, 502);
       return c.json({ ...normalized, traceId: getTraceId(c) }, 502);
+    }
+
+    if (!auth.authenticated) {
+      guestService.incrementUsage(c.req.raw);
+    }
+
+    return uploadSuccessResponse(c, result);
+  });
+
+  // --- Media resolve (yt-dlp) ---
+  // Docker/self-hosted runtime only: the Cloudflare Pages build never registers
+  // these, so the Pages deployment simply 404s here.
+  app.get('/api/resolve-url/status', async (c) => {
+    const { authService, guestService, mediaResolveService } = getServices(c);
+    const auth = authService.checkAuthentication(c.req.raw);
+
+    if (!auth.authenticated) {
+      const guestCheck = guestService.checkUploadAllowed(c.req.raw, 0);
+      if (!guestCheck.allowed) {
+        return jsonError(c, guestCheck.status || 403, 'GUEST_REJECTED', '访客上传未通过限制检查。', guestCheck.reason);
+      }
+    }
+
+    const status = await mediaResolveService.getStatus();
+
+    if (prefersV2Envelope(c)) {
+      return c.json({ success: true, data: status, traceId: getTraceId(c) });
+    }
+    return c.json({ success: true, ...status, traceId: getTraceId(c) });
+  });
+
+  app.post('/api/resolve-url', async (c) => {
+    const { authService, guestService, uploadService, mediaResolveService } = getServices(c);
+    const auth = authService.checkAuthentication(c.req.raw);
+    const payload = await c.req.json().catch(() => ({}));
+
+    if (!payload.url) {
+      return jsonError(c, 400, 'URL_REQUIRED', '请输入视频链接。', '请求体缺少 "url" 字段。');
+    }
+
+    if (!auth.authenticated) {
+      const guestCheck = guestService.checkUploadAllowed(c.req.raw, 0);
+      if (!guestCheck.allowed) {
+        return jsonError(c, guestCheck.status || 403, 'GUEST_REJECTED', '访客上传未通过限制检查。', guestCheck.reason);
+      }
+    }
+
+    let resolved;
+    try {
+      resolved = await mediaResolveService.resolve({ url: asString(payload.url) });
+    } catch (error) {
+      if (error instanceof MediaResolveError) {
+        return jsonError(c, error.status, error.code, error.message, error.detail, error.retriable);
+      }
+      safeLogError(error);
+      return jsonError(c, 502, 'MEDIA_RESOLVE_FAILED', '解析失败。', String(error?.message || 'unknown'));
+    }
+
+    const item = resolved.items[0];
+    const storageMode = asString(payload.storageMode || payload.storage);
+    const storageId = asString(payload.storageId || payload.storage_config_id);
+    const folderPath = normalizeFolderPath(payload.folderPath || payload.folder || '');
+    const sourceUrl = asString(payload.url);
+
+    // A resolved video ends up in storage exactly like an upload, so it has to
+    // obey the same ceilings: the remote-import cap, the global upload cap, and
+    // whatever the target backend itself accepts (Telegram 50MB on the cloud
+    // Bot API, Discord 25MB, ...).
+    const storageLimits = getUploadLimits();
+    let importCap = Math.min(container.config.urlImportMaxSize, container.config.uploadMaxSize);
+    try {
+      const targetStorage = uploadService.resolveStorage({ storageId, storageMode });
+      const backendLimit = storageLimits[String(targetStorage.type || '').toLowerCase()];
+      if (backendLimit) importCap = Math.min(importCap, backendLimit.maxBytes);
+    } catch {
+      // Nothing configured yet; the upload call below reports that accurately.
+    }
+
+    // Resolve-only: return the direct URL plus metadata so callers can preview
+    // or decide for themselves before anything is written to storage.
+    if (payload.upload !== true) {
+      const media = {
+        source: resolved.source,
+        title: item.title,
+        uploader: item.uploader,
+        duration: item.duration,
+        thumbnail: item.thumbnail,
+        webpageUrl: item.webpageUrl,
+        extractor: item.extractor,
+        // Empty when the platform only serves separate tracks; such media can
+        // still be stored via upload:true, which downloads and muxes it.
+        downloadUrl: item.directUrl,
+        requiresMerge: item.requiresMerge,
+        ext: item.ext,
+        filesize: item.filesize,
+        width: item.width,
+        height: item.height,
+        maxImportBytes: importCap,
+        exceedsImportLimit: item.filesize > 0 && item.filesize > importCap,
+      };
+
+      if (prefersV2Envelope(c)) {
+        return c.json({ success: true, data: media, traceId: getTraceId(c) });
+      }
+      return c.json({ success: true, ...media, traceId: getTraceId(c) });
+    }
+
+    // Resolve + store in one step.
+    if (item.filesize > 0 && item.filesize > importCap) {
+      return jsonError(
+        c,
+        413,
+        'MEDIA_RESOLVE_FILE_TOO_LARGE',
+        '视频超过远程导入大小限制。',
+        `该视频约 ${Math.floor(item.filesize / 1024 / 1024)}MB，当前上限为 ${Math.floor(importCap / 1024 / 1024)}MB；可调大 URL_IMPORT_MAX_SIZE。`
+      );
+    }
+
+    let result;
+
+    if (item.directUrl) {
+      // Single-file format: reuse the existing remote importer, which already
+      // enforces the size cap and the SSRF rules. The headers yt-dlp reported
+      // carry whichever Referer the CDN asks for.
+      try {
+        result = await uploadService.uploadFromUrl({
+          url: item.directUrl,
+          headers: item.directHeaders,
+          storageMode,
+          storageId,
+          folderPath,
+          maxBytes: importCap,
+        });
+      } catch (error) {
+        const normalized = normalizeUploadError(c, error, 502);
+        return c.json({ ...normalized, traceId: getTraceId(c) }, 502);
+      }
+    } else {
+      // Separate video/audio tracks (Bilibili, YouTube, ...): yt-dlp has to
+      // fetch them and mux, which needs ffmpeg on the host.
+      let downloaded;
+      try {
+        downloaded = await mediaResolveService.download({
+          url: sourceUrl,
+          maxBytes: importCap,
+          requireMerge: item.requiresMerge,
+        });
+      } catch (error) {
+        if (error instanceof MediaResolveError) {
+          return jsonError(c, error.status, error.code, error.message, error.detail, error.retriable);
+        }
+        safeLogError(error);
+        return jsonError(c, 502, 'MEDIA_RESOLVE_DOWNLOAD_FAILED', '视频下载失败。', String(error?.message || 'unknown'));
+      }
+
+      try {
+        const buffer = await fs.readFile(downloaded.filePath);
+        const safeTitle = String(item.title || item.id || 'video')
+          .replace(/[^\w\u4e00-\u9fa5.-]+/g, '_')
+          .replace(/^[._]+/, '')
+          .slice(0, 80);
+
+        result = await uploadService.uploadFile({
+          fileName: `${safeTitle || 'video'}.${item.ext || 'mp4'}`,
+          mimeType: 'video/mp4',
+          fileSize: downloaded.bytes,
+          buffer,
+          storageId,
+          storageMode,
+          folderPath,
+        });
+      } catch (error) {
+        const normalized = normalizeUploadError(c, error, 502);
+        return c.json({ ...normalized, traceId: getTraceId(c) }, 502);
+      } finally {
+        await mediaResolveService.cleanupFile(downloaded.filePath);
+      }
     }
 
     if (!auth.authenticated) {

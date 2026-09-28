@@ -1,6 +1,26 @@
 const { buildPublicFileId, normalizeStorageType } = require('../storage/common');
 const { normalizeFolderPath } = require('../repos/file-repo');
 
+// Resolved media URLs occasionally need the platform's own Referer or
+// User-Agent to clear the CDN's hotlink check. Only well-formed string values
+// survive, so a hostile payload cannot smuggle malformed headers into fetch.
+const FORBIDDEN_REQUEST_HEADERS = new Set(['host', 'content-length', 'connection', 'transfer-encoding']);
+
+function normalizeRequestHeaders(input) {
+  if (!input || typeof input !== 'object') return {};
+  const normalized = {};
+  for (const [key, value] of Object.entries(input)) {
+    const name = String(key || '').trim();
+    if (!name || name.length > 64) continue;
+    if (!/^[A-Za-z0-9-]+$/.test(name)) continue;
+    if (FORBIDDEN_REQUEST_HEADERS.has(name.toLowerCase())) continue;
+    const text = typeof value === 'string' ? value : String(value ?? '');
+    if (!text || text.length > 2048) continue;
+    normalized[name] = text;
+  }
+  return normalized;
+}
+
 class UploadService {
   constructor({ storageRepo, fileRepo, storageFactory }) {
     this.storageRepo = storageRepo;
@@ -78,6 +98,8 @@ class UploadService {
     storageMode,
     folderPath,
     maxBytes = 20 * 1024 * 1024,
+    headers = null,
+    timeoutMs = 30000,
   }) {
     const parsedUrl = new URL(url);
     if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
@@ -85,7 +107,7 @@ class UploadService {
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    const timeout = setTimeout(() => controller.abort(), Math.max(1000, Number(timeoutMs) || 30000));
     let response;
 
     try {
@@ -94,6 +116,7 @@ class UploadService {
         headers: {
           'User-Agent': 'K-Vault/2.0 (+https://github.com/katelya77/K-Vault)',
           Accept: '*/*',
+          ...normalizeRequestHeaders(headers),
         },
       });
     } finally {

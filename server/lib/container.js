@@ -9,6 +9,7 @@ const { ApiTokenRepository } = require('./repos/api-token-repo');
 const { PasteRepository } = require('./repos/paste-repo');
 const { UploadService } = require('./services/upload-service');
 const { ChunkUploadService } = require('./services/chunk-service');
+const { MediaResolveService } = require('./services/media-resolve-service');
 const { createSettingsStore } = require('./settings/factory');
 
 function createContainer(env = process.env) {
@@ -39,6 +40,7 @@ function createContainer(env = process.env) {
 
   const authService = new AuthService(db, config);
   const guestService = new GuestService(db, config);
+  const mediaResolveService = new MediaResolveService({ config });
 
   return {
     config,
@@ -53,6 +55,7 @@ function createContainer(env = process.env) {
     settingsStore,
     uploadService,
     chunkService,
+    mediaResolveService,
   };
 }
 
