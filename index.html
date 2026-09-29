@@ -2755,7 +2755,7 @@
               type="primary"
               @click="uploadFromUrl"
               :loading="urlUploading"
-              >{{ urlResolving ? "解析中" : "上传" }}</el-button
+              >{{ urlStage || (urlResolving ? "解析中" : "上传") }}</el-button
             >
           </div>
 
@@ -3477,6 +3477,8 @@
           urlToUpload: "",
           urlUploading: false,
           urlResolving: false,
+          urlStage: "",
+          urlStageTimer: null,
           // Media resolve capability, loaded from /api/resolve-url/status. The
           // allowed-host list stays server side so this UI can never disagree
           // with what the backend actually accepts.
@@ -4169,6 +4171,7 @@
 
           // 打开清晰度选择；只剩一个可用档位时直接转存，省掉多余点击
           async openQualityPicker(rawUrl) {
+            this.startUrlTicker("解析中", 0);
             this.qualityPicker.visible = true;
             this.qualityPicker.loading = true;
             this.qualityPicker.title = "";
@@ -4181,6 +4184,7 @@
             try {
               info = await this.fetchMediaInfo(rawUrl);
             } catch (err) {
+              this.stopUrlTicker();
               this.qualityPicker.visible = false;
               this.qualityPicker.loading = false;
               this.showToast("解析失败：" + err.message, "error");
@@ -4204,7 +4208,28 @@
               return;
             }
 
+            this.stopUrlTicker();
             this.qualityPicker.selected = usable[0].formatId;
+          },
+
+          // 转存阶段的服务器侧耗时没有进度事件，但体积是解析阶段就确定的，
+          // 按实测的 0.55MB/s 上行速率换算成预估秒数，至少让等待有个刻度。
+          startUrlTicker(baseText, estimateSeconds) {
+            const startedAt = Date.now();
+            const suffix = estimateSeconds > 0 ? `，预计约 ${estimateSeconds} 秒` : "";
+            this.urlStage = `${baseText}…`;
+            this.urlStageTimer = setInterval(() => {
+              const seconds = Math.round((Date.now() - startedAt) / 1000);
+              this.urlStage = `${baseText}… 已等待 ${seconds} 秒${suffix}`;
+            }, 1000);
+          },
+
+          stopUrlTicker() {
+            if (this.urlStageTimer) {
+              clearInterval(this.urlStageTimer);
+              this.urlStageTimer = null;
+            }
+            this.urlStage = "";
           },
 
           async confirmQualityAndUpload() {
@@ -4219,6 +4244,11 @@
           async runMediaUpload(rawUrl, variant) {
             this.urlResolving = true;
             this.urlUploading = true;
+            const size = Number(variant && variant.filesize) || 0;
+            this.startUrlTicker(
+              "转存中",
+              size > 0 ? Math.round(size / 1048576 / 0.55) : 0,
+            );
             try {
               const data = await this.submitMediaUpload(rawUrl, variant);
               if (Array.isArray(data) && data[0]?.src) {
@@ -4228,6 +4258,7 @@
             } catch (err) {
               this.showToast("转存失败：" + err.message, "error");
             }
+            this.stopUrlTicker();
             this.urlUploading = false;
             this.urlResolving = false;
           },
