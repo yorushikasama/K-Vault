@@ -41,7 +41,7 @@
 - **内容审核** - 可选的图片审核 API，自动屏蔽不良内容
 - **多格式支持** - 图片、视频、音频、文档、压缩包等
 - **在线预览** - 支持图片、视频、音频、文档（pdf、docx、txt）格式的预览
-- **分片上传** - 支持最大 100MB 文件（建议配合 R2/S3/WebDAV/GitHub，Telegram 网页上传按平台限制处理）
+- **分片上传** - 支持最大 200MB 文件（受 `UPLOAD_MAX_SIZE` 约束；分片按序流式转存，内存峰值与文件体积无关。建议配合 R2/S3/WebDAV/GitHub，Telegram 网页上传按平台限制处理）
 - **视频链接解析** - Docker/自托管模式集成 yt-dlp，粘贴抖音 / B站 / YouTube 等分享链接即可解析并转存
 - **访客上传** - 可选的访客上传功能，支持文件大小和每日次数限制
 - **API Token 认证** - 支持 `curl` / ShareX / 脚本等程序化上传与调用
@@ -636,7 +636,7 @@ sudo chmod +x /usr/local/bin/yt-dlp
 - **下载会占用磁盘。** 视频先落到 `MEDIA_RESOLVE_TEMP_DIR`（默认 `DATA_DIR/tmp`），入库后立即删除；请确保该分区能容纳至少一个视频。
 - **systemd 部署建议显式设置 `MEDIA_RESOLVE_TEMP_DIR`。** 单元文件里常见的 `PrivateTmp=true` 会让服务看到的 `/tmp` 变成私有挂载 —— 从宿主机既看不见也清理不了，排查问题时极具误导性。放在 `DATA_DIR` 下最省事，因为该路径通常已在 `ReadWritePaths` 中。
 - **孤儿文件有兜底清理。** 下载中途被强杀（OOM、重启）时 `finally` 不会执行，文件会留在临时目录。服务启动时会强制清扫一次，运行期间每 30 分钟一次，**只清 2 小时以上、且文件名以 `kv-resolve-` 开头的文件** —— 进行中的下载和其他人的文件都不会被误删。若清扫因权限不足失败，启动日志会出现 `media-resolve: N stale temp file(s) could not be removed`，说明该目录不属于服务账号。
-- **B站 1080P+ 与抖音部分内容需要 Cookie。** 导出 Netscape 格式的 `cookies.txt`，通过 `MEDIA_RESOLVE_COOKIES_FILE` 指定；否则可能只解析到试看片段或直接失败。
+- **B站 1080P+ 与抖音需要 Cookie。** 导出 Netscape 格式的 `cookies.txt`，通过 `MEDIA_RESOLVE_COOKIES_FILE` 指定；否则可能只解析到试看片段或直接失败。**抖音的 Cookie 不需要登录账号**（游客 Cookie 即可，访问一次 douyin.com 就有），但会过期，需要定期重新生成；服务端对抖音请求会自动附带自身 `Referer`（缺它时接口返回空响应体，并被误报为"缺 Cookie"）。
 - **直链是带签名的临时地址**（通常 24 小时内有效），因此「解析」与「转存」应在同一次请求内完成，不建议取到直链后留存稍后再用。
 - 默认只允许白名单内的站点。需要其他站点时用 `MEDIA_RESOLVE_EXTRA_HOSTS` 追加；开放 `MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS` 会让服务端能够请求任意公网地址（仍受 SSRF 防护约束），请谨慎评估。
 - 请遵守各平台服务条款与版权规定，仅用于个人合法用途。
@@ -716,6 +716,8 @@ curl -u admin:your_password -X POST http://127.0.0.1:8787/api/resolve-url \
 | `SESSION_SECRET` | 会话/签名密钥；Docker 未提供时会写入 `/app/data/runtime.env` | 自动生成 |
 | `UPLOAD_MAX_SIZE` | 最大上传大小（字节） | `104857600` |
 | `UPLOAD_SMALL_FILE_THRESHOLD` | 直传/分片策略阈值（字节） | `20971520` |
+| `UPLOAD_MAX_CONCURRENCY` | 同时处理的上传数（上传体整块缓冲，并发会线性抬高内存峰值） | `2` |
+| `BUFFERED_BACKEND_MAX_SIZE` | 不支持流式的存储后端（HuggingFace / GitHub，API 要求 base64 进 JSON）的单文件上限（字节）；超过直接 413，避免静默 OOM | `min(UPLOAD_MAX_SIZE, 100MB)` |
 | `CHUNK_SIZE` | 分片大小（字节） | `5242880` |
 | `URL_IMPORT_MAX_SIZE` | 远程 URL 导入 / 解析转存的单文件体积上限（字节） | `UPLOAD_MAX_SIZE` |
 | `MEDIA_RESOLVE_ENABLED` | 启用 yt-dlp 视频链接解析 | `true` |
