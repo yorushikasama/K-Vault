@@ -447,7 +447,7 @@ class MediaResolveService {
     this.gate.release();
   }
 
-  buildCommonArgs() {
+  buildCommonArgs(url) {
     const args = [
       // Respect the ?p= / ?v= selector in the URL instead of expanding a
       // channel or collection into every item.
@@ -473,16 +473,32 @@ class MediaResolveService {
     if (this.proxy) {
       args.push('--proxy', this.proxy);
     }
+
+    // Douyin's web detail endpoint answers with an empty body unless the request
+    // carries its own site as Referer — which surfaces as the misleading
+    // "Fresh cookies are needed" error even with a perfectly good cookie jar.
+    // Measured on 2026-09-29: identical request without the header returns 0 bytes
+    // and fails; with it, 16 formats. Other platforms ignore the header, so it is
+    // only sent where it matters.
+    let host = '';
+    try {
+      host = new URL(String(url || '')).hostname;
+    } catch {
+      host = '';
+    }
+    if (/(^|\.)douyin\.com$/.test(host) || /(^|\.)iesdouyin\.com$/.test(host)) {
+      args.push('--add-header', 'Referer: https://www.douyin.com/');
+    }
     return args;
   }
 
   buildArgs(url) {
     // "--" terminates option parsing so a hostile URL can never be read as a flag.
-    return [...this.buildCommonArgs(), '--dump-single-json', '--skip-download', '--', url];
+    return [...this.buildCommonArgs(url), '--dump-single-json', '--skip-download', '--', url];
   }
 
   buildDownloadArgs(url, destination, hasFfmpeg, formatSelector) {
-    const args = this.buildCommonArgs();
+    const args = this.buildCommonArgs(url);
     // An explicit selector comes from the quality picker; otherwise ask for the
     // best video plus the best audio and let yt-dlp mux them (needs ffmpeg).
     // Without ffmpeg only a single-file format can be used at all.
