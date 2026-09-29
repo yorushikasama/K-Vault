@@ -1155,6 +1155,13 @@ function createApp() {
     const directThreshold = Number(container.config.uploadSmallFileThreshold || 20 * mb);
     const maxUploadSize = Number(container.config.uploadMaxSize || 100 * mb);
 
+    // Only telegram actually streams today, so it alone follows UPLOAD_MAX_SIZE
+    // all the way. The rest must buffer the whole file and are therefore
+    // additionally capped by BUFFERED_BACKEND_MAX_SIZE — the advertised limit has
+    // to match what uploadStream enforces, or the UI invites 413s.
+    const bufferedCap = Number(container.config.bufferedBackendMaxSize) || 0;
+    const bufferedLimit = (value) => (bufferedCap > 0 ? Math.min(value, bufferedCap) : value);
+
     const telegramMaxBytes = Number(container.config.telegramMaxUploadSize || 50 * mb);
     // Name whichever constraint is actually binding. A self-hosted deployment
     // that is merely capped by UPLOAD_MAX_SIZE must not read as "50MB", which is
@@ -1172,33 +1179,33 @@ function createApp() {
           : `当前 Telegram 上传上限为 ${Math.floor(telegramEffective / mb)}MB，由 UPLOAD_MAX_SIZE 决定（自建 Bot API 侧可用到 2GB）。`,
       },
       r2: {
-        maxBytes: maxUploadSize,
+        maxBytes: bufferedLimit(maxUploadSize),
         directThreshold,
         supportsChunkUpload: true,
       },
       s3: {
-        maxBytes: maxUploadSize,
+        maxBytes: bufferedLimit(maxUploadSize),
         directThreshold,
         supportsChunkUpload: true,
       },
       discord: {
-        maxBytes: Math.min(maxUploadSize, 25 * mb),
+        maxBytes: bufferedLimit(Math.min(maxUploadSize, 25 * mb)),
         directThreshold,
         supportsChunkUpload: true,
         message: 'Discord 上传上限受服务器加成影响，K-Vault 默认按 25MB 保守处理。',
       },
       huggingface: {
-        maxBytes: Math.min(maxUploadSize, 35 * mb),
+        maxBytes: bufferedLimit(Math.min(maxUploadSize, 35 * mb)),
         directThreshold,
         supportsChunkUpload: true,
       },
       webdav: {
-        maxBytes: maxUploadSize,
+        maxBytes: bufferedLimit(maxUploadSize),
         directThreshold,
         supportsChunkUpload: true,
       },
       github: {
-        maxBytes: maxUploadSize,
+        maxBytes: bufferedLimit(Math.min(maxUploadSize, 100 * mb)),
         directThreshold,
         supportsChunkUpload: true,
       },

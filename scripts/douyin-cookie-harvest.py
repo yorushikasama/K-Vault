@@ -56,6 +56,14 @@ def write_atomic(path, text):
         fh.write(text)
     os.chmod(tmp, 0o600)
     os.replace(tmp, path)
+    # 服务以 kvault 用户跑 yt-dlp，产物必须归它所有；systemd 以 root 跑本脚本。
+    try:
+        import pwd
+
+        entry = pwd.getpwnam("kvault")
+        os.chown(path, entry.pw_uid, entry.pw_gid)
+    except (KeyError, PermissionError, OSError):
+        pass
     return path
 
 

@@ -11,6 +11,38 @@ class ChunkUploadService {
     this.uploadService = uploadService;
     this.ensureSchema();
     fs.mkdirSync(this.config.chunkDir, { recursive: true });
+    this.sweepOrphanChunks();
+  }
+
+  // A failed complete() skips cleanupTask, so the parts stay on disk forever —
+  // the 1h expiry is only enforced when a client asks about that same upload
+  // again, which never happens for an abandoned one. At startup, drop every task
+  // dir whose DB row is gone or already expired.
+  sweepOrphanChunks() {
+    let entries = [];
+    try {
+      entries = fs.readdirSync(this.config.chunkDir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+
+    let removed = 0;
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const uploadId = entry.name;
+      const task = get(this.db, 'SELECT expires_at FROM chunk_uploads WHERE upload_id = ?', [uploadId]);
+      if (task && Number(task.expires_at) > Date.now()) continue;
+      try {
+        fs.rmSync(path.join(this.config.chunkDir, uploadId), { recursive: true, force: true });
+        if (task) run(this.db, 'DELETE FROM chunk_uploads WHERE upload_id = ?', [uploadId]);
+        removed += 1;
+      } catch {
+        // Leave it behind; the next startup tries again.
+      }
+    }
+    if (removed > 0) {
+      console.log(`[k-vault] chunk-upload: swept ${removed} stale upload dir(s) at startup.`);
+    }
   }
 
   ensureSchema() {

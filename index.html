@@ -3542,7 +3542,7 @@
           isGuest: false, // 是否为访客模式
           guestUploadConfig: null, // 访客上传配置 { maxFileSize, maxDailyUploads }
           uploadConfig: {
-            maxSize: 100 * 1024 * 1024, // 100MB max (chunked upload)
+            maxSize: 200 * 1024 * 1024, // 200MB max, follows the server's UPLOAD_MAX_SIZE
             chunkSize: 5 * 1024 * 1024, // 5MB chunks
             smallFileThreshold: 20 * 1024 * 1024, // 20MB, below this use direct upload
             maxConcurrent: 3,
