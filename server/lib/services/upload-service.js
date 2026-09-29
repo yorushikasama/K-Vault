@@ -1,6 +1,11 @@
 const { buildPublicFileId, normalizeStorageType } = require('../storage/common');
 const { normalizeFolderPath } = require('../repos/file-repo');
 const { fetchRemote, readBodyWithLimit } = require('../utils/remote-fetch');
+const crypto = require('node:crypto');
+const fsp = require('node:fs/promises');
+const fsSync = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 // Resolved media URLs occasionally need the platform's own Referer or
 // User-Agent to clear the CDN's hotlink check. Only well-formed string values
@@ -32,6 +37,63 @@ async function collectStream(stream) {
   return Buffer.concat(chunks);
 }
 
+/**
+ * Stages a body whose length is unknown onto disk, enforcing the cap while
+ * writing.
+ *
+ * Without a Content-Length the cap can only be enforced by counting, and counting
+ * means holding every byte — which is how a "legitimate" 200MB import used to
+ * cost a couple of hundred megabytes of heap. Writing to a file instead keeps the
+ * resident cost at one chunk, and the staged file feeds straight into the
+ * streaming upload afterwards.
+ */
+async function stageBodyToTempFile(response, maxBytes, buildError, dir) {
+  const body = response.body;
+  if (!body) throw buildError();
+
+  await fsp.mkdir(dir, { recursive: true });
+  const filePath = path.join(
+    dir,
+    `upload-from-url-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.part`
+  );
+
+  const handle = await fsp.open(filePath, 'w');
+  let received = 0;
+  try {
+    const reader = body.getReader();
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        received += value.byteLength;
+        if (received > maxBytes) throw buildError();
+        await handle.write(Buffer.from(value));
+      }
+    } finally {
+      try {
+        await reader.cancel();
+      } catch {
+        // Already closed.
+      }
+    }
+  } catch (error) {
+    await handle.close().catch(() => {});
+    await fsp.rm(filePath, { force: true }).catch(() => {});
+    throw error;
+  }
+  await handle.close();
+
+  if (received === 0) {
+    await fsp.rm(filePath, { force: true }).catch(() => {});
+    const error = new Error('目标 URL 返回了空文件。');
+    error.code = 'REMOTE_FILE_EMPTY';
+    error.status = 422;
+    throw error;
+  }
+
+  return { filePath, size: received };
+}
+
 class UploadService {
   constructor({ storageRepo, fileRepo, storageFactory, config = null }) {
     this.storageRepo = storageRepo;
@@ -40,6 +102,8 @@ class UploadService {
     // Ceiling for backends that can only accept a whole in-memory file. 0 = no
     // extra cap beyond the global upload limit.
     this.bufferedBackendMaxSize = Number(config?.bufferedBackendMaxSize) || 0;
+    // Where unknown-length remote bodies get staged before the streaming upload.
+    this.uploadTempDir = String(config?.uploadTempDir || '').trim();
   }
 
   resolveStorage({ storageId, storageMode }) {
@@ -232,17 +296,6 @@ class UploadService {
 
     const contentType = response.headers.get('content-type') || 'application/octet-stream';
 
-    // Enforces the cap while reading: an oversize body is refused on its declared
-    // length before allocation, and abandoned mid-read if the length lied.
-    const bytes = await readBodyWithLimit(response, maxBytes, tooLarge);
-
-    if (bytes.byteLength === 0) {
-      const error = new Error('目标 URL 返回了空文件。');
-      error.code = 'REMOTE_FILE_EMPTY';
-      error.status = 422;
-      throw error;
-    }
-
     // Derive the name from the URL we actually ended up at, not the one we were
     // asked for — after a redirect those differ.
     let fileName = '';
@@ -258,6 +311,40 @@ class UploadService {
     if (!fileName.includes('.')) {
       const ext = String(contentType).split('/')[1]?.split(';')[0] || 'bin';
       fileName = `${fileName}.${ext}`;
+    }
+
+    // With no declared length the cap can only be enforced by counting, and
+    // counting means holding every byte — the one case the streaming upload can't
+    // cover directly. Stage it on disk instead: same cap, flat heap, and the file
+    // then feeds into uploadStream like any other on-disk source.
+    const declared = Number(response.headers.get('content-length'));
+    if (!Number.isFinite(declared)) {
+      const tempDir = String(this.uploadTempDir || '').trim() || os.tmpdir();
+      const staged = await stageBodyToTempFile(response, maxBytes, tooLarge, tempDir);
+      try {
+        return await this.uploadStream({
+          openStream: () => fsSync.createReadStream(staged.filePath),
+          fileSize: staged.size,
+          fileName,
+          mimeType: contentType,
+          storageId,
+          storageMode,
+          folderPath,
+        });
+      } finally {
+        await fsp.rm(staged.filePath, { force: true }).catch(() => {});
+      }
+    }
+
+    // Enforces the cap while reading: an oversize body is refused on its declared
+    // length before allocation, and abandoned mid-read if the length lied.
+    const bytes = await readBodyWithLimit(response, maxBytes, tooLarge);
+
+    if (bytes.byteLength === 0) {
+      const error = new Error('目标 URL 返回了空文件。');
+      error.code = 'REMOTE_FILE_EMPTY';
+      error.status = 422;
+      throw error;
     }
 
     return this.uploadFile({

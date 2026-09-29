@@ -123,6 +123,10 @@ function loadConfig(env = process.env) {
     // Defaults to 100MB so nothing regresses today, and so that raising
     // UPLOAD_MAX_SIZE later cannot silently turn those backends into an OOM risk.
     bufferedBackendMaxSize: resolveBufferedBackendMaxSize(env),
+    // Unknown-length remote bodies get staged here before the streaming upload.
+    // Defaults to the media-resolve temp dir (already volume-backed and swept) so
+    // the file never lands in the service's private /tmp.
+    uploadTempDir: String(env.UPLOAD_TEMP_DIR || env.MEDIA_RESOLVE_TEMP_DIR || '').trim(),
 
     configEncryptionKey: normalizeEnvString(env.CONFIG_ENCRYPTION_KEY) || normalizeEnvString(env.FILE_URL_SECRET) || normalizeEnvString(env.SESSION_SECRET) || '',
     sessionSecret: normalizeEnvString(env.SESSION_SECRET) || normalizeEnvString(env.FILE_URL_SECRET) || normalizeEnvString(env.CONFIG_ENCRYPTION_KEY) || '',

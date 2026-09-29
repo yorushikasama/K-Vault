@@ -2675,6 +2675,7 @@ function createApp() {
         storageId: asString(payload.storageId || payload.storage_config_id),
         folderPath: normalizeFolderPath(payload.folderPath || payload.folder || ''),
         maxBytes: Math.min(container.config.urlImportMaxSize, container.config.uploadMaxSize),
+        tempDir: container.config.uploadTempDir,
       });
     } catch (error) {
       // Remote-import failures now carry a code and a status of their own
