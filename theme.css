@@ -1,3 +1,40 @@
+/* ===== Light :root — shared purple-brand token set =====
+   The purple-brand pages (index / login / gallery) use these as their
+   default tokens; a page may still override a var locally in its own sheet.
+   Hues are unchanged from the previous inline definitions. */
+:root {
+  --primary-color: #8a4bff;
+  --primary-light: #b39ddb;
+  --primary-dark: #6c3ce0;
+  --accent-color: #ffd7e4;
+  --success-color: #67c23a;
+  --warning-color: #e6a23c;
+  --danger-color: #f56c6c;
+  --info-color: #909399;
+  --text-primary: #2f3243;
+  --text-secondary: #555d72;
+  --text-muted: #8b93aa;
+  --surface-1: #ffffff;
+  --surface-2: rgba(255, 255, 255, 0.82);
+  --surface-3: #f0f3fa;
+  --surface-border: rgba(255, 255, 255, 0.55);
+  --input-border: #e8eaf2;
+  --transition: all 0.2s ease-out;
+}
+
+/* Shared keyframes (de-duplicated from per-page copies). */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 html[data-theme="light"] {
   color-scheme: light;
 }
