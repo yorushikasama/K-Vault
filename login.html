@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/theme.css">
   <script src="/theme.js?v=20260305"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/lucide@1.49.0/dist/umd/lucide.min.js"></script>
   <link rel="stylesheet" href="/login.css">
   <link rel="stylesheet" href="/mobile-refactor.css">
 </head>
@@ -21,13 +22,13 @@
   <div class="login-container">
     <div class="login-card">
       <div class="logo">
-        <i class="fas fa-cloud-upload-alt"></i>
+        <i data-lucide="cloud-upload"></i>
       </div>
       <h1 class="title">K-Vault</h1>
       <p class="subtitle">请登录以继续使用文件托管服务</p>
 
       <div class="error-message" id="errorMessage">
-        <i class="fas fa-exclamation-circle"></i>
+        <i data-lucide="circle-alert"></i>
         <span id="errorText">用户名或密码错误</span>
       </div>
 
@@ -35,7 +36,7 @@
         <div class="form-group">
           <label for="username">用户名</label>
           <div class="input-wrapper">
-            <i class="fas fa-user"></i>
+            <i data-lucide="user"></i>
             <input type="text" id="username" class="form-input" placeholder="请输入用户名" required autofocus>
           </div>
         </div>
@@ -43,10 +44,10 @@
         <div class="form-group">
           <label for="password">密码</label>
           <div class="input-wrapper">
-            <i class="fas fa-lock"></i>
+            <i data-lucide="lock"></i>
             <input type="password" id="password" class="form-input has-toggle" placeholder="请输入密码" required>
             <button type="button" class="password-toggle" onclick="togglePassword()">
-              <i class="fas fa-eye" id="passwordToggleIcon"></i>
+              <i data-lucide="eye" id="passwordToggleIcon"></i>
             </button>
           </div>
         </div>
@@ -59,7 +60,7 @@
         </div>
 
         <button type="submit" class="login-btn" id="loginBtn">
-          <i class="fas fa-sign-in-alt"></i>
+          <i data-lucide="log-in"></i>
           <span>登 录</span>
         </button>
       </form>
@@ -147,16 +148,14 @@
     function togglePassword() {
       const passwordInput = document.getElementById('password');
       const icon = document.getElementById('passwordToggleIcon');
-      
-      if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
-      } else {
-        passwordInput.type = 'password';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
-      }
+
+      // Lucide replaces the <i> with an <svg>, so swap the icon by rewriting
+      // the placeholder and re-running the converter.
+      const nextIcon = passwordInput.type === 'password' ? 'eye-off' : 'eye';
+      passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+      icon.setAttribute('data-lucide', nextIcon);
+      icon.classList.remove('lucide', 'lucide-eye', 'lucide-eye-off');
+      window.KVIcons.render(icon.parentNode);
     }
 
     function showError(message) {
@@ -177,7 +176,8 @@
         btn.innerHTML = '<div class="spinner"></div><span>登录中...</span>';
       } else {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i><span>登 录</span>';
+        btn.innerHTML = window.KVIcons.markup('log-in') + '<span>登 录</span>';
+        window.KVIcons.render(btn);
       }
     }
 
@@ -227,5 +227,6 @@
       }
     });
   </script>
+  <script src="/icons.js"></script>
 </body>
 </html>

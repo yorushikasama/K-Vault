@@ -169,7 +169,8 @@
       line-height: 1;
       overflow: hidden;
     }
-    .folder-head-title i {
+    .folder-head-title i,
+    .folder-head-title svg.lucide {
       flex: 0 0 auto;
       font-size: 18px;
     }
@@ -592,7 +593,8 @@
       color: #4a5f7a;
       margin-bottom: 8px;
     }
-    .token-empty i {
+    .token-empty i,
+    .token-empty svg.lucide {
       font-size: 20px;
       margin-bottom: 8px;
       color: #409eff;

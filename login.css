@@ -100,7 +100,8 @@
       position: relative;
     }
 
-    .input-wrapper i {
+    .input-wrapper i,
+    .input-wrapper svg.lucide {
       position: absolute;
       left: 16px;
       top: 50%;

@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/theme.css" />
     <script src="/theme.js?v=20260305"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/lucide@1.49.0/dist/umd/lucide.min.js"></script>
     <link rel="stylesheet" href="/webdav.css">
     <link rel="stylesheet" href="/mobile-refactor.css" />
   </head>
@@ -27,12 +28,12 @@
           <span>WebDAV 上传中心</span>
         </h1>
         <div class="header-actions">
-          <a class="action-link" href="./"><i class="fas fa-home"></i><span>首页</span></a>
-          <a class="action-link" href="./gallery.html"><i class="fas fa-images"></i><span>图片浏览</span></a>
-          <a class="action-link" href="./admin.html"><i class="fas fa-folder-tree"></i><span>管理后台</span></a>
-          <a class="action-link active" href="./webdav.html"><i class="fas fa-hard-drive"></i><span>WebDAV</span></a>
+          <a class="action-link" href="./"><i data-lucide="house"></i><span>首页</span></a>
+          <a class="action-link" href="./gallery.html"><i data-lucide="images"></i><span>图片浏览</span></a>
+          <a class="action-link" href="./admin.html"><i data-lucide="folder-tree"></i><span>管理后台</span></a>
+          <a class="action-link active" href="./webdav.html"><i data-lucide="hard-drive"></i><span>WebDAV</span></a>
           <button type="button" class="action-btn" data-theme-toggle aria-label="切换主题">
-            <i class="fas fa-moon" data-theme-icon></i>
+            <i data-lucide="moon" data-theme-icon></i>
             <span data-theme-label>夜间</span>
           </button>
         </div>
@@ -46,7 +47,7 @@
               <span id="statusText">正在检测 WebDAV 状态...</span>
             </div>
             <div class="status-pill">
-              <i class="fas fa-folder-tree"></i>
+              <i data-lucide="folder-tree"></i>
               <span id="folderPathPreview">当前目录：根目录</span>
             </div>
           </div>
@@ -59,10 +60,10 @@
         <article class="card">
           <div class="card-header">
             <div>
-              <h2><i class="fas fa-circle-info"></i> WebDAV 状态</h2>
+              <h2><i data-lucide="info"></i> WebDAV 状态</h2>
               <p class="card-sub">用于确认 WebDAV 配置和连接情况。</p>
             </div>
-            <button id="refreshStatusBtn" type="button"><i class="fas fa-rotate"></i> 刷新状态</button>
+            <button id="refreshStatusBtn" type="button"><i data-lucide="rotate-cw"></i> 刷新状态</button>
           </div>
           <p id="statusDetailText" class="status-line">等待检测</p>
         </article>
@@ -70,7 +71,7 @@
         <article class="card">
           <div class="card-header">
             <div>
-              <h2><i class="fas fa-folder-open"></i> 上传目录</h2>
+              <h2><i data-lucide="folder-open"></i> 上传目录</h2>
               <p class="card-sub">可填写多级目录，例如：项目A/一月。</p>
             </div>
           </div>
@@ -84,7 +85,7 @@
         <article class="card">
           <div class="card-header">
             <div>
-              <h2><i class="fas fa-cloud-upload-alt"></i> 文件上传</h2>
+              <h2><i data-lucide="cloud-upload"></i> 文件上传</h2>
               <p class="card-sub">支持批量上传到 WebDAV。</p>
             </div>
           </div>
@@ -92,7 +93,7 @@
             <div class="file-picker" id="filePickerBox" role="button" tabindex="0" aria-label="选择或拖拽文件">
               <input id="fileInput" class="file-input-native" type="file" multiple />
               <button id="chooseFileBtn" type="button" class="file-choose-btn">
-                <i class="fas fa-folder-open"></i>
+                <i data-lucide="folder-open"></i>
                 <span>选择文件</span>
               </button>
               <div class="file-picker-meta">
@@ -105,7 +106,7 @@
           </div>
           <div id="fileQueueWrap" class="file-queue-wrap" style="display:none;">
             <div class="file-queue-head">
-              <span class="file-queue-title"><i class="fas fa-list-ul"></i> 待上传队列</span>
+              <span class="file-queue-title"><i data-lucide="list"></i> 待上传队列</span>
               <button id="clearQueueBtn" type="button" class="file-queue-clear">清空队列</button>
             </div>
             <ul id="fileQueueList" class="file-queue-list"></ul>
@@ -115,7 +116,7 @@
         <article class="card">
           <div class="card-header">
             <div>
-              <h2><i class="fas fa-link"></i> URL 上传</h2>
+              <h2><i data-lucide="link"></i> URL 上传</h2>
               <p class="card-sub">输入文件地址，服务器将自动拉取并上传。</p>
             </div>
           </div>
@@ -127,7 +128,7 @@
 
         <article class="card span-2">
           <div class="card-header">
-            <h2><i class="fas fa-list-check"></i> 上传结果</h2>
+            <h2><i data-lucide="list-checks"></i> 上传结果</h2>
             <div class="result-tools">
               <span id="resultCount" class="card-sub">0 条</span>
             </div>
@@ -204,15 +205,15 @@
         function resolveFileIconClass(file) {
           var name = String((file && file.name) || "").toLowerCase();
           var mime = String((file && file.type) || "").toLowerCase();
-          if (mime.startsWith("image/")) return "fas fa-image";
-          if (mime.startsWith("video/")) return "fas fa-film";
-          if (mime.startsWith("audio/")) return "fas fa-music";
-          if (mime.includes("zip") || mime.includes("rar") || mime.includes("7z") || /\.zip$|\.rar$|\.7z$|\.tar$|\.gz$/i.test(name)) return "fas fa-file-archive";
-          if (mime.includes("pdf") || /\.pdf$/i.test(name)) return "fas fa-file-pdf";
-          if (mime.includes("word") || /\.docx?$|\.odt$/i.test(name)) return "fas fa-file-word";
-          if (mime.includes("excel") || /\.xlsx?$|\.csv$/i.test(name)) return "fas fa-file-excel";
-          if (mime.includes("text") || /\.txt$|\.md$/i.test(name)) return "fas fa-file-lines";
-          return "fas fa-file";
+          if (mime.startsWith("image/")) return "image";
+          if (mime.startsWith("video/")) return "film";
+          if (mime.startsWith("audio/")) return "music";
+          if (mime.includes("zip") || mime.includes("rar") || mime.includes("7z") || /\.zip$|\.rar$|\.7z$|\.tar$|\.gz$/i.test(name)) return "file-archive";
+          if (mime.includes("pdf") || /\.pdf$/i.test(name)) return "file-text";
+          if (mime.includes("word") || /\.docx?$|\.odt$/i.test(name)) return "file-text";
+          if (mime.includes("excel") || /\.xlsx?$|\.csv$/i.test(name)) return "file-spreadsheet";
+          if (mime.includes("text") || /\.txt$|\.md$/i.test(name)) return "file-text";
+          return "file";
         }
 
         function renderFileQueue(files) {
@@ -635,5 +636,6 @@
         });
       })();
     </script>
-  </body>
+    <script src="/icons.js"></script>
+</body>
 </html>

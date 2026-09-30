@@ -67,7 +67,8 @@
       margin: 0;
     }
 
-    .header-title i {
+    .header-title i,
+    .header-title svg.lucide {
       color: var(--wf-primary);
     }
 
@@ -176,7 +177,8 @@
       color: #6b7280;
     }
 
-    .empty-state i {
+    .empty-state i,
+    .empty-state svg.lucide {
       font-size: 1.8rem;
       margin-bottom: 10px;
       color: var(--wf-primary);

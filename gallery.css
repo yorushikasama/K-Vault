@@ -91,7 +91,8 @@
       font-weight: 600;
     }
 
-    .header-actions .gallery-theme-toggle i {
+    .header-actions .gallery-theme-toggle i,
+    .header-actions .gallery-theme-toggle svg.lucide {
       color: var(--primary);
       width: 14px;
       text-align: center;
@@ -107,7 +108,8 @@
       color: #e8eeff;
     }
 
-    html[data-theme="dark"] .header-actions .gallery-theme-toggle i {
+    html[data-theme="dark"] .header-actions .gallery-theme-toggle i,
+    html[data-theme="dark"] .header-actions .gallery-theme-toggle svg.lucide {
       color: #c4d4ff;
     }
 
@@ -658,7 +660,8 @@
         border-radius: var(--radius-sm);
       }
       
-      .nav-btn i {
+            .nav-btn i,
+      .nav-btn svg.lucide {
         font-size: 0.9em;
       }
       
@@ -738,7 +741,8 @@
         padding: 30px;
       }
       
-      .loading-indicator i {
+            .loading-indicator i,
+      .loading-indicator svg.lucide {
         font-size: 2em;
       }
 

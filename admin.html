@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="./admin-imgtc.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/lucide@1.49.0/dist/umd/lucide.min.js"></script>
   <script src="https://js.sentry-cdn.com/219f636ac7bde5edab2c3e16885cb535.min.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="/admin.css">
   <link rel="stylesheet" href="/mobile-refactor.css">
@@ -22,11 +23,11 @@
     <el-container>
       <el-header>
         <div class="header-content">
-          <span class="home-btn" @click="goHome"><i class="fas fa-home"></i></span>
+          <span class="home-btn" @click="goHome"><i data-lucide="house"></i></span>
           <span class="title" @click="refreshDashboard">管理后台</span>
           <div class="search-card"><el-input v-model="search" size="mini" placeholder="输入关键字搜索"></el-input></div>
           <span class="stats" role="status" aria-live="polite">
-            <i class="fas fa-chart-line stats-icon"></i>
+            <i data-lucide="chart-line" data-icon-class="stats-icon"></i>
             <span class="stats-text">总记录: {{ totalCount || Number }}</span>
             <small class="stats-loaded">已加载 {{ Number }}</small>
           </span>
@@ -34,7 +35,7 @@
             <el-dropdown @command="switchFileType" :hide-on-click="false">
               <span class="el-dropdown-link"><i :class="fileTypeIcon"></i></span>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="all" :class="{ 'el-dropdown-menu__item--selected': fileType === 'all' }"><i class="fas fa-th-large"></i> 全部</el-dropdown-item>
+                <el-dropdown-item command="all" :class="{ 'el-dropdown-menu__item--selected': fileType === 'all' }"><i data-lucide="layout-grid"></i> 全部</el-dropdown-item>
                 <el-dropdown-item command="image" :class="{ 'el-dropdown-menu__item--selected': fileType === 'image' }"><i :class="fileConfig.image.icon"></i> 图片</el-dropdown-item>
                 <el-dropdown-item command="video" :class="{ 'el-dropdown-menu__item--selected': fileType === 'video' }"><i :class="fileConfig.video.icon"></i> 视频</el-dropdown-item>
                 <el-dropdown-item command="audio" :class="{ 'el-dropdown-menu__item--selected': fileType === 'audio' }"><i :class="fileConfig.audio.icon"></i> 音频</el-dropdown-item>
@@ -44,58 +45,58 @@
             <el-dropdown @command="switchStorageFilter" :hide-on-click="false">
               <span class="el-dropdown-link"><i :class="storageFilterIcon"></i></span>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="all" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'all' }"><i class="fas fa-database"></i> 全部存储</el-dropdown-item>
+                <el-dropdown-item command="all" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'all' }"><i data-lucide="database"></i> 全部存储</el-dropdown-item>
                 <el-dropdown-item command="telegram" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'telegram' }"><i class="fab fa-telegram"></i> Telegram</el-dropdown-item>
-                <el-dropdown-item command="r2" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'r2' }"><i class="fas fa-cloud"></i> R2 存储</el-dropdown-item>
-                <el-dropdown-item command="s3" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 's3' }"><i class="fas fa-database"></i> S3 存储</el-dropdown-item>
+                <el-dropdown-item command="r2" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'r2' }"><i data-lucide="cloud"></i> R2 存储</el-dropdown-item>
+                <el-dropdown-item command="s3" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 's3' }"><i data-lucide="database"></i> S3 存储</el-dropdown-item>
                 <el-dropdown-item command="discord" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'discord' }"><i class="fab fa-discord"></i> Discord</el-dropdown-item>
-                <el-dropdown-item command="huggingface" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'huggingface' }"><i class="fas fa-robot"></i> HuggingFace</el-dropdown-item>
-                <el-dropdown-item command="webdav" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'webdav' }"><i class="fas fa-hard-drive"></i> WebDAV</el-dropdown-item>
+                <el-dropdown-item command="huggingface" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'huggingface' }"><i data-lucide="bot"></i> HuggingFace</el-dropdown-item>
+                <el-dropdown-item command="webdav" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'webdav' }"><i data-lucide="hard-drive"></i> WebDAV</el-dropdown-item>
                 <el-dropdown-item command="github" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'github' }"><i class="fab fa-github"></i> GitHub</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="sort" :hide-on-click="false">
               <span class="el-dropdown-link"><i :class="sortIcon"></i></span>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="dateDesc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'dateDesc' }"><i class="fas fa-sort-amount-down"></i> 按时间倒序</el-dropdown-item>
-                <el-dropdown-item command="nameAsc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'nameAsc' }"><i class="fas fa-sort-alpha-up"></i> 按名称升序</el-dropdown-item>
-                <el-dropdown-item command="sizeDesc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'sizeDesc' }"><i class="fas fa-sort-amount-down"></i> 按大小倒序</el-dropdown-item>
+                <el-dropdown-item command="dateDesc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'dateDesc' }"><i data-lucide="arrow-down-wide-narrow"></i> 按时间倒序</el-dropdown-item>
+                <el-dropdown-item command="nameAsc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'nameAsc' }"><i data-lucide="arrow-down-a-z"></i> 按名称升序</el-dropdown-item>
+                <el-dropdown-item command="sizeDesc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'sizeDesc' }"><i data-lucide="arrow-down-wide-narrow"></i> 按大小倒序</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="filter" :hide-on-click="false">
               <span class="el-dropdown-link"><i :class="filterIcon"></i></span>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="all" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'all' }"><i class="fas fa-filter"></i> 全部</el-dropdown-item>
-                <el-dropdown-item command="favorites" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'favorites' }"><i class="fas fa-bookmark"></i> 收藏</el-dropdown-item>
-                <el-dropdown-item command="blocked" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'blocked' }"><i class="fas fa-lock"></i> 黑名单</el-dropdown-item>
-                <el-dropdown-item command="unblocked" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'unblocked' }"><i class="fas fa-unlock"></i> 白名单</el-dropdown-item>
-                <el-dropdown-item command="adult" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'adult' }"><i class="fas fa-user-secret"></i> NSFW</el-dropdown-item>
+                <el-dropdown-item command="all" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'all' }"><i data-lucide="funnel"></i> 全部</el-dropdown-item>
+                <el-dropdown-item command="favorites" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'favorites' }"><i data-lucide="bookmark"></i> 收藏</el-dropdown-item>
+                <el-dropdown-item command="blocked" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'blocked' }"><i data-lucide="lock"></i> 黑名单</el-dropdown-item>
+                <el-dropdown-item command="unblocked" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'unblocked' }"><i data-lucide="lock-open"></i> 白名单</el-dropdown-item>
+                <el-dropdown-item command="adult" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'adult' }"><i data-lucide="user-round"></i> NSFW</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="switchViewMode" :hide-on-click="false">
               <span class="el-dropdown-link"><i :class="viewModeIcon"></i></span>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="grid" :class="{ 'el-dropdown-menu__item--selected': viewMode === 'grid' }"><i class="fas fa-th-large"></i> 平铺视图</el-dropdown-item>
-                <el-dropdown-item command="list" :class="{ 'el-dropdown-menu__item--selected': viewMode === 'list' }"><i class="fas fa-list"></i> 详细视图</el-dropdown-item>
+                <el-dropdown-item command="grid" :class="{ 'el-dropdown-menu__item--selected': viewMode === 'grid' }"><i data-lucide="layout-grid"></i> 平铺视图</el-dropdown-item>
+                <el-dropdown-item command="list" :class="{ 'el-dropdown-menu__item--selected': viewMode === 'list' }"><i data-lucide="list"></i> 详细视图</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="handleBatchOperation" :hide-on-click="false">
-              <span class="el-dropdown-link"><i class="fas fa-tasks"></i></span>
+              <span class="el-dropdown-link"><i data-lucide="list-todo"></i></span>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="selectAll"><i class="fas fa-check-double"></i> {{ isAllSelected ? '取消全选' : '全选当前页' }}</el-dropdown-item>
-                <el-dropdown-item command="selectAllLoaded"><i class="fas fa-check-square"></i> 全选已加载 ({{ tableData.length }})</el-dropdown-item>
-                <el-dropdown-item divided command="copy" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-link"></i> 批量复制</el-dropdown-item>
+                <el-dropdown-item command="selectAll"><i data-lucide="check-check"></i> {{ isAllSelected ? '取消全选' : '全选当前页' }}</el-dropdown-item>
+                <el-dropdown-item command="selectAllLoaded"><i data-lucide="square-check"></i> 全选已加载 ({{ tableData.length }})</el-dropdown-item>
+                <el-dropdown-item divided command="copy" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="link"></i> 批量复制</el-dropdown-item>
                 <el-dropdown-item command="copyMarkdown" :class="{ disabled: selectedFiles.length === 0 }"><i class="fab fa-markdown"></i> 复制Markdown</el-dropdown-item>
-                <el-dropdown-item command="copyHtml" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-code"></i> 复制HTML</el-dropdown-item>
-                <el-dropdown-item command="delete" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-trash-alt"></i> 批量删除</el-dropdown-item>
-                <el-dropdown-item command="download" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-download"></i> 批量下载</el-dropdown-item>
-                <el-dropdown-item command="moveFolder" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-folder-tree"></i> 移动到目录</el-dropdown-item>
-                <el-dropdown-item command="block" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-lock"></i> 加入黑名单</el-dropdown-item>
-                <el-dropdown-item command="unblock" :class="{ disabled: selectedFiles.length === 0 }"><i class="fas fa-unlock"></i> 加入白名单</el-dropdown-item>
+                <el-dropdown-item command="copyHtml" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="code"></i> 复制HTML</el-dropdown-item>
+                <el-dropdown-item command="delete" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="trash"></i> 批量删除</el-dropdown-item>
+                <el-dropdown-item command="download" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="download"></i> 批量下载</el-dropdown-item>
+                <el-dropdown-item command="moveFolder" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="folder-tree"></i> 移动到目录</el-dropdown-item>
+                <el-dropdown-item command="block" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="lock"></i> 加入黑名单</el-dropdown-item>
+                <el-dropdown-item command="unblock" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="lock-open"></i> 加入白名单</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="handleWebsite">
-              <span class="el-dropdown-link"><i class="fas fa-external-link-alt"></i></span>
+              <span class="el-dropdown-link"><i data-lucide="external-link"></i></span>
               <el-dropdown-menu slot="dropdown">
                 <template v-for="site in quickWebsites">
                   <el-dropdown-item :command="site.url">
@@ -105,59 +106,59 @@
               </el-dropdown-menu>
             </el-dropdown>
             <el-dropdown @command="handleToolkit" :hide-on-click="false">
-              <span class="el-dropdown-link"><i class="fas fa-toolbox"></i></span>
+              <span class="el-dropdown-link"><i data-lucide="wrench"></i></span>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="selectAllInPage"><i class="fas fa-check-square"></i> 全选当前页</el-dropdown-item>
-                <el-dropdown-item command="checkBrokenFiles"><i class="fas fa-wrench"></i> 检测失效文件</el-dropdown-item>
-                <el-dropdown-item command="editWebsites"><i class="fas fa-edit"></i> 编辑快捷方式</el-dropdown-item>
-                <el-dropdown-item command="openUploader"><i class="fas fa-cloud-upload-alt"></i> 打开上传中心</el-dropdown-item>
-                <el-dropdown-item command="exportLinks"><i class="fas fa-file-export"></i> 导出全部链接</el-dropdown-item>
-                <el-dropdown-item command="manageApiTokens"><i class="fas fa-key"></i> API Token 管理</el-dropdown-item>
-                <el-dropdown-item command="checkStatus" divided><i class="fas fa-heartbeat"></i> 检查连接状态</el-dropdown-item>
+                <el-dropdown-item command="selectAllInPage"><i data-lucide="square-check"></i> 全选当前页</el-dropdown-item>
+                <el-dropdown-item command="checkBrokenFiles"><i data-lucide="wrench"></i> 检测失效文件</el-dropdown-item>
+                <el-dropdown-item command="editWebsites"><i data-lucide="pencil"></i> 编辑快捷方式</el-dropdown-item>
+                <el-dropdown-item command="openUploader"><i data-lucide="cloud-upload"></i> 打开上传中心</el-dropdown-item>
+                <el-dropdown-item command="exportLinks"><i data-lucide="file-output"></i> 导出全部链接</el-dropdown-item>
+                <el-dropdown-item command="manageApiTokens"><i data-lucide="key"></i> API Token 管理</el-dropdown-item>
+                <el-dropdown-item command="checkStatus" divided><i data-lucide="activity"></i> 检查连接状态</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
             <div class="status-panel" @click="checkConnectionStatus">
               <div class="status-item">
-                <i class="fas fa-circle" :style="{ color: systemStatus.telegram.connected ? '#67c23a' : '#f56c6c' }"></i>
+                <i data-lucide="circle" :style="{ color: systemStatus.telegram.connected ? '#67c23a' : '#f56c6c' }"></i>
                 <span>TG</span>
               </div>
               <div class="status-item">
-                <i class="fas fa-circle" :style="{ color: systemStatus.kv.connected ? '#67c23a' : '#f56c6c' }"></i>
+                <i data-lucide="circle" :style="{ color: systemStatus.kv.connected ? '#67c23a' : '#f56c6c' }"></i>
                 <span>KV</span>
               </div>
               <div class="status-item">
-                <i class="fas fa-circle" :style="{ color: systemStatus.r2.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.r2) ? '#909399' : '#f56c6c') }"></i>
+                <i data-lucide="circle" :style="{ color: systemStatus.r2.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.r2) ? '#909399' : '#f56c6c') }"></i>
                 <span>R2</span>
               </div>
               <div class="status-item">
-                <i class="fas fa-circle" :style="{ color: systemStatus.s3.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.s3) ? '#909399' : '#f56c6c') }"></i>
+                <i data-lucide="circle" :style="{ color: systemStatus.s3.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.s3) ? '#909399' : '#f56c6c') }"></i>
                 <span>S3</span>
               </div>
               <div class="status-item">
-                <i class="fas fa-circle" :style="{ color: systemStatus.discord.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.discord) ? '#909399' : '#f56c6c') }"></i>
+                <i data-lucide="circle" :style="{ color: systemStatus.discord.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.discord) ? '#909399' : '#f56c6c') }"></i>
                 <span>DC</span>
               </div>
               <div class="status-item">
-                <i class="fas fa-circle" :style="{ color: systemStatus.huggingface.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.huggingface) ? '#909399' : '#f56c6c') }"></i>
+                <i data-lucide="circle" :style="{ color: systemStatus.huggingface.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.huggingface) ? '#909399' : '#f56c6c') }"></i>
                 <span>HF</span>
               </div>
               <div class="status-item">
-                <i class="fas fa-circle" :style="{ color: systemStatus.github.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.github) ? '#909399' : '#f56c6c') }"></i>
+                <i data-lucide="circle" :style="{ color: systemStatus.github.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.github) ? '#909399' : '#f56c6c') }"></i>
                 <span>GH</span>
               </div>
             </div>
             <el-dropdown @command="handleLoadSettings" :hide-on-click="false">
-              <span class="el-dropdown-link"><i class="fas fa-cog"></i></span>
+              <span class="el-dropdown-link"><i data-lucide="settings"></i></span>
               <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="normal" :class="{ 'el-dropdown-menu__item--selected': loadMode === 'normal' }"><i class="fas fa-eye"></i> 正常模式</el-dropdown-item>
-                <el-dropdown-item command="dataSaver" :class="{ 'el-dropdown-menu__item--selected': loadMode === 'dataSaver' }"><i class="fas fa-bolt"></i> 省流模式</el-dropdown-item>
-                <el-dropdown-item command="noImage" :class="{ 'el-dropdown-menu__item--selected': loadMode === 'noImage' }"><i class="fas fa-eye-slash"></i> 无图模式</el-dropdown-item>
-                <el-dropdown-item command="safeMode" divided :class="{ 'el-dropdown-menu__item--selected': safeMode }"><i class="fas fa-shield-alt"></i> {{ safeMode ? '✓' : '' }} 安全模式(NSFW)</el-dropdown-item>
-                <el-dropdown-item command="uiDesign" divided><i class="fas fa-sliders-h"></i> 前端 UI 设计</el-dropdown-item>
+                <el-dropdown-item command="normal" :class="{ 'el-dropdown-menu__item--selected': loadMode === 'normal' }"><i data-lucide="eye"></i> 正常模式</el-dropdown-item>
+                <el-dropdown-item command="dataSaver" :class="{ 'el-dropdown-menu__item--selected': loadMode === 'dataSaver' }"><i data-lucide="zap"></i> 省流模式</el-dropdown-item>
+                <el-dropdown-item command="noImage" :class="{ 'el-dropdown-menu__item--selected': loadMode === 'noImage' }"><i data-lucide="eye-off"></i> 无图模式</el-dropdown-item>
+                <el-dropdown-item command="safeMode" divided :class="{ 'el-dropdown-menu__item--selected': safeMode }"><i data-lucide="shield"></i> {{ safeMode ? '✓' : '' }} 安全模式(NSFW)</el-dropdown-item>
+                <el-dropdown-item command="uiDesign" divided><i data-lucide="sliders-horizontal"></i> 前端 UI 设计</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
-            <el-tooltip content="前端 UI 设计" placement="bottom"><i class="fas fa-sliders-h" @click="showUiDesignSettingsPanel"></i></el-tooltip>
-            <i class="fas fa-sign-out-alt" @click="handleLogout"></i>
+            <el-tooltip content="前端 UI 设计" placement="bottom"><i data-lucide="sliders-horizontal" @click="showUiDesignSettingsPanel"></i></el-tooltip>
+            <i data-lucide="log-out" @click="handleLogout"></i>
           </div>
         </div>
       </el-header>
@@ -169,7 +170,7 @@
             @dragover.prevent="handleFolderSidebarDragOver"
           >
             <div class="folder-head">
-              <span class="folder-head-title"><i class="fas fa-folder-tree"></i><span>目录管理</span></span>
+              <span class="folder-head-title"><i data-lucide="folder-tree"></i><span>目录管理</span></span>
               <span class="folder-head-actions">
                 <el-button size="mini" circle icon="el-icon-refresh" title="刷新目录与文件" :disabled="folderMutating" :loading="folderLoading" @click="refreshFolderResources"></el-button>
                 <el-button size="mini" circle icon="el-icon-plus" title="新建目录" :disabled="folderMutating" :loading="folderMutatingAction === 'create'" @click="createFolder"></el-button>
@@ -195,7 +196,7 @@
                 @drop.prevent="handleFolderDrop(folder.path, $event)"
               >
                 <span class="folder-node-main" :style="{ paddingLeft: (folder.depth * 14 + 6) + 'px' }">
-                  <i class="fas" :class="folder.path === folderPath ? 'fa-folder-open' : 'fa-folder'"></i>
+                  <i :data-lucide="folder.path === folderPath ? 'folder-open' : 'folder'" :key="folderPath"></i>
                   <span>{{ folder.name }}</span>
                 </span>
                 <span class="folder-node-count">{{ folder.fileCount }}</span>
@@ -204,7 +205,7 @@
           </aside>
           <section class="disk-content">
             <div class="folder-breadcrumb">
-              <i class="fas fa-location-arrow"></i>
+              <i data-lucide="navigation"></i>
               <span class="folder-crumb" @click="selectFolder('')">根目录</span>
               <template v-for="item in folderBreadcrumbs">
                 <i :key="'sep-' + item.path" class="el-icon-arrow-right"></i>
@@ -218,7 +219,7 @@
             <template v-if="getActualFileType(item.name) === 'image'">
               <el-card class="image-card" :draggable="true" @dragstart="handleFileDragStart(item, $event)" @dragend="handleFileDragEnd">
                 <span class="collect-icon" @click.stop="toggleLike(index, item.name)">
-                <i :class="item.metadata.liked ? 'fa-solid fa-bookmark liked' : 'fa-regular fa-bookmark not-liked'"></i>
+                <i :class="item.metadata.liked ? 'bookmark liked' : 'bookmark not-liked'"></i>
                 </span>
                 <el-checkbox v-model="item.selected" :ref="'checkbox-' + index"></el-checkbox>
                 <div
@@ -240,7 +241,7 @@
                     class="preview-gate"
                     type="button"
                     @click.stop="revealPreview(item)">
-                    <span class="preview-gate-icon"><i class="fas fa-eye"></i></span>
+                    <span class="preview-gate-icon"><i data-lucide="eye"></i></span>
                     <span class="preview-gate-title">{{ getPreviewGateTitle(item, 'image') }}</span>
                     <span class="preview-gate-subtitle">{{ getPreviewGateSubtitle(item, 'image') }}</span>
                   </button>
@@ -294,14 +295,14 @@
                       style="width: 100%; height: 100%; object-fit: cover;">
                     </video>
                     <div v-else class="preview-skeleton video-skeleton">
-                      <i class="fas fa-film"></i>
+                      <i data-lucide="film"></i>
                     </div>
                     <button
                       v-if="isPreviewGated(item, 'video')"
                       class="preview-gate"
                       type="button"
                       @click.stop="revealPreview(item)">
-                      <span class="preview-gate-icon"><i class="fas fa-play"></i></span>
+                      <span class="preview-gate-icon"><i data-lucide="play"></i></span>
                       <span class="preview-gate-title">{{ getPreviewGateTitle(item, 'video') }}</span>
                       <span class="preview-gate-subtitle">{{ getPreviewGateSubtitle(item, 'video') }}</span>
                     </button>
@@ -321,12 +322,12 @@
                   </div>
                     <!-- 控制按钮区域 -->
                   <div class="video-controls">
-                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'fas fa-heart liked' : 'far fa-heart'"></i></button>
-                    <button class="control-btn edit-btn" @click.stop="handleEditName(item)"><i class="fas fa-edit"></i></button>
-                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'fas fa-square-check selected' : 'far fa-square'"></i></button>
-                    <button class="control-btn" @click.stop="openPreview(item)" title="预览"><i class="fas fa-eye"></i></button>
-                    <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i class="fas fa-link"></i></button>
-                    <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i class="fas fa-trash-alt"></i></button>
+                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'heart liked' : 'heart'"></i></button>
+                    <button class="control-btn edit-btn" @click.stop="handleEditName(item)"><i data-lucide="pencil"></i></button>
+                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'square-check selected' : 'square'"></i></button>
+                    <button class="control-btn" @click.stop="openPreview(item)" title="预览"><i data-lucide="eye"></i></button>
+                    <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i data-lucide="link"></i></button>
+                    <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i data-lucide="trash"></i></button>
                   </div>
                 </div>
               </el-card>
@@ -370,26 +371,26 @@
                       当前浏览器不支持音频播放
                     </audio>
                     <div v-else class="preview-skeleton audio-skeleton">
-                      <i class="fas fa-wave-square"></i>
+                      <i data-lucide="audio-waveform"></i>
                     </div>
                     <button
                       v-if="isPreviewGated(item, 'audio')"
                       class="preview-gate compact"
                       type="button"
                       @click.stop="revealPreview(item)">
-                      <span class="preview-gate-icon"><i class="fas fa-play"></i></span>
+                      <span class="preview-gate-icon"><i data-lucide="play"></i></span>
                       <span class="preview-gate-title">{{ getPreviewGateTitle(item, 'audio') }}</span>
                       <span class="preview-gate-subtitle">{{ getPreviewGateSubtitle(item, 'audio') }}</span>
                     </button>
                   </div>
                   <!-- 控制按钮区域 -->
                   <div class="audio-controls">
-                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'fas fa-heart liked' : 'far fa-heart'"></i></button>
-                    <button class="control-btn edit-btn" @click.stop="handleEditName(item)"><i class="fas fa-edit"></i></button>
-                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'fas fa-square-check selected' : 'far fa-square'"></i></button>
-                    <button class="control-btn" @click.stop="openPreview(item)" title="预览"><i class="fas fa-eye"></i></button>
-                    <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i class="fas fa-copy"></i></button>
-                    <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i class="fas fa-trash-alt"></i></button>
+                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'heart liked' : 'heart'"></i></button>
+                    <button class="control-btn edit-btn" @click.stop="handleEditName(item)"><i data-lucide="pencil"></i></button>
+                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'square-check selected' : 'square'"></i></button>
+                    <button class="control-btn" @click.stop="openPreview(item)" title="预览"><i data-lucide="eye"></i></button>
+                    <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i data-lucide="copy"></i></button>
+                    <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i data-lucide="trash"></i></button>
                   </div>
                 </div>
               </el-card>
@@ -422,12 +423,12 @@
                   </div>
                   <!-- 控制按钮区域 -->
                   <div class="file-controls">
-                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'fas fa-heart liked' : 'far fa-heart'"></i></button>
-                    <button class="control-btn edit-btn" @click.stop="handleEditName(item)"><i class="fas fa-edit"></i></button>
-                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'fas fa-square-check selected' : 'far fa-square'"></i></button>
-                    <button class="control-btn" @click.stop="openPreview(item)" title="预览"><i class="fas fa-eye"></i></button>
-                    <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i class="fas fa-copy"></i></button>
-                    <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i class="fas fa-trash-alt"></i></button>
+                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'heart liked' : 'heart'"></i></button>
+                    <button class="control-btn edit-btn" @click.stop="handleEditName(item)"><i data-lucide="pencil"></i></button>
+                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'square-check selected' : 'square'"></i></button>
+                    <button class="control-btn" @click.stop="openPreview(item)" title="预览"><i data-lucide="eye"></i></button>
+                    <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i data-lucide="copy"></i></button>
+                    <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i data-lucide="trash"></i></button>
                   </div>
                 </div>
               </el-card>
@@ -452,7 +453,7 @@
                   <el-table-column label="文件名" min-width="280" show-overflow-tooltip>
                     <template slot-scope="scope">
                       <span class="row-drag-handle" draggable="true" @dragstart="handleFileDragStart(scope.row, $event)" @dragend="handleFileDragEnd">
-                        <i class="fas fa-grip-lines"></i>
+                        <i data-lucide="grip-horizontal"></i>
                       </span>
                       <span :style="{ color: scope.row.metadata.ListType === 'Block' ? '#999' : '' }">
                         {{ scope.row.metadata.fileName || scope.row.name }}
@@ -539,7 +540,7 @@
         <i class="el-icon-loading"></i> 正在加载 Token...
       </div>
       <div v-else-if="apiTokens.length === 0" class="token-empty">
-        <i class="fas fa-key"></i>
+        <i data-lucide="key"></i>
         <p>暂无 API Token，可创建后用于脚本、curl 或 ShareX 上传。</p>
       </div>
       <el-table
@@ -613,7 +614,7 @@
         </el-table-column>
       </el-table>
       <div style="margin-top:14px;padding:10px 12px;background:#f5f7fa;border-radius:6px;border:1px solid #ebeef5;">
-        <div style="font-size:13px;font-weight:600;color:#606266;margin-bottom:6px;"><i class="fas fa-terminal"></i> 脚本 / Agent 调用示例</div>
+        <div style="font-size:13px;font-weight:600;color:#606266;margin-bottom:6px;"><i data-lucide="terminal"></i> 脚本 / Agent 调用示例</div>
         <pre style="margin:0;font-size:12px;line-height:1.7;color:#476582;background:#fafbfc;border-radius:4px;padding:10px;overflow-x:auto;"># curl 上传（storage 可选 telegram/r2/s3/discord/huggingface/webdav/github）
 curl -H "Authorization: Bearer $KVAULT_API_TOKEN" \
   -F "file=@./image.png" -F "storage=r2" \
@@ -639,10 +640,10 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         </el-form-item>
         <el-form-item label="权限">
           <el-checkbox-group v-model="tokenForm.scopes" class="token-scope-group">
-            <el-checkbox label="upload"><i class="fas fa-upload"></i> 上传文件</el-checkbox>
-            <el-checkbox label="read"><i class="fas fa-eye"></i> 读取/列表/下载</el-checkbox>
-            <el-checkbox label="delete"><i class="fas fa-trash-alt"></i> 删除文件/粘贴</el-checkbox>
-            <el-checkbox label="paste"><i class="fas fa-file-alt"></i> 创建文本粘贴</el-checkbox>
+            <el-checkbox label="upload"><i data-lucide="upload"></i> 上传文件</el-checkbox>
+            <el-checkbox label="read"><i data-lucide="eye"></i> 读取/列表/下载</el-checkbox>
+            <el-checkbox label="delete"><i data-lucide="trash"></i> 删除文件/粘贴</el-checkbox>
+            <el-checkbox label="paste"><i data-lucide="file-text"></i> 创建文本粘贴</el-checkbox>
           </el-checkbox-group>
         </el-form-item>
         <el-form-item label="存储限制（可选，留空不限制）">
@@ -688,7 +689,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       append-to-body
       custom-class="token-created-dialog">
       <div class="token-once-warning">
-        <i class="fas fa-exclamation-triangle"></i>
+        <i data-lucide="triangle-alert"></i>
         完整 Token 仅在此处展示一次，请立即复制并妥善保存。
       </div>
       <el-input
@@ -745,7 +746,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
             class="move-folder-option"
             :class="{ 'is-active': moveDialogTargetPath === folder.path }"
             @click="selectMoveDialogFolder(folder.path)">
-            <i :class="folder.path ? 'fas fa-folder' : 'fas fa-house'"></i>
+            <i :class="folder.path ? 'folder' : 'house'"></i>
             <span class="move-folder-option-name">{{ folder.label }}</span>
             <span class="move-folder-option-meta">
               {{ folder.fileCountLabel }}
@@ -797,7 +798,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
     <!-- 预览弹窗 - 模态框模式（不跳转新标签页） -->
     <div class="preview-modal" v-if="previewData" @click="closePreview">
       <button class="preview-close" @click.stop="closePreview">
-        <i class="fas fa-times"></i>
+        <i data-lucide="x"></i>
       </button>
       <!-- 原生图片预览 -->
       <img v-if="previewData.type === 'native-image'" :src="previewData.url" @click.stop>
@@ -814,8 +815,8 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       <div class="preview-toolbar" @click.stop>
         <span class="preview-filename">{{ previewData.fileName }}</span>
         <div class="preview-btns">
-          <el-button size="small" type="primary" @click="copyPreviewLink"><i class="fas fa-copy"></i> 复制直链</el-button>
-          <el-button size="small" @click="downloadPreviewFile"><i class="fas fa-download"></i> 下载</el-button>
+          <el-button size="small" type="primary" @click="copyPreviewLink"><i data-lucide="copy"></i> 复制直链</el-button>
+          <el-button size="small" @click="downloadPreviewFile"><i data-lucide="download"></i> 下载</el-button>
         </div>
       </div>
     </div>
@@ -853,31 +854,31 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         all: {
           name: '全部',
           exts: [],  // 空数组表示匹配所有
-          icon: 'fas fa-th-large',
+          icon: 'layout-grid',
           count: 0
         },
         image: {
           name: '图片',
           exts: ['jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp', 'png', 'apng', 'gif', 'webp', 'bmp', 'tif', 'tiff', 'ico', 'svg', 'heic', 'heif', 'avif', 'jxl'],
-          icon: 'fas fa-image',
+          icon: 'image',
           count: 0
         },
         video: {
           name: '视频',
           exts: ['mp4', 'webm', 'ogg', 'ogv', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'm4v', 'm3u8', '3gp', 'ts', 'mts', 'm2ts'],
-          icon: 'fas fa-video',
+          icon: 'video',
           count: 0
         },
         audio: {
           name: '音频',
           exts: ['mp3', 'mpeg', 'wav', 'ogg', 'oga', 'flac', 'aac', 'm4a', 'wma', 'ape', 'opus', 'weba', 'midi', 'mid', 'aif', 'aiff'],
-          icon: 'fas fa-music',
+          icon: 'music',
           count: 0
         },
         document: {
           name: '文件',
           exts: ['pdf', 'ofd', 'typ', 'typst', 'doc', 'dot', 'docx', 'docm', 'dotx', 'dotm', 'rtf', 'odt', 'xls', 'xlsb', 'xlsx', 'xlsm', 'xlt', 'xltx', 'xltm', 'ods', 'fods', 'numbers', 'ppt', 'pptx', 'pptm', 'ppsx', 'ppsm', 'potx', 'potm', 'odp', 'txt', 'md', 'markdown', 'zip', 'zipx', 'jar', 'war', 'ear', 'rar', '7z', 'tar', 'tgz', 'gz', 'gzip', 'bz2', 'bzip2', 'tbz', 'tbz2', 'xz', 'txz', 'lzma', 'zst', 'cab', 'iso', 'exe', 'apk', 'dmg', 'msi', 'deb', 'rpm', 'json', 'jsonc', 'json5', 'xml', 'csv', 'tsv', 'sql', 'html', 'css', 'js', 'ts', 'tsx', 'jsx', 'vue', 'py', 'java', 'go', 'rs', 'cpp', 'c', 'h', 'ttf', 'otf', 'woff', 'woff2', 'eml', 'msg', 'mbox', 'psd', 'ai', 'eps', 'sqlite', 'sqlite3', 'db', 'parquet', 'avro', 'wasm', 'webarchive', 'dwg', 'dxf', 'dwf', 'dwfx', 'xps', 'xmind', 'drawio', 'dio', 'excalidraw', 'mermaid', 'mmd', 'plantuml', 'puml', 'epub', 'umd', 'geojson', 'kml', 'gpx', 'shp', 'glb', 'gltf', 'obj', 'stl', 'ply', 'fbx', 'dae', '3ds', '3mf', 'usd', 'usdz', 'kmz', 'step', 'stp', 'iges', 'igs', 'ifc', 'olb', 'dra', 'gds', 'oas', 'oasis'],
-          icon: 'fas fa-folder-open',
+          icon: 'folder-open',
           count: 0
         }
       },
@@ -940,12 +941,12 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       previewData: null,  // 模态框预览数据
       revealedPreviewKeys: {},
       quickWebsites: [
-        { name: '上传中心', url: './', icon: 'fas fa-cloud-upload-alt' },
-        { name: '图片浏览', url: './gallery.html', icon: 'fas fa-images' },
-        { name: 'Movavi', url: 'https://www.movavi.com/zh/movavi-video-converter.html', icon: 'fas fa-file-video' },
-        { name: 'FreeConvert', url: 'https://www.freeconvert.com/zh/video-compressor', icon: 'fas fa-file' },
-        { name: 'YouCompress', url: 'https://www.youcompress.com/zh-cn/', icon: 'fas fa-file-zipper' },
-        { name: 'Cloudinary', url: 'https://console.cloudinary.com/', icon: 'fas fa-cloud' },
+        { name: '上传中心', url: './', icon: 'cloud-upload' },
+        { name: '图片浏览', url: './gallery.html', icon: 'images' },
+        { name: 'Movavi', url: 'https://www.movavi.com/zh/movavi-video-converter.html', icon: 'file-video-camera' },
+        { name: 'FreeConvert', url: 'https://www.freeconvert.com/zh/video-compressor', icon: 'file' },
+        { name: 'YouCompress', url: 'https://www.youcompress.com/zh-cn/', icon: 'file-archive' },
+        { name: 'Cloudinary', url: 'https://console.cloudinary.com/', icon: 'cloud' },
       ],
       tokenDialogVisible: false,
       tokenLoading: false,
@@ -1033,33 +1034,33 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       isAllSelected() {
         return this.paginatedData.length > 0 && this.paginatedData.every(f => f.selected);
       },
-      sortIcon() { return `fas fa-sort-${this.sortOption === 'dateDesc' ? 'amount-down' : 'alpha-up'}`; },
+      sortIcon() { return `arrow-down-${this.sortOption === 'dateDesc' ? 'wide-narrow' : 'a-z'}`; },
       filterIcon() {
-        return this.filterOption === 'all' ? 'fas fa-filter' :
-        this.filterOption === 'favorites' ? 'fas fa-bookmark' :
-        this.filterOption === 'blocked' ? 'fas fa-lock' :
-        this.filterOption === 'unblocked' ? 'fas fa-unlock' :
-        this.filterOption === 'adult' ? 'fas fa-user-secret' : '';
+        return this.filterOption === 'all' ? 'funnel' :
+        this.filterOption === 'favorites' ? 'bookmark' :
+        this.filterOption === 'blocked' ? 'lock' :
+        this.filterOption === 'unblocked' ? 'lock-open' :
+        this.filterOption === 'adult' ? 'user-round' : '';
       },
       fileTypeIcon() {
-        return this.fileType === 'all' ? 'fas fa-th-large' :
-        this.fileType === 'image' ? 'fas fa-image' :
-        this.fileType === 'video' ? 'fas fa-video' :
-        this.fileType === 'audio' ? 'fas fa-music' :
-        this.fileType === 'document' ? 'fas fa-folder-open' : 'fas fa-th-large';
+        return this.fileType === 'all' ? 'layout-grid' :
+        this.fileType === 'image' ? 'image' :
+        this.fileType === 'video' ? 'video' :
+        this.fileType === 'audio' ? 'music' :
+        this.fileType === 'document' ? 'folder-open' : 'layout-grid';
       },
       storageFilterIcon() {
-        return this.storageFilter === 'all' ? 'fas fa-database' :
+        return this.storageFilter === 'all' ? 'database' :
         this.storageFilter === 'telegram' ? 'fab fa-telegram' :
-        this.storageFilter === 'r2' ? 'fas fa-cloud' :
-        this.storageFilter === 's3' ? 'fas fa-database' :
+        this.storageFilter === 'r2' ? 'cloud' :
+        this.storageFilter === 's3' ? 'database' :
         this.storageFilter === 'discord' ? 'fab fa-discord' :
-        this.storageFilter === 'huggingface' ? 'fas fa-robot' :
-        this.storageFilter === 'webdav' ? 'fas fa-hard-drive' :
-        this.storageFilter === 'github' ? 'fab fa-github' : 'fas fa-database';
+        this.storageFilter === 'huggingface' ? 'bot' :
+        this.storageFilter === 'webdav' ? 'hard-drive' :
+        this.storageFilter === 'github' ? 'fab fa-github' : 'database';
       },
       viewModeIcon() {
-        return this.viewMode === 'list' ? 'fas fa-list' : 'fas fa-th-large';
+        return this.viewMode === 'list' ? 'list' : 'layout-grid';
       },
       folderBreadcrumbs() {
         const parts = this.normalizeFolderPath(this.folderPath).split('/').filter(Boolean);
@@ -2766,7 +2767,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
               : 'Telegram 频道';
             this.$message({
               dangerouslyUseHTMLString: true,
-              message: `<i class="fas fa-check-circle" style="color:#67c23a;margin-right:8px;"></i>成功上传 <b>${successCount}</b> 个文件到 <b>${storageInfo}</b>`,
+              message: `<i data-lucide="circle-check" style="color:#67c23a;margin-right:8px;"></i>成功上传 <b>${successCount}</b> 个文件到 <b>${storageInfo}</b>`,
               type: 'success',
               duration: 3000
             });
@@ -3098,22 +3099,22 @@ curl -X POST "{SITE_URL}/api/v1/import" \
           // 显示详细状态对话框
           const statusHtml = `
             <div style="line-height: 2;">
-              <p><i class="fas fa-robot" style="width: 20px;"></i> <b>Telegram:</b> 
+              <p><i data-lucide="bot" style="width: 20px;"></i> <b>Telegram:</b> 
                 <span style="color: ${status.telegram.connected ? '#67c23a' : '#f56c6c'}">
                   ${status.telegram.connected ? '✓' : '✗'} ${status.telegram.message}
                 </span>
               </p>
-              <p><i class="fas fa-database" style="width: 20px;"></i> <b>KV 存储:</b> 
+              <p><i data-lucide="database" style="width: 20px;"></i> <b>KV 存储:</b> 
                 <span style="color: ${status.kv.connected ? '#67c23a' : '#f56c6c'}">
                   ${status.kv.connected ? '✓' : '✗'} ${status.kv.message}
                 </span>
               </p>
-              <p><i class="fas fa-cloud" style="width: 20px;"></i> <b>R2 存储:</b>
+              <p><i data-lucide="cloud" style="width: 20px;"></i> <b>R2 存储:</b>
                 <span style="color: ${status.r2.connected ? '#67c23a' : (this.isUnconfiguredStatus(status.r2) ? '#909399' : '#f56c6c')}">
                   ${status.r2.connected ? '✓' : (this.isUnconfiguredStatus(status.r2) ? '○' : '✗')} ${status.r2.message}
                 </span>
               </p>
-              <p><i class="fas fa-database" style="width: 20px; color: #e6a23c;"></i> <b>S3 存储:</b>
+              <p><i data-lucide="database" style="width: 20px; color: #e6a23c;"></i> <b>S3 存储:</b>
                 <span style="color: ${status.s3?.connected ? '#67c23a' : (this.isUnconfiguredStatus(status.s3) ? '#909399' : '#f56c6c')}">
                   ${status.s3?.connected ? '✓' : (this.isUnconfiguredStatus(status.s3) ? '○' : '✗')} ${status.s3?.message || '未知'}
                 </span>
@@ -3123,7 +3124,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
                   ${status.discord?.connected ? '✓' : (this.isUnconfiguredStatus(status.discord) ? '○' : '✗')} ${status.discord?.message || '未知'}
                 </span>
               </p>
-              <p><i class="fas fa-robot" style="width: 20px; color: #ff9d00;"></i> <b>HuggingFace:</b>
+              <p><i data-lucide="bot" style="width: 20px; color: #ff9d00;"></i> <b>HuggingFace:</b>
                 <span style="color: ${status.huggingface?.connected ? '#67c23a' : (this.isUnconfiguredStatus(status.huggingface) ? '#909399' : '#f56c6c')}">
                   ${status.huggingface?.connected ? '✓' : (this.isUnconfiguredStatus(status.huggingface) ? '○' : '✗')} ${status.huggingface?.message || '未知'}
                 </span>
@@ -3133,7 +3134,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
                   ${status.github?.connected ? '✓' : (this.isUnconfiguredStatus(status.github) ? '○' : '✗')} ${status.github?.message || '未知'}
                 </span>
               </p>
-              <p><i class="fas fa-lock" style="width: 20px;"></i> <b>身份验证:</b> 
+              <p><i data-lucide="lock" style="width: 20px;"></i> <b>身份验证:</b> 
                 <span style="color: ${status.auth.enabled ? '#67c23a' : '#909399'}">
                   ${status.auth.enabled ? '✓' : '○'} ${status.auth.message}
                 </span>
@@ -3245,7 +3246,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
           message: `
             <div>
               每行一个网站，格式：名称|网址|图标类名<br>
-              图标需在 <a href="https://fontawesome.com/v6/search?m=free" target="_blank" style="color: #409EFF; text-decoration: underline">Font Awesome</a> 中选择
+              图标需在 <a href="https://lucide.dev/icons/" target="_blank" style="color: #409EFF; text-decoration: underline">Lucide</a> 中选择
             </div>
           `,
           inputValidator: (value) => {
@@ -3253,10 +3254,10 @@ curl -X POST "{SITE_URL}/api/v1/import" \
             if (lines.length > 10) return '不能超过10行';
             for (let line of lines) {
               if (!line.trim()) continue;
-              const [name, url, icon = 'fas fa-link'] = line.split('|');
+              const [name, url, icon = 'link'] = line.split('|');
               if (!name || !url) return '名称和网址不能为空：' + line;
               if (!(/^https?:\/\/.+/.test(url) || /^\.\/.*/.test(url))) return '网址格式错误：'+line;
-              if (!/^(fas?|fa-brands|fa-regular|fa-solid)\s+fa-[a-z0-9-]+$/.test(icon)) {
+              if (!/^(?:[a-z0-9]+(?:-[a-z0-9]+)*|(?:fab|fa-brands)\s+fa-[a-z0-9-]+|(?:fas|far|fa-solid|fa-regular)\s+fa-[a-z0-9-]+)$/.test(icon)) {
                 return '图标类名格式错误：' + line;
               }
             }
@@ -3266,7 +3267,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
           const newSites = value.split('\n')
             .filter(line => line.trim())
             .map(line => {
-              const [name, url, icon = 'fas fa-link'] = line.split('|');
+              const [name, url, icon = 'link'] = line.split('|');
               return { name, url, icon };
             });
           this.quickWebsites = newSites;
@@ -3277,33 +3278,33 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       getFileIcon(filename) {
         const ext = filename.split('.').pop().toLowerCase();
         const iconMap = {
-          'pdf': 'fas fa-file-pdf',
-          'ofd,typ,typst': 'fas fa-file-pdf',
-          'doc,dot,docx,docm,dotx,dotm,rtf,odt': 'fas fa-file-word',
-          'xls,xlsb,xlsx,xlsm,xlt,xltx,xltm,ods,fods,numbers,csv,tsv': 'fas fa-file-excel',
-          'ppt,pptx,pptm,ppsx,ppsm,potx,potm,odp': 'fas fa-file-powerpoint',
-          'txt,md,markdown,log,patch,diff,bundle,bdl': 'fas fa-file-lines',
-          'zip,zipx,jar,war,ear,rar,7z,tar,tgz,gz,gzip,bz2,bzip2,tbz,tbz2,xz,txz,lzma,zst,cab,iso': 'fas fa-file-zipper',
-          'html,htm,css,js,ts,jsx,tsx,vue,php,py,java,c,cpp,h,hpp,cs,go,rs,rb,pl,sh,sql,bash,cc': 'fas fa-file-code',
-          'json,jsonc,json5,xml,yaml,yml,toml,proto,hcl,graphql,gv': 'fas fa-file-code',
-          'eml,msg,mbox': 'fas fa-envelope',
-          'mp4,avi,mov,wmv,flv,mkv,webm,m4v,m3u8,3gp,ts,mts,m2ts': 'fas fa-file-video',
-          'mp3,mpeg,wav,ogg,oga,flac,aac,m4a,wma,ape,opus,weba,midi,mid,aif,aiff': 'fas fa-file-audio',
-          'jpg,jpeg,jfif,png,apng,gif,bmp,webp,svg,ico,tif,tiff,heic,heif,avif,jxl': 'fas fa-file-image',
-          'psd,ai,eps,cdr': 'fas fa-file-image',
-          'ttf,otf,woff,woff2': 'fas fa-font',
-          'sqlite,sqlite3,db,parquet,avro,wasm,webarchive': 'fas fa-database',
-          'dwg,dxf,dwf,dwfx,xps': 'fas fa-drafting-compass',
-          'glb,gltf,obj,stl,ply,fbx,dae,3ds,3mf,usd,usdz,kmz,step,stp,iges,igs,ifc': 'fas fa-cube',
-          'xmind,drawio,dio,excalidraw,mermaid,mmd,plantuml,puml,epub,umd,geojson,kml,gpx,shp,olb,dra,gds,oas,oasis': 'fas fa-diagram-project',
-          'exe,msi,app,dmg,deb,rpm': 'fas fa-file-arrow-down'
+          'pdf': 'file-text',
+          'ofd,typ,typst': 'file-text',
+          'doc,dot,docx,docm,dotx,dotm,rtf,odt': 'file-text',
+          'xls,xlsb,xlsx,xlsm,xlt,xltx,xltm,ods,fods,numbers,csv,tsv': 'file-spreadsheet',
+          'ppt,pptx,pptm,ppsx,ppsm,potx,potm,odp': 'presentation',
+          'txt,md,markdown,log,patch,diff,bundle,bdl': 'file-text',
+          'zip,zipx,jar,war,ear,rar,7z,tar,tgz,gz,gzip,bz2,bzip2,tbz,tbz2,xz,txz,lzma,zst,cab,iso': 'file-archive',
+          'html,htm,css,js,ts,jsx,tsx,vue,php,py,java,c,cpp,h,hpp,cs,go,rs,rb,pl,sh,sql,bash,cc': 'file-code',
+          'json,jsonc,json5,xml,yaml,yml,toml,proto,hcl,graphql,gv': 'file-code',
+          'eml,msg,mbox': 'mail',
+          'mp4,avi,mov,wmv,flv,mkv,webm,m4v,m3u8,3gp,ts,mts,m2ts': 'file-video-camera',
+          'mp3,mpeg,wav,ogg,oga,flac,aac,m4a,wma,ape,opus,weba,midi,mid,aif,aiff': 'audio-lines',
+          'jpg,jpeg,jfif,png,apng,gif,bmp,webp,svg,ico,tif,tiff,heic,heif,avif,jxl': 'file-image',
+          'psd,ai,eps,cdr': 'file-image',
+          'ttf,otf,woff,woff2': 'type',
+          'sqlite,sqlite3,db,parquet,avro,wasm,webarchive': 'database',
+          'dwg,dxf,dwf,dwfx,xps': 'compass',
+          'glb,gltf,obj,stl,ply,fbx,dae,3ds,3mf,usd,usdz,kmz,step,stp,iges,igs,ifc': 'box',
+          'xmind,drawio,dio,excalidraw,mermaid,mmd,plantuml,puml,epub,umd,geojson,kml,gpx,shp,olb,dra,gds,oas,oasis': 'network',
+          'exe,msi,app,dmg,deb,rpm': 'file-down'
         };
         for(const [exts, icon] of Object.entries(iconMap)) {
           if(exts.split(',').includes(ext)) {
             return icon;
           }
         }
-        return 'fas fa-file';
+        return 'file';
       },
       getFileType(filename) {
         const ext = filename.split('.').pop();
@@ -3364,15 +3365,15 @@ curl -X POST "{SITE_URL}/api/v1/import" \
             <div style="margin-bottom: 16px;">
               <label style="display: block; margin: 8px 0; cursor: pointer;">
                 <input type="radio" name="bgMode" value="gradient" ${currentMode === 'gradient' ? 'checked' : ''}> 
-                <i class="fas fa-palette" style="margin: 0 8px;"></i>默认渐变色
+                <i data-lucide="palette" style="margin: 0 8px;"></i>默认渐变色
               </label>
               <label style="display: block; margin: 8px 0; cursor: pointer;">
                 <input type="radio" name="bgMode" value="image" ${currentMode === 'image' ? 'checked' : ''}> 
-                <i class="fas fa-image" style="margin: 0 8px;"></i>自定义图片
+                <i data-lucide="image" style="margin: 0 8px;"></i>自定义图片
               </label>
               <label style="display: block; margin: 8px 0; cursor: pointer;">
                 <input type="radio" name="bgMode" value="bing" ${currentMode === 'bing' ? 'checked' : ''}> 
-                <i class="fas fa-globe" style="margin: 0 8px;"></i>Bing 每日壁纸
+                <i data-lucide="globe" style="margin: 0 8px;"></i>Bing 每日壁纸
               </label>
             </div>
             <p style="margin-bottom: 8px;"><b>自定义图片 URL：</b></p>
@@ -3380,7 +3381,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
               placeholder="输入图片链接，如 https://example.com/bg.jpg"
               style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 8px;">
             <p style="color: #999; font-size: 12px;">
-              <i class="fas fa-info-circle"></i> 
+              <i data-lucide="info"></i> 
               提示：可以使用本站上传的图片链接，或者任意外部图片链接
             </p>
           </div>
@@ -3549,18 +3550,18 @@ curl -X POST "{SITE_URL}/api/v1/import" \
           <div class="ui-design-panel" id="uiDesignPanel">
             <div class="ui-design-head">
               <div>
-                <div class="ui-design-title"><i class="fas fa-palette"></i><span>前端 UI 设计</span></div>
+                <div class="ui-design-title"><i data-lucide="palette"></i><span>前端 UI 设计</span></div>
                 <div class="ui-design-subtitle">当前改动实时预览，点击保存后同步到所有设备。</div>
               </div>
             </div>
 
             <section class="ui-design-section">
-              <div class="ui-design-section-title"><i class="fas fa-image"></i> 背景图设置（全站）</div>
+              <div class="ui-design-section-title"><i data-lucide="image"></i> 背景图设置（全站）</div>
               <div class="ui-design-inline">
                 <input id="uiGlobalBgUrl" class="ui-design-input" type="text" value="${escapeAttr(snapshot.globalBackgroundUrl)}" placeholder="请输入图片链接（https://example.com/background.jpg）">
               </div>
               <div class="ui-design-inline">
-                <button type="button" id="uiUploadGlobalBtn" class="ui-upload-drop"><i class="fas fa-cloud-upload-alt"></i><span>上传图片</span></button>
+                <button type="button" id="uiUploadGlobalBtn" class="ui-upload-drop"><i data-lucide="cloud-upload"></i><span>上传图片</span></button>
                 <input id="uiUploadGlobalInput" type="file" accept="image/*" style="display:none;">
                 <button type="button" id="uiClearGlobalBg" class="el-button el-button--small">清除</button>
               </div>
@@ -3568,21 +3569,21 @@ curl -X POST "{SITE_URL}/api/v1/import" \
             </section>
 
             <section class="ui-design-section">
-              <div class="ui-design-section-title"><i class="fas fa-sign-in-alt"></i> 登录页背景图</div>
+              <div class="ui-design-section-title"><i data-lucide="log-in"></i> 登录页背景图</div>
               <div class="ui-segmented">
                 <label class="ui-segment"><input type="radio" name="uiLoginMode" value="follow-global" ${checked(snapshot.loginBackgroundMode !== 'custom')}><span>与全站一致</span></label>
                 <label class="ui-segment"><input type="radio" name="uiLoginMode" value="custom" ${checked(snapshot.loginBackgroundMode === 'custom')}><span>仅登录页单独设置</span></label>
               </div>
               <div class="ui-design-inline" id="uiLoginCustomRow">
                 <input id="uiLoginBgUrl" class="ui-design-input" type="text" value="${escapeAttr(snapshot.loginBackgroundUrl)}" placeholder="请输入登录页背景图链接">
-                <button type="button" id="uiUploadLoginBtn" class="ui-upload-drop"><i class="fas fa-cloud-upload-alt"></i><span>上传图片</span></button>
+                <button type="button" id="uiUploadLoginBtn" class="ui-upload-drop"><i data-lucide="cloud-upload"></i><span>上传图片</span></button>
                 <input id="uiUploadLoginInput" type="file" accept="image/*" style="display:none;">
                 <button type="button" id="uiClearLoginBg" class="el-button el-button--small">清除</button>
               </div>
             </section>
 
             <section class="ui-design-section">
-              <div class="ui-design-section-title"><i class="fas fa-clone"></i> 界面透明度</div>
+              <div class="ui-design-section-title"><i data-lucide="copy"></i> 界面透明度</div>
               <div class="ui-design-range-wrap">
                 <div class="ui-design-range-head">
                   <span>卡片透明度</span>
@@ -3600,7 +3601,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
             </section>
 
             <section class="ui-design-section">
-              <div class="ui-design-section-title"><i class="fas fa-wave-square"></i> 动态背景特效</div>
+              <div class="ui-design-section-title"><i data-lucide="audio-waveform"></i> 动态背景特效</div>
               <div class="ui-segmented">
                 <label class="ui-segment"><input type="radio" name="uiEffectStyle" value="none" ${checked(snapshot.effectStyle === 'none')}><span>无特效</span></label>
                 <label class="ui-segment"><input type="radio" name="uiEffectStyle" value="math" ${checked(snapshot.effectStyle === 'math')}><span>数学符号</span></label>
@@ -4031,4 +4032,5 @@ curl -X POST "{SITE_URL}/api/v1/import" \
   });
 </script>
 </body>
+<script src="/icons.js"></script>
 </html>

@@ -38,7 +38,16 @@
     );
 
     if (icon) {
-      icon.className = toDark ? "fas fa-moon" : "fas fa-sun";
+      // Lucide replaces the <i> with an <svg> that keeps the data-theme-icon
+      // marker and its data-lucide attribute. Point it at the other icon and
+      // re-render that subtree.
+      icon.setAttribute("data-lucide", toDark ? "moon" : "sun");
+      icon.classList.remove("lucide-moon", "lucide-sun");
+      if (window.KVIcons) {
+        window.KVIcons.render(button);
+      } else if (window.lucide) {
+        window.lucide.createIcons({ root: button });
+      }
     }
     if (label) {
       label.textContent = toDark ? "夜间" : "亮色";
@@ -94,7 +103,7 @@
     button.className = className;
     button.setAttribute("data-theme-toggle", "");
     button.innerHTML =
-      '<i class="fas fa-moon" data-theme-icon></i><span data-theme-label>夜间</span>';
+      '<i data-lucide="moon" data-theme-icon></i><span data-theme-label>夜间</span>';
     return button;
   }
 

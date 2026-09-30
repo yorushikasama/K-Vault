@@ -17,6 +17,7 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"
     />
+  <script src="https://cdn.jsdelivr.net/npm/lucide@1.49.0/dist/umd/lucide.min.js"></script>
 <link rel="stylesheet" href="/index.css">
     <link rel="stylesheet" href="/mobile-refactor.css">
   </head>
@@ -35,19 +36,19 @@
           <span>K-Vault</span>
         </div>
         <button type="button" class="theme-toggle-btn header-theme-toggle" data-theme-toggle aria-label="切换主题">
-          <i class="fas fa-moon" data-theme-icon></i>
+          <i data-lucide="moon" data-theme-icon></i>
           <span data-theme-label>夜间</span>
         </button>
         <div class="nav-links">
-          <a href="./"><i class="fas fa-home"></i> 首页</a>
+          <a href="./"><i data-lucide="house"></i> 首页</a>
           <a href="./gallery.html" v-if="!isGuest"
-            ><i class="fas fa-images"></i> 图片浏览</a
+            ><i data-lucide="images"></i> 图片浏览</a
           >
           <a href="./admin.html" v-if="!isGuest"
-            ><i class="fas fa-cog"></i> 管理后台</a
+            ><i data-lucide="settings"></i> 管理后台</a
           >
           <a href="./webdav.html" v-if="!isGuest"
-            ><i class="fas fa-hard-drive"></i> WebDAV</a
+            ><i data-lucide="hard-drive"></i> WebDAV</a
           >
           <a
             href="javascript:void(0)"
@@ -55,14 +56,14 @@
             v-if="isAuthenticated"
             class="logout-link"
           >
-            <i class="fas fa-sign-out-alt"></i> 退出
+            <i data-lucide="log-out"></i> 退出
           </a>
         </div>
       </div>
 
       <!-- 访客模式提示条 -->
       <div class="guest-notice" v-if="!authChecking && isGuest && guestUploadConfig">
-        <i class="fas fa-user-clock"></i>
+        <i data-lucide="user"></i>
         <span
           >访客模式 - 单文件最大 {{ formatSize(guestUploadConfig.maxFileSize)
           }}，每日上限 {{ guestUploadConfig.maxDailyUploads }} 次</span
@@ -75,7 +76,7 @@
         <div class="card upload-section">
           <div class="card-header">
             <div class="card-title">
-              <i class="fas fa-upload"></i>
+              <i data-lucide="upload"></i>
               <span>上传文件</span>
             </div>
             <span
@@ -98,7 +99,7 @@
             @drop.prevent="onDrop"
             :class="{ dragover: isDragging }"
           >
-            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+            <i data-lucide="cloud-upload" data-icon-class="upload-icon"></i>
             <div class="upload-text">点击或拖拽文件到此区域上传</div>
             <div class="upload-hint" v-if="!authChecking && isGuest && guestUploadConfig">
               访客模式：单文件最大 {{ formatSize(guestUploadConfig.maxFileSize)
@@ -136,7 +137,7 @@
                 :disabled="!r2Available"
                 :title="!r2Available ? '未配置 - 请在环境变量中配置 R2 存储桶' : 'Cloudflare R2 存储'"
               >
-                <i class="fas fa-cloud"></i>
+                <i data-lucide="cloud"></i>
                 <span>R2 存储</span>
               </button>
               <button
@@ -147,7 +148,7 @@
                 :disabled="!s3Available"
                 :title="!s3Available ? '未配置 - 请在环境变量中配置 S3 相关参数' : 'S3 兼容存储'"
               >
-                <i class="fas fa-database"></i>
+                <i data-lucide="database"></i>
                 <span>S3 API</span>
               </button>
               <button
@@ -169,7 +170,7 @@
                 :disabled="!huggingfaceAvailable"
                 :title="!huggingfaceAvailable ? '未配置 - 请在环境变量中配置 HuggingFace 相关参数' : 'HuggingFace 存储'"
               >
-                <i class="fas fa-robot"></i>
+                <i data-lucide="bot"></i>
                 <span>HuggingFace</span>
               </button>
               <button
@@ -190,12 +191,12 @@
           <div class="folder-target-panel">
             <div class="folder-target-head">
               <span class="folder-target-title">
-                <i class="fas fa-folder-tree"></i>
+                <i data-lucide="folder-tree"></i>
                 <span>上传目录</span>
               </span>
               <div class="folder-action-row">
                 <span class="folder-target-badge">
-                  <i class="fas fa-map-marker-alt"></i>
+                  <i data-lucide="map-pin"></i>
                   {{ folderPath || '根目录' }}
                 </span>
                 <button
@@ -205,7 +206,7 @@
                   @click="fetchUploadFolders(true)"
                   :title="isGuest ? '访客模式不可读取后台目录' : '刷新已有上传目录'"
                 >
-                  <i class="fas fa-rotate" :class="{ 'fa-spin': uploadFoldersLoading }"></i>
+                  <i data-lucide="rotate-cw" :class="{ 'spin': uploadFoldersLoading }"></i>
                   <span>刷新目录</span>
                 </button>
                 <button
@@ -215,7 +216,7 @@
                   @click="openUploadFolderCreator"
                   :title="isGuest ? '访客模式不可新建目录' : '新建上传目录'"
                 >
-                  <i class="fas fa-folder-plus"></i>
+                  <i data-lucide="folder-plus"></i>
                   <span>新建</span>
                 </button>
               </div>
@@ -239,7 +240,7 @@
                 :class="{ active: !folderPath }"
                 @click="selectUploadFolder('')"
               >
-                <i class="fas fa-house"></i>
+                <i data-lucide="house"></i>
                 <span>根目录</span>
               </button>
               <button
@@ -251,7 +252,7 @@
                 :title="folder.path"
                 @click="selectUploadFolder(folder.path)"
               >
-                <i class="fas fa-folder"></i>
+                <i data-lucide="folder"></i>
                 <span>{{ folder.path }}</span>
                 <small v-if="Number.isFinite(folder.fileCount)">{{ folder.fileCount }}</small>
               </button>
@@ -272,7 +273,7 @@
                 :disabled="uploadFolderCreating"
                 @click="createUploadFolder"
               >
-                <i class="fas fa-check"></i>
+                <i data-lucide="check"></i>
                 <span>{{ uploadFolderCreating ? '创建中' : '创建并选中' }}</span>
               </button>
               <button class="folder-action-btn" type="button" @click="cancelUploadFolderCreator">
@@ -290,7 +291,7 @@
           >
             <div class="image-compress-head">
               <div class="image-compress-title">
-                <i class="fas fa-compress-alt"></i>
+                <i data-lucide="minimize"></i>
                 <div>
                   <strong>图片压缩转换</strong>
                   <span>{{ imageCompressPanelExpanded ? '选择图片上传时的转换格式、质量和尺寸。' : '未开启时默认原图上传，开启后再显示详细选项。' }}</span>
@@ -344,7 +345,7 @@
                     @click="selectCompressFormat(format.value)"
                     :title="isFormatSupported(format.value) ? format.tip : '当前浏览器不支持输出 ' + format.label"
                   >
-                    <i :class="format.icon"></i>
+                    <i :data-lucide="format.icon" :key="format.icon"></i>
                     <span>{{ format.label }}</span>
                   </button>
                 </div>
@@ -392,15 +393,15 @@
 
           <div class="upload-methods">
             <button class="method-btn" @click="triggerUpload">
-              <i class="fas fa-folder-open"></i>
+              <i data-lucide="folder-open"></i>
               <span>选择文件</span>
             </button>
             <button class="method-btn" @click="pasteFromClipboard">
-              <i class="fas fa-paste"></i>
+              <i data-lucide="clipboard"></i>
               <span>粘贴上传</span>
             </button>
             <button class="method-btn" @click="showUrlInput = !showUrlInput">
-              <i class="fas fa-link"></i>
+              <i data-lucide="link"></i>
               <span>URL 上传</span>
             </button>
           </div>
@@ -435,7 +436,7 @@
             :close-on-click-modal="false"
           >
             <div v-if="qualityPicker.loading" class="qp-loading">
-              <i class="fas fa-spinner fa-spin"></i>
+              <i data-lucide="loader-circle" data-icon-class="spin"></i>
               <span>正在解析可用清晰度...</span>
             </div>
             <template v-else>
@@ -491,7 +492,7 @@
               "
             >
               <div>
-                <i class="fas fa-tasks"></i>
+                <i data-lucide="list-todo"></i>
                 <span>上传队列 ({{ uploadingFiles.length }})</span>
                 <span
                   v-if="failedCount > 0"
@@ -507,10 +508,10 @@
                   type="warning"
                   @click="retryAllFailed"
                 >
-                  <i class="fas fa-redo"></i> 重试全部失败 ({{ failedCount }})
+                  <i data-lucide="redo"></i> 重试全部失败 ({{ failedCount }})
                 </el-button>
                 <el-button size="mini" type="info" @click="clearUploadQueue">
-                  <i class="fas fa-broom"></i> 清空队列
+                  <i data-lucide="brush"></i> 清空队列
                 </el-button>
               </div>
             </div>
@@ -554,11 +555,11 @@
                   v-if="file.status === 'uploading' || file.status === 'processing'"
                 ></span>
                 <i
-                  class="fas fa-check-circle"
+                  data-lucide="circle-check"
                   v-if="file.status === 'success'"
                 ></i>
                 <i
-                  class="fas fa-times-circle"
+                  data-lucide="circle-x"
                   v-if="file.status === 'error'"
                 ></i>
                 <span
@@ -572,7 +573,7 @@
                 @click="retryUpload(file)"
                 title="重试"
               >
-                <i class="fas fa-redo"></i>
+                <i data-lucide="redo"></i>
               </button>
             </div>
           </div>
@@ -582,7 +583,7 @@
         <div class="card result-section">
           <div class="card-header">
             <div class="card-title">
-              <i class="fas fa-images"></i>
+              <i data-lucide="images"></i>
               <span>上传结果</span>
               <span
                 v-if="uploadedFiles.length > 0"
@@ -681,28 +682,28 @@
                   @click="copyLink(file)"
                   title="复制链接"
                 >
-                  <i class="fas fa-copy"></i>
+                  <i data-lucide="copy"></i>
                 </button>
                 <button
                   class="action-btn"
                   @click="downloadFile(file)"
                   title="下载"
                 >
-                  <i class="fas fa-download"></i>
+                  <i data-lucide="download"></i>
                 </button>
                 <button
                   class="action-btn"
                   @click="openPreview(file)"
                   title="预览"
                 >
-                  <i class="fas fa-eye"></i>
+                  <i data-lucide="eye"></i>
                 </button>
                 <button
                   class="action-btn delete"
                   @click="removeFromResults(index)"
                   title="移除"
                 >
-                  <i class="fas fa-times"></i>
+                  <i data-lucide="x"></i>
                 </button>
               </div>
             </div>
@@ -720,7 +721,7 @@
 
           <!-- 空状态 -->
           <div class="empty-state" v-if="uploadedFiles.length === 0">
-            <i class="fas fa-cloud-upload-alt"></i>
+            <i data-lucide="cloud-upload"></i>
             <div>上传文件后，链接将显示在这里</div>
             <div style="margin-top: 8px; font-size: 0.9em">
               支持批量选择和一键复制
@@ -733,7 +734,7 @@
       <div class="card history-section" v-if="uploadHistory.length > 0">
         <div class="card-header">
           <div class="card-title">
-            <i class="fas fa-history"></i>
+            <i data-lucide="clock-arrow-down"></i>
             <span>本地上传历史</span>
             <span style="font-size: 0.8em; color: var(--text-muted); margin-left: 8px"
               >({{ uploadHistory.length }})</span
@@ -760,28 +761,28 @@
         <!-- 统计条 -->
         <div class="stats-bar">
           <div class="stat-item">
-            <i class="fas fa-images"></i>
+            <i data-lucide="images"></i>
             <span
               >图片:
               <span class="stat-value">{{ historyStats.images }}</span></span
             >
           </div>
           <div class="stat-item">
-            <i class="fas fa-video"></i>
+            <i data-lucide="video"></i>
             <span
               >视频:
               <span class="stat-value">{{ historyStats.videos }}</span></span
             >
           </div>
           <div class="stat-item">
-            <i class="fas fa-file"></i>
+            <i data-lucide="file"></i>
             <span
               >其他:
               <span class="stat-value">{{ historyStats.others }}</span></span
             >
           </div>
           <div class="stat-item">
-            <i class="fas fa-hdd"></i>
+            <i data-lucide="hard-drive"></i>
             <span
               >总大小:
               <span class="stat-value"
@@ -824,21 +825,21 @@
                 @click.stop="copyLink(item)"
                 style="background: rgba(255, 255, 255, 0.2); color: white"
               >
-                <i class="fas fa-copy"></i>
+                <i data-lucide="copy"></i>
               </button>
               <button
                 class="action-btn"
                 @click.stop="openPreview(item)"
                 style="background: rgba(255, 255, 255, 0.2); color: white"
               >
-                <i class="fas fa-eye"></i>
+                <i data-lucide="eye"></i>
               </button>
               <button
                 class="action-btn delete"
                 @click.stop="removeFromHistory(index)"
                 style="background: rgba(245, 108, 108, 0.8)"
               >
-                <i class="fas fa-trash"></i>
+                <i data-lucide="trash"></i>
               </button>
             </div>
           </div>
@@ -848,7 +849,7 @@
       <!-- 预览弹窗 - 原生图片 / iframe 预览 -->
       <div class="preview-modal" v-if="previewData" @click="closePreview">
         <button class="preview-close" @click.stop="closePreview">
-          <i class="fas fa-times"></i>
+          <i data-lucide="x"></i>
         </button>
         <!-- 原生图片预览 -->
         <img
@@ -878,13 +879,13 @@
               class="preview-btn preview-btn-primary"
               @click="copyPreviewLink"
             >
-              <i class="fas fa-copy"></i> 复制直链
+              <i data-lucide="copy"></i> 复制直链
             </button>
             <button
               class="preview-btn preview-btn-default"
               @click="downloadPreviewFile"
             >
-              <i class="fas fa-download"></i> 下载
+              <i data-lucide="download"></i> 下载
             </button>
           </div>
         </div>
@@ -899,7 +900,7 @@
           <div class="compress-confirm-header">
             <div>
               <div class="compress-confirm-title">
-                <i class="fas fa-images"></i>
+                <i data-lucide="images"></i>
                 <span>上传前确认图片处理方式</span>
               </div>
               <div class="compress-confirm-note">
@@ -912,7 +913,7 @@
               @click="cancelPendingUpload"
               title="取消"
             >
-              <i class="fas fa-times"></i>
+              <i data-lucide="x"></i>
             </button>
           </div>
 
@@ -938,7 +939,7 @@
               :class="{ active: pendingCompressionChoice === 'original' }"
               @click="setPendingCompressionMode('original')"
             >
-              <i class="fas fa-file-image"></i>
+              <i data-lucide="file-image"></i>
               <div>
                 <strong>直接上传原图</strong>
                 <span>保持文件格式、尺寸和质量不变。</span>
@@ -950,7 +951,7 @@
               :class="{ active: pendingCompressionChoice === 'compress' }"
               @click="setPendingCompressionMode('compress')"
             >
-              <i class="fas fa-compress-alt"></i>
+              <i data-lucide="minimize"></i>
               <div>
                 <strong>压缩/转换后上传</strong>
                 <span>适合节省 S3、WebDAV、R2 等存储空间。</span>
@@ -970,7 +971,7 @@
                 @click="selectCompressFormat(format.value)"
                 :title="isFormatSupported(format.value) ? format.tip : '当前浏览器不支持输出 ' + format.label"
               >
-                <i :class="format.icon"></i>
+                <i :data-lucide="format.icon" :key="format.icon"></i>
                 <span>{{ format.label }}</span>
               </button>
             </div>
@@ -1028,7 +1029,7 @@
               type="button"
               @click="uploadPendingOriginal"
             >
-              <i class="fas fa-file-upload"></i>
+              <i data-lucide="file-up"></i>
               上传原图
             </button>
             <button
@@ -1037,7 +1038,7 @@
               type="button"
               @click="uploadPendingCompressed"
             >
-              <i class="fas fa-compress-alt"></i>
+              <i data-lucide="minimize"></i>
               压缩后上传
             </button>
           </div>
@@ -1052,17 +1053,17 @@
         aria-live="polite"
       >
         <div class="paste-notice-icon">
-          <i :class="getPasteNoticeIcon(pasteUploadNotice.type)"></i>
+          <i :data-lucide="getPasteNoticeIcon(pasteUploadNotice.type)" :key="pasteUploadNotice.type"></i>
         </div>
         <div class="paste-notice-content">
           <div class="paste-notice-title">{{ pasteUploadNotice.title }}</div>
           <div class="paste-notice-message">{{ pasteUploadNotice.message }}</div>
           <div class="paste-notice-meta" v-if="pasteUploadNotice.fileCount">
-            <span><i class="fas fa-layer-group"></i>{{ pasteUploadNotice.fileCount }} 个文件</span>
-            <span><i class="fas fa-weight-hanging"></i>{{ pasteUploadNotice.totalSize }}</span>
-            <span><i class="fas fa-database"></i>{{ pasteUploadNotice.storageTarget }}</span>
+            <span><i data-lucide="layers"></i>{{ pasteUploadNotice.fileCount }} 个文件</span>
+            <span><i data-lucide="weight"></i>{{ pasteUploadNotice.totalSize }}</span>
+            <span><i data-lucide="database"></i>{{ pasteUploadNotice.storageTarget }}</span>
             <span v-if="pasteUploadNotice.folderPath">
-              <i class="fas fa-folder"></i>{{ pasteUploadNotice.folderPath }}
+              <i data-lucide="folder"></i>{{ pasteUploadNotice.folderPath }}
             </span>
           </div>
         </div>
@@ -1072,7 +1073,7 @@
           @click="dismissPasteUploadNotice"
           title="关闭提醒"
         >
-          <i class="fas fa-times"></i>
+          <i data-lucide="x"></i>
         </button>
       </div>
 
@@ -1084,7 +1085,7 @@
           v-for="(toast, index) in toasts"
           :key="index"
         >
-          <i :class="getToastIcon(toast.type)"></i>
+          <i :data-lucide="getToastIcon(toast.type)" :key="toast.type"></i>
           <span>{{ toast.message }}</span>
         </div>
       </div>
@@ -1197,7 +1198,7 @@
                 label: "WebP",
                 mime: "image/webp",
                 ext: "webp",
-                icon: "fas fa-image",
+                icon: "image",
                 tip: "兼容性好，通常比 JPEG/PNG 更省空间",
               },
               {
@@ -1205,7 +1206,7 @@
                 label: "AVIF",
                 mime: "image/avif",
                 ext: "avif",
-                icon: "fas fa-bolt",
+                icon: "zap",
                 tip: "压缩率更高，适合现代浏览器",
               },
               {
@@ -1213,7 +1214,7 @@
                 label: "JPEG",
                 mime: "image/jpeg",
                 ext: "jpg",
-                icon: "fas fa-file-image",
+                icon: "file-image",
                 tip: "适合照片，兼容性最好",
               },
               {
@@ -1221,7 +1222,7 @@
                 label: "PNG",
                 mime: "image/png",
                 ext: "png",
-                icon: "far fa-file-image",
+                icon: "file-image",
                 tip: "保留透明通道，体积通常较大",
               },
             ];
@@ -3177,47 +3178,47 @@
             const ext = this.getFileExt(filename).toLowerCase();
             const iconMap = {
               // 视频
-              mp4: "fas fa-video",
-              webm: "fas fa-video",
-              avi: "fas fa-video",
-              mov: "fas fa-video",
-              mkv: "fas fa-video",
-              flv: "fas fa-video",
+              mp4: "video",
+              webm: "video",
+              avi: "video",
+              mov: "video",
+              mkv: "video",
+              flv: "video",
               // 音频
-              mp3: "fas fa-music",
-              wav: "fas fa-music",
-              ogg: "fas fa-music",
-              flac: "fas fa-music",
-              aac: "fas fa-music",
-              m4a: "fas fa-music",
+              mp3: "music",
+              wav: "music",
+              ogg: "music",
+              flac: "music",
+              aac: "music",
+              m4a: "music",
               // 文档
-              pdf: "fas fa-file-pdf",
-              doc: "fas fa-file-word",
-              docx: "fas fa-file-word",
-              xls: "fas fa-file-excel",
-              xlsx: "fas fa-file-excel",
-              ppt: "fas fa-file-powerpoint",
-              pptx: "fas fa-file-powerpoint",
-              txt: "fas fa-file-alt",
-              md: "fas fa-file-alt",
+              pdf: "file-text",
+              doc: "file-text",
+              docx: "file-text",
+              xls: "file-spreadsheet",
+              xlsx: "file-spreadsheet",
+              ppt: "presentation",
+              pptx: "presentation",
+              txt: "file-text",
+              md: "file-text",
               // 压缩包
-              zip: "fas fa-file-archive",
-              rar: "fas fa-file-archive",
-              "7z": "fas fa-file-archive",
-              tar: "fas fa-file-archive",
-              gz: "fas fa-file-archive",
+              zip: "file-archive",
+              rar: "file-archive",
+              "7z": "file-archive",
+              tar: "file-archive",
+              gz: "file-archive",
               // 代码
-              js: "fas fa-file-code",
-              ts: "fas fa-file-code",
-              py: "fas fa-file-code",
-              java: "fas fa-file-code",
-              c: "fas fa-file-code",
-              cpp: "fas fa-file-code",
-              html: "fas fa-file-code",
-              css: "fas fa-file-code",
-              json: "fas fa-file-code",
+              js: "file-code",
+              ts: "file-code",
+              py: "file-code",
+              java: "file-code",
+              c: "file-code",
+              cpp: "file-code",
+              html: "file-code",
+              css: "file-code",
+              json: "file-code",
             };
-            return iconMap[ext] || "fas fa-file";
+            return iconMap[ext] || "file";
           },
 
           getFileIconClass(filename) {
@@ -3417,28 +3418,28 @@
           getFileIcon(filename) {
             const ext = filename.split(".").pop().toLowerCase();
             const iconMap = {
-              pdf: "fas fa-file-pdf",
-              "doc,docx": "fas fa-file-word",
-              "xls,xlsx,csv": "fas fa-file-excel",
-              "ppt,pptx": "fas fa-file-powerpoint",
-              "txt,md,log": "fas fa-file-lines",
-              "mp4,webm,avi,mov,wmv,flv,mkv,m4v,3gp,ts": "fas fa-file-video",
-              "mp3,wav,ogg,flac,aac,m4a,wma,ape,opus": "fas fa-file-audio",
-              "zip,rar,7z,tar,gz,bz2": "fas fa-file-zipper",
-              "exe,msi,dmg,deb,rpm": "fas fa-file-arrow-down",
+              pdf: "file-text",
+              "doc,docx": "file-text",
+              "xls,xlsx,csv": "file-spreadsheet",
+              "ppt,pptx": "presentation",
+              "txt,md,log": "file-text",
+              "mp4,webm,avi,mov,wmv,flv,mkv,m4v,3gp,ts": "file-video-camera",
+              "mp3,wav,ogg,flac,aac,m4a,wma,ape,opus": "audio-lines",
+              "zip,rar,7z,tar,gz,bz2": "file-archive",
+              "exe,msi,dmg,deb,rpm": "file-down",
               apk: "fab fa-android",
-              "iso,img": "fas fa-compact-disc",
-              "json,xml,yaml,yml,toml": "fas fa-file-code",
+              "iso,img": "disc",
+              "json,xml,yaml,yml,toml": "file-code",
               "html,htm,css,js,ts,jsx,tsx,vue,php,py,java,c,cpp,h,hpp,cs,go,rs,rb,pl,sh,sql":
-                "fas fa-file-code",
+                "file-code",
               "jpg,jpeg,png,gif,webp,bmp,svg,ico,heic,heif,avif":
-                "fas fa-file-image",
-              "psd,ai,eps,cdr": "fas fa-file-image",
+                "file-image",
+              "psd,ai,eps,cdr": "file-image",
             };
             for (const [exts, icon] of Object.entries(iconMap)) {
               if (exts.split(",").includes(ext)) return icon;
             }
-            return "fas fa-file";
+            return "file";
           },
 
           async copyToClipboard(text) {
@@ -3500,18 +3501,18 @@
 
           getPasteNoticeIcon(type) {
             const icons = {
-              success: "fas fa-clipboard-check",
-              error: "fas fa-triangle-exclamation",
-              info: "fas fa-paste",
+              success: "clipboard-check",
+              error: "triangle-alert",
+              info: "clipboard",
             };
             return icons[type] || icons.info;
           },
 
           getToastIcon(type) {
             const icons = {
-              success: "fas fa-check-circle",
-              error: "fas fa-times-circle",
-              info: "fas fa-info-circle",
+              success: "circle-check",
+              error: "circle-x",
+              info: "info",
             };
             return icons[type] || icons.info;
           },
@@ -3759,5 +3760,6 @@
         },
       });
     </script>
-  </body>
+    <script src="/icons.js"></script>
+</body>
 </html>

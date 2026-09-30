@@ -67,7 +67,8 @@
         margin: 0;
       }
 
-      .header-title i {
+            .header-title i,
+      .header-title svg.lucide {
         color: var(--wf-primary);
       }
 

@@ -1,3 +1,33 @@
+/* ===== Icons (Lucide) =====
+   Lucide replaces FontAwesome except for brand icons (github/telegram/
+   discord/android/markdown), which Lucide does not ship. Icons carry
+   data-lucide="name"; data-icon-class preserves the original element's extra
+   classes because createIcons() replaces the node wholesale. */
+.lucide {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+
+/* Selected / active states: Lucide is outline-only, so the old FontAwesome
+   solid-vs-regular distinction is expressed with a fill instead. */
+.lucide.filled {
+  fill: currentColor;
+}
+
+/* Replaces FontAwesome's fa-spin helper. */
+.lucide.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Brand icons stay on FontAwesome. */
+.fa-brands,
+.fab {
+  font-family: "Font Awesome 6 Brands", "Font Awesome 5 Brands", sans-serif;
+}
+
 /* ===== Light :root — shared purple-brand token set =====
    The purple-brand pages (index / login / gallery) use these as their
    default tokens; a page may still override a var locally in its own sheet.
@@ -196,7 +226,8 @@ html[data-theme="dark"] textarea::placeholder {
   transition: border-color 0.18s ease, background-color 0.18s ease;
 }
 
-.theme-floating-toggle i {
+.theme-floating-toggle i,
+.theme-floating-toggle svg.lucide {
   color: #8a4bff;
   width: 14px;
   text-align: center;
@@ -222,7 +253,8 @@ html[data-theme="dark"] textarea::placeholder {
   transition: border-color 0.18s ease, background-color 0.18s ease;
 }
 
-.theme-auto-inline-toggle i {
+.theme-auto-inline-toggle i,
+.theme-auto-inline-toggle svg.lucide {
   color: #8a4bff;
   width: 14px;
   text-align: center;
@@ -252,7 +284,8 @@ html[data-theme="dark"] textarea::placeholder {
   display: none;
 }
 
-.theme-admin-toggle i {
+.theme-admin-toggle i,
+.theme-admin-toggle svg.lucide {
   color: #8a4bff;
   font-size: 14px;
 }
@@ -268,7 +301,8 @@ html[data-theme="dark"] .theme-floating-toggle {
   color: #e8eeff;
 }
 
-html[data-theme="dark"] .theme-floating-toggle i {
+html[data-theme="dark"] .theme-floating-toggle i,
+html[data-theme="dark"] .theme-floating-toggle svg.lucide {
   color: #c4d4ff;
 }
 
@@ -280,7 +314,8 @@ html[data-theme="dark"] .theme-admin-toggle {
 }
 
 html[data-theme="dark"] .theme-auto-inline-toggle i,
-html[data-theme="dark"] .theme-admin-toggle i {
+html[data-theme="dark"] .theme-admin-toggle i,
+html[data-theme="dark"] .theme-admin-toggle svg.lucide {
   color: #c4d4ff;
 }
 
@@ -497,7 +532,8 @@ html[data-theme="dark"] .gallery-theme-toggle {
 html[data-theme="dark"] .theme-floating-toggle i,
 html[data-theme="dark"] .theme-auto-inline-toggle i,
 html[data-theme="dark"] .theme-admin-toggle i,
-html[data-theme="dark"] .gallery-theme-toggle i {
+html[data-theme="dark"] .gallery-theme-toggle i,
+html[data-theme="dark"] .gallery-theme-toggle svg.lucide {
   color: #d0dcff !important;
 }
 

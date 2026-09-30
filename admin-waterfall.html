@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="/theme.css">
   <script src="/theme.js?v=20260305"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/lucide@1.49.0/dist/umd/lucide.min.js"></script>
   <link rel="stylesheet" href="/admin-waterfall.css">
   <link rel="stylesheet" href="/mobile-refactor.css">
 </head>
@@ -17,24 +18,24 @@
   <main class="page">
     <header class="header">
       <h1 class="header-title">
-        <i class="fas fa-water"></i>
+        <i data-lucide="waves-ladder"></i>
         <span>Waterfall Gallery</span>
       </h1>
       <div class="header-actions">
-        <a class="action-link" href="./"><i class="fas fa-home"></i><span>Home</span></a>
-        <a class="action-link" href="./admin.html"><i class="fas fa-th-large"></i><span>Dashboard</span></a>
+        <a class="action-link" href="./"><i data-lucide="house"></i><span>Home</span></a>
+        <a class="action-link" href="./admin.html"><i data-lucide="layout-grid"></i><span>Dashboard</span></a>
       </div>
     </header>
 
     <section id="gallery" class="masonry" aria-live="polite"></section>
     <section id="emptyState" class="empty-state">
-      <i class="fas fa-image"></i>
+      <i data-lucide="image"></i>
       <div>No images available.</div>
     </section>
 
     <div class="load-wrap">
       <button id="loadMoreBtn" class="load-btn" type="button">
-        <i class="fas fa-cloud-download-alt"></i>
+        <i data-lucide="cloud-download"></i>
         <span>Load More</span>
       </button>
     </div>
@@ -43,7 +44,7 @@
   <aside id="lightbox" class="lightbox" aria-hidden="true">
     <div class="lightbox-content">
       <button id="lightboxCloseBtn" class="lightbox-close" type="button" aria-label="Close preview">
-        <i class="fas fa-times"></i>
+        <i data-lucide="x"></i>
       </button>
       <img id="lightboxImage" alt="Preview image">
       <div id="lightboxMeta" class="lightbox-meta"></div>
@@ -96,8 +97,8 @@
         state.loading = loading;
         loadMoreBtn.disabled = loading;
         loadMoreBtn.innerHTML = loading
-          ? '<i class="fas fa-spinner fa-spin"></i><span>Loading</span>'
-          : '<i class="fas fa-cloud-download-alt"></i><span>Load More</span>';
+          ? '<i data-lucide="loader-circle" data-icon-class="spin"></i><span>Loading</span>'
+          : '<i data-lucide="cloud-download"></i><span>Load More</span>';
       }
 
       function hideLoadButtonIfDone() {
@@ -218,5 +219,6 @@
       })();
     })();
   </script>
+  <script src="/icons.js"></script>
 </body>
 </html>

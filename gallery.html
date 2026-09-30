@@ -11,6 +11,7 @@
   <script src="/theme.js?v=20260305"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/lucide@1.49.0/dist/umd/lucide.min.js"></script>
   <link rel="stylesheet" href="/gallery.css">
   <link rel="stylesheet" href="/mobile-refactor.css">
 </head>
@@ -19,18 +20,18 @@
     <!-- 头部 -->
     <div class="header">
       <div class="header-title">
-        <i class="fas fa-images"></i>
+        <i data-lucide="images"></i>
         <span>图片浏览器</span>
       </div>
       <div class="header-search">
         <input type="text" v-model="searchQuery" placeholder="搜索文件名..." @input="handleSearch">
       </div>
       <div class="header-actions">
-        <a href="./" class="nav-btn"><i class="fas fa-cloud-upload-alt"></i> 上传</a>
-        <a href="./admin.html" class="nav-btn"><i class="fas fa-th-large"></i> 管理</a>
-        <a href="./" class="nav-btn"><i class="fas fa-home"></i> 首页</a>
+        <a href="./" class="nav-btn"><i data-lucide="cloud-upload"></i> 上传</a>
+        <a href="./admin.html" class="nav-btn"><i data-lucide="layout-grid"></i> 管理</a>
+        <a href="./" class="nav-btn"><i data-lucide="house"></i> 首页</a>
         <button type="button" class="nav-btn gallery-theme-toggle" data-theme-toggle aria-label="切换主题">
-          <i class="fas fa-moon" data-theme-icon></i>
+          <i data-lucide="moon" data-theme-icon></i>
           <span data-theme-label>夜间</span>
         </button>
       </div>
@@ -39,14 +40,14 @@
     <!-- 工具栏 -->
     <div class="toolbar">
       <div class="toolbar-left">
-        <span class="stat-badge"><i class="fas fa-images"></i> 总数<strong>{{ totalCount }}</strong></span>
-        <span class="stat-badge"><i class="fas fa-check-square"></i> 已选<strong>{{ selectedCount }}</strong></span>
+        <span class="stat-badge"><i data-lucide="images"></i> 总数<strong>{{ totalCount }}</strong></span>
+        <span class="stat-badge"><i data-lucide="square-check"></i> 已选<strong>{{ selectedCount }}</strong></span>
         <button class="nav-btn" @click="selectAll">
-          <i :class="isAllSelected ? 'fas fa-square' : 'fas fa-check-square'"></i>
+          <i :class="isAllSelected ? 'square' : 'square-check'"></i>
           {{ isAllSelected ? '取消全选' : '全选' }}
         </button>
         <button class="nav-btn" @click="loadMore" v-if="hasMore" :disabled="loading">
-          <i class="fas fa-sync" :class="{ 'fa-spin': loading }"></i>
+          <i data-lucide="refresh-cw" :class="{ 'spin': loading }"></i>
           加载更多
         </button>
       </div>
@@ -75,22 +76,22 @@
         <div class="image-card-checkbox" 
              :class="{ checked: img.selected }"
              @click.stop="toggleSelect(img)">
-          <i :class="img.selected ? 'fas fa-check' : 'far fa-square'"></i>
+          <i :class="img.selected ? 'check' : 'square'"></i>
         </div>
         <div class="image-card-overlay">
           <div class="image-card-name">{{ img.metadata?.fileName || img.name }}</div>
           <div class="image-card-actions">
             <button class="card-btn" @click.stop="copyLink(img)" title="复制链接">
-              <i class="fas fa-copy"></i>
+              <i data-lucide="copy"></i>
             </button>
             <button class="card-btn" @click.stop="previewImage(img)" title="预览">
-              <i class="fas fa-expand"></i>
+              <i data-lucide="expand"></i>
             </button>
             <button class="card-btn" @click.stop="downloadImage(img)" title="下载">
-              <i class="fas fa-download"></i>
+              <i data-lucide="download"></i>
             </button>
             <button class="card-btn delete" @click.stop="deleteImage(img, index)" title="删除">
-              <i class="fas fa-trash"></i>
+              <i data-lucide="trash"></i>
             </button>
           </div>
         </div>
@@ -105,21 +106,21 @@
 
     <!-- 空状态 -->
     <div class="empty-state" v-if="!loading && filteredImages.length === 0">
-      <i class="fas fa-inbox"></i>
+      <i data-lucide="inbox"></i>
       <div style="font-size: 1.2em; margin-bottom: 8px;">没有找到图片</div>
       <div>{{ searchQuery ? '尝试其他搜索词' : '上传一些图片开始使用' }}</div>
       <a href="./" class="nav-btn" style="margin-top: 20px; display: inline-flex;">
-        <i class="fas fa-cloud-upload-alt"></i> 去上传
+        <i data-lucide="cloud-upload"></i> 去上传
       </a>
     </div>
 
     <!-- 分页 -->
     <div class="pagination" v-if="totalPages > 1">
       <button class="page-btn" @click="currentPage = 1" :disabled="currentPage === 1">
-        <i class="fas fa-angle-double-left"></i>
+        <i data-lucide="chevrons-left"></i>
       </button>
       <button class="page-btn" @click="currentPage--" :disabled="currentPage === 1">
-        <i class="fas fa-angle-left"></i>
+        <i data-lucide="chevron-left"></i>
       </button>
       <template v-for="page in displayPages">
         <button class="page-btn" :class="{ active: page === currentPage }" @click="currentPage = page" :key="page">
@@ -127,10 +128,10 @@
         </button>
       </template>
       <button class="page-btn" @click="currentPage++" :disabled="currentPage === totalPages">
-        <i class="fas fa-angle-right"></i>
+        <i data-lucide="chevron-right"></i>
       </button>
       <button class="page-btn" @click="currentPage = totalPages" :disabled="currentPage === totalPages">
-        <i class="fas fa-angle-double-right"></i>
+        <i data-lucide="chevrons-right"></i>
       </button>
     </div>
 
@@ -138,23 +139,23 @@
     <div class="batch-bar" v-if="selectedCount > 0">
       <div class="batch-bar-count">已选择 <strong>{{ selectedCount }}</strong> 个文件</div>
       <button class="batch-btn primary" @click="batchCopy">
-        <i class="fas fa-copy"></i> 复制链接
+        <i data-lucide="copy"></i> 复制链接
       </button>
       <button class="batch-btn success" @click="batchDownload">
-        <i class="fas fa-download"></i> 下载
+        <i data-lucide="download"></i> 下载
       </button>
       <button class="batch-btn danger" @click="batchDelete">
-        <i class="fas fa-trash"></i> 删除
+        <i data-lucide="trash"></i> 删除
       </button>
       <button class="batch-btn default" @click="clearSelection">
-        <i class="fas fa-times"></i> 取消
+        <i data-lucide="x"></i> 取消
       </button>
     </div>
 
     <!-- 预览弹窗 - 原生图片 / iframe 预览 -->
     <div class="preview-modal" v-if="previewData" @click="closePreview">
       <button class="preview-close" @click="closePreview">
-        <i class="fas fa-times"></i>
+        <i data-lucide="x"></i>
       </button>
       <!-- 原生图片预览 -->
       <img v-if="previewData.type === 'native-image'" :src="previewData.url" @click.stop>
@@ -170,7 +171,7 @@
       <div class="preview-info" @click.stop>
         <span class="preview-link">{{ previewData.url }}</span>
         <button class="batch-btn primary" @click="copyPreviewLink">
-          <i class="fas fa-copy"></i> 复制
+          <i data-lucide="copy"></i> 复制
         </button>
       </div>
     </div>
@@ -536,9 +537,9 @@
 
         getToastIcon(type) {
           const icons = {
-            success: 'fas fa-check-circle',
-            error: 'fas fa-times-circle',
-            info: 'fas fa-info-circle'
+            success: 'circle-check',
+            error: 'circle-x',
+            info: 'info'
           };
           return icons[type] || icons.info;
         },
@@ -574,5 +575,6 @@
       }
     });
   </script>
+  <script src="/icons.js"></script>
 </body>
 </html>

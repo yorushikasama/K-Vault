@@ -99,7 +99,8 @@ body {
   align-items: center;
 }
 
-.header-content .actions i {
+.header-content .actions i,
+.header-content .actions svg.lucide {
   font-size: clamp(1.2em, 1.5vw, 1.6em);
   cursor: pointer;
   transition: color 0.3s, transform 0.3s;
@@ -107,12 +108,14 @@ body {
   margin: 0 8px;
 }
 
-.header-content .actions i:hover {
+.header-content .actions i:hover,
+.header-content .actions svg.lucide:hover {
   color: #B39DDB;
   transform: scale(1.1);
 }
 
-.header-content .actions .el-dropdown-link i {
+.header-content .actions .el-dropdown-link i,
+.header-content .actions .el-dropdown-link svg.lucide {
   color: #333;
 }
 
@@ -247,11 +250,13 @@ body {
   transition: filter 0.25s ease, transform 0.25s ease;
 }
 
-.preview-skeleton i {
+.preview-skeleton i,
+.preview-skeleton svg.lucide {
   font-size: 38px;
 }
 
-.audio-skeleton i {
+.audio-skeleton i,
+.audio-skeleton svg.lucide {
   font-size: 28px;
 }
 
@@ -525,7 +530,8 @@ body {
   color: #333; /* 悬停时的链接颜色改为黑色 */
 }
 
-.footer i {
+.footer i,
+.footer svg.lucide {
   color: #333; /* 图标颜色改为黑色 */
 }
 
@@ -560,7 +566,8 @@ body {
     grid-template-columns: 1fr;
     gap: 10px;
   }
-  .header-content .actions i {
+    .header-content .actions i,
+  .header-content .actions svg.lucide {
     font-size: 1em;
     margin: 0 3px;
   }
@@ -685,7 +692,10 @@ body {
   margin-top: 12px;
 }
 
-.like-btn i, .select-btn i {
+.like-btn i,
+.like-btn svg.lucide,
+.select-btn i,
+.select-btn svg.lucide {
   font-size: 1.2em;
 }
 
@@ -742,7 +752,8 @@ body {
   font-weight: 500;
 }
 
-.status-item i {
+.status-item i,
+.status-item svg.lucide {
   font-size: 8px !important;
   margin: 0 !important;
 }
@@ -772,7 +783,8 @@ body {
   box-shadow: var(--shadow-2);
 }
 
-.home-btn i {
+.home-btn i,
+.home-btn svg.lucide {
   color: white;
   font-size: 16px;
 }
@@ -948,7 +960,8 @@ body {
     border-top: 1px solid rgba(0,0,0,0.05);
     margin-top: 4px;
   }
-  .header-content .actions i {
+    .header-content .actions i,
+  .header-content .actions svg.lucide {
     font-size: 0.95em;
     margin: 0 2px;
     padding: 4px;

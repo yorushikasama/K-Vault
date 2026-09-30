@@ -400,7 +400,8 @@ html[data-theme="dark"] {
     padding-right: 50px !important;
   }
 
-  .input-wrapper i {
+    .input-wrapper i,
+  .input-wrapper svg.lucide {
     left: 12px !important;
   }
 
@@ -486,7 +487,8 @@ html[data-theme="dark"] {
     min-width: 0;
   }
 
-  .header-content .actions > .status-panel .status-item i {
+    .header-content .actions > .status-panel .status-item i,
+  .header-content .actions > .status-panel .status-item svg.lucide {
     width: auto;
     height: auto;
     background: transparent !important;
@@ -917,7 +919,8 @@ html[data-theme="dark"] {
 
 .header-content .actions > i,
 .header-content .actions > .el-dropdown > .el-dropdown-link i,
-.header-content .actions > .theme-admin-toggle i {
+.header-content .actions > .theme-admin-toggle i,
+.header-content .actions > .theme-admin-toggle svg.lucide {
   margin: 0 !important;
   color: inherit !important;
   opacity: 1 !important;
