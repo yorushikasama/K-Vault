@@ -362,6 +362,95 @@
         box-shadow: var(--shadow-hover);
       }
 
+      /* 清晰度选择弹窗：接进全站统一表面（--ui-card-* / --surface-*）。
+         原先它落在 Element UI 的默认白底上，内部分区又各铺一层
+         rgba(surface, --ui-card-opacity)，叠起来接近不透明 —— 所以看起来
+         和卡片不是一套。这里让**只有弹窗根**铺表面 + 磨砂，内部分区透明。 */
+      html .quality-picker-dialog {
+        background: rgba(var(--ui-surface-rgb), var(--ui-card-opacity)) !important;
+        backdrop-filter: var(--ui-card-backdrop-filter);
+        -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
+        border: 1px solid var(--surface-border);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      /* 必须带 html 前缀：theme.css 里有 `html[data-theme="dark"] .el-dialog__body`
+         这类 (0,2,1) 的选择器并带 !important，普通两类的选择器压不住它 ——
+         压不住时暗色下内部分区仍会各铺一层 0.9 的底，叠成近乎不透明，
+         磨砂就白做了。带上 html 提到 (0,3,1) 才稳。 */
+      html .quality-picker-dialog .el-dialog__header,
+      html .quality-picker-dialog .el-dialog__body,
+      html .quality-picker-dialog .el-dialog__footer {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        box-shadow: none !important;
+      }
+
+      .qp-loading {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+      }
+
+      .qp-title {
+        margin: 0 0 12px;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .qp-option {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        border: 1px solid var(--surface-border);
+        border-radius: 8px;
+        background: var(--surface-2);
+        cursor: pointer;
+        transition: var(--transition);
+      }
+
+      .qp-option:hover {
+        border-color: var(--primary-light);
+      }
+
+      .qp-option.is-selected {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 1px var(--primary-color);
+      }
+
+      .qp-option.is-disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
+
+      .qp-option-height {
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .qp-option-size {
+        margin-left: auto;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+      }
+
+      .qp-hint {
+        margin: 4px 0 0;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        opacity: 0.7;
+      }
+
       .card-header {
         display: flex;
         justify-content: space-between;
@@ -2762,59 +2851,27 @@
           <!-- 视频清晰度选择 -->
           <el-dialog
             title="选择清晰度"
+            custom-class="quality-picker-dialog"
             :visible.sync="qualityPicker.visible"
             width="380px"
             append-to-body
             :close-on-click-modal="false"
           >
-            <div
-              v-if="qualityPicker.loading"
-              style="
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                color: #909399;
-                font-size: 0.9rem;
-              "
-            >
+            <div v-if="qualityPicker.loading" class="qp-loading">
               <i class="fas fa-spinner fa-spin"></i>
               <span>正在解析可用清晰度...</span>
             </div>
             <template v-else>
-              <p
-                :title="qualityPicker.title"
-                style="
-                  margin: 0 0 12px;
-                  font-size: 0.9rem;
-                  color: #606266;
-                  overflow: hidden;
-                  text-overflow: ellipsis;
-                  white-space: nowrap;
-                "
-              >
+              <p class="qp-title" :title="qualityPicker.title">
                 {{ qualityPicker.title || "未命名视频" }}
               </p>
               <label
                 v-for="item in qualityPicker.variants"
                 :key="item.formatId"
-                :style="{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '10px 12px',
-                  marginBottom: '8px',
-                  border:
-                    '1px solid ' +
-                    (qualityPicker.selected === item.formatId
-                      ? '#409eff'
-                      : '#dcdfe6'),
-                  borderRadius: '8px',
-                  cursor: isVariantDisabled(item) ? 'not-allowed' : 'pointer',
-                  opacity: isVariantDisabled(item) ? 0.45 : 1,
-                  background:
-                    qualityPicker.selected === item.formatId
-                      ? '#ecf5ff'
-                      : '#ffffff',
+                class="qp-option"
+                :class="{
+                  'is-selected': qualityPicker.selected === item.formatId,
+                  'is-disabled': isVariantDisabled(item),
                 }"
               >
                 <input
@@ -2823,19 +2880,12 @@
                   v-model="qualityPicker.selected"
                   :disabled="isVariantDisabled(item)"
                 />
-                <span style="font-weight: 600; color: #303133"
-                  >{{ item.height }}P</span
-                >
-                <span
-                  style="
-                    margin-left: auto;
-                    font-size: 0.85rem;
-                    color: #909399;
-                  "
-                  >{{ formatBytes(item.filesize) }}</span
-                >
+                <span class="qp-option-height">{{ item.height }}P</span>
+                <span class="qp-option-size">{{
+                  formatBytes(item.filesize)
+                }}</span>
               </label>
-              <p style="margin: 4px 0 0; font-size: 0.8rem; color: #c0c4cc">
+              <p class="qp-hint">
                 超过上限的档位不可选（当前上限
                 {{ formatBytes(qualityPicker.maxBytes) }}）
               </p>
