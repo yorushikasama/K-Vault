@@ -22,6 +22,12 @@ RUN if [ "$YTDLP_VERSION" = "latest" ]; then \
       && chmod +x /usr/local/bin/yt-dlp \
     || echo "WARN: yt-dlp download failed; /api/resolve-url will report unavailable"
 
+# YouTube has required an external JavaScript runtime for full support since
+# yt-dlp 2025.11.12 — without one it silently drops the `web` player client and
+# falls back to clients that cannot serve most videos. The node runtime is
+# already in this image (it runs the API), so nothing new has to be installed.
+ENV MEDIA_RESOLVE_JS_RUNTIME=node
+
 WORKDIR /app/server
 COPY server/package.json server/package-lock.json* ./
 RUN npm ci --omit=dev

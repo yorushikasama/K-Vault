@@ -167,6 +167,77 @@ function loadConfig(env = process.env) {
       proxy: normalizeEnvString(env.MEDIA_RESOLVE_PROXY),
       allowUnknownHosts: toBool(env.MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS, false),
       extraHosts: normalizeEnvString(env.MEDIA_RESOLVE_EXTRA_HOSTS),
+
+      // --- Capability-related (added with the option surface) ---------------
+
+      // YouTube has required an external JS runtime for full support since
+      // yt-dlp 2025.11.12, and only deno is enabled upstream by default. The
+      // image is node-based, so node is what we point at unless told otherwise.
+      // "none" disables the flag entirely (e.g. a host with no JS runtime).
+      jsRuntime: normalizeEnvString(env.MEDIA_RESOLVE_JS_RUNTIME, 'node'),
+      // Path to the runtime when it is not on PATH.
+      jsRuntimePath: normalizeEnvString(env.MEDIA_RESOLVE_JS_RUNTIME_PATH),
+      // Allow yt-dlp to fetch the EJS challenge-solver components. Official
+      // builds bundle them, so this only matters for source installs.
+      remoteComponents: normalizeEnvString(env.MEDIA_RESOLVE_REMOTE_COMPONENTS),
+
+      // Retry/backoff. The 403s that YouTube and TikTok emit are transient far
+      // more often than they are permanent, and the default of 10 retries with
+      // no extractor retries is too thin for a server.
+      extractorRetries: toInt(env.MEDIA_RESOLVE_EXTRACTOR_RETRIES, 3),
+      fragmentRetries: toInt(env.MEDIA_RESOLVE_FRAGMENT_RETRIES, 10),
+      // yt-dlp's own syntax, e.g. "http:exp=1:20" or "fragment:5".
+      retrySleep: normalizeEnvString(env.MEDIA_RESOLVE_RETRY_SLEEP, 'http:exp=1:20'),
+      // Seconds. Caps how long a single retry may back off.
+      socketTimeout: toInt(env.MEDIA_RESOLVE_SOCKET_TIMEOUT, 20),
+      // Concurrent DASH/HLS fragments per download. This is the supported way
+      // to speed up a segmented download; aria2c for HLS/DASH was removed in
+      // 2026.06.09 over CVE-2026-50574.
+      concurrentFragments: toInt(env.MEDIA_RESOLVE_CONCURRENT_FRAGMENTS, 4),
+      maxConcurrentFragments: toInt(env.MEDIA_RESOLVE_MAX_CONCURRENT_FRAGMENTS, 16),
+      // Optional global download rate cap, yt-dlp syntax ("4.2M").
+      limitRate: normalizeEnvString(env.MEDIA_RESOLVE_LIMIT_RATE),
+      // Ceiling on one downloaded file, enforced by yt-dlp before writing.
+      maxFilesize: normalizeEnvString(env.MEDIA_RESOLVE_MAX_FILESIZE),
+
+      // Operator-supplied extractor arguments, always applied. This is trusted
+      // input, so it is the only place keys like player_client or api_hostname
+      // can be set — the request-level field refuses them.
+      extractorArgs: normalizeEnvString(env.MEDIA_RESOLVE_EXTRACTOR_ARGS),
+      // Default impersonation target, e.g. "chrome" or "chrome:windows-10".
+      // Needs curl_cffi in the yt-dlp build; the status endpoint reports
+      // whether the configured target is actually available.
+      impersonate: normalizeEnvString(env.MEDIA_RESOLVE_IMPERSONATE),
+
+      // Media enrichment defaults. Off by default because they change the
+      // bytes that land in storage; operators who want a Jellyfin-shaped
+      // library turn them on once.
+      writeSubtitles: toBool(env.MEDIA_RESOLVE_WRITE_SUBTITLES, false),
+      subtitleLangs: normalizeEnvString(env.MEDIA_RESOLVE_SUBTITLE_LANGS, 'zh.*,en'),
+      writeThumbnail: toBool(env.MEDIA_RESOLVE_WRITE_THUMBNAIL, false),
+      writeInfoJson: toBool(env.MEDIA_RESOLVE_WRITE_INFO_JSON, false),
+      writeNfo: toBool(env.MEDIA_RESOLVE_WRITE_NFO, false),
+      embedMetadata: toBool(env.MEDIA_RESOLVE_EMBED_METADATA, false),
+      embedThumbnail: toBool(env.MEDIA_RESOLVE_EMBED_THUMBNAIL, false),
+
+      // --- Limits on the new surface ---------------------------------------
+      // Sidecar files (subtitles, thumbnails, NFO) are uploaded alongside the
+      // media when the target backend can take them.
+      sidecarEnabled: toBool(env.MEDIA_RESOLVE_SIDECAR_ENABLED, true),
+      // Cap on the number of files a single resolve may emit, which is also
+      // the guard against a "playlist" URL quietly turning into 500 uploads.
+      maxSidecarFiles: toInt(env.MEDIA_RESOLVE_MAX_SIDECAR_FILES, 12),
+      maxSidecarBytes: toInt(env.MEDIA_RESOLVE_MAX_SIDECAR_BYTES, 20 * 1024 * 1024),
+      // Playlist expansion is off unless an operator opts in: on a public
+      // deployment it is the difference between one video and a thousand.
+      allowPlaylists: toBool(env.MEDIA_RESOLVE_ALLOW_PLAYLISTS, true),
+      maxPlaylistItems: toInt(env.MEDIA_RESOLVE_MAX_PLAYLIST_ITEMS, 25),
+      // Live-stream downloads have no natural end, so they get their own cap.
+      allowLive: toBool(env.MEDIA_RESOLVE_ALLOW_LIVE, true),
+      // Progress reporting: how many finished jobs stay queryable, and how
+      // often the download loop is allowed to publish an update.
+      progressEnabled: toBool(env.MEDIA_RESOLVE_PROGRESS, true),
+      progressHistorySize: toInt(env.MEDIA_RESOLVE_PROGRESS_HISTORY, 64),
     },
 
     // Optional bootstrap default storage from env.

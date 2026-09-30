@@ -3,6 +3,7 @@ const { loadConfig } = require('./config');
 const { AuthService } = require('./utils/auth');
 const { GuestService } = require('./utils/guest');
 const { createSemaphore } = require('./utils/semaphore');
+const { createJobRegistry } = require('./utils/job-registry');
 const { StorageFactory } = require('./storage/factory');
 const { StorageConfigRepository } = require('./repos/storage-config-repo');
 const { FileRepository } = require('./repos/file-repo');
@@ -62,7 +63,14 @@ function createContainer(env = process.env) {
     },
   });
 
-  const mediaResolveService = new MediaResolveService({ config });
+  // Long downloads are detached from the request that started them, so their
+  // progress and outcome need somewhere to live. Bounded and in-memory: a
+  // restart loses the history, which is acceptable for a job you can re-run.
+  const jobRegistry = createJobRegistry({
+    historySize: config.mediaResolve.progressHistorySize,
+  });
+
+  const mediaResolveService = new MediaResolveService({ config, jobRegistry });
   // Clear anything a previous run left behind when it was killed mid-download.
   // Deliberately not awaited: startup must not wait on housekeeping. A non-zero
   // failure count almost always means the temp directory is not writable by
@@ -92,6 +100,7 @@ function createContainer(env = process.env) {
     uploadService,
     chunkService,
     mediaResolveService,
+    jobRegistry,
     uploadGate,
   };
 }

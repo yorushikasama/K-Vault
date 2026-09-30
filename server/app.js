@@ -20,7 +20,8 @@ const {
 const { run: dbRun, get: dbGet } = require('./db');
 const { sniffImageMime } = require('./lib/utils/ssrf-guard');
 const { fetchRemote, readBodyWithLimit } = require('./lib/utils/remote-fetch');
-const { MediaResolveError } = require('./lib/services/media-resolve-service');
+const { MediaResolveError, YtdlpOptionError } = require('./lib/services/media-resolve-service');
+const { mimeTypeForFile } = require('./lib/services/ytdlp-options');
 const { AUDIT_EVENTS, writeAuditLog, listAuditLogs } = require('./lib/utils/audit');
 const { safeLogError } = require('./lib/utils/redact');
 const { toStorageErrorPayload } = require('./lib/utils/storage-error');
@@ -2727,6 +2728,63 @@ function createApp() {
     return c.json({ success: true, ...status, traceId: getTraceId(c) });
   });
 
+  // Capabilities alone, for clients that want the feature matrix without the
+  // (slower) probe-derived status block.
+  app.get('/api/resolve-url/capabilities', async (c) => {
+    const { authService, guestService, mediaResolveService } = getServices(c);
+    const auth = authService.checkAuthentication(c.req.raw);
+
+    if (!auth.authenticated) {
+      const guestCheck = guestService.checkUploadAllowed(c.req.raw, 0);
+      if (!guestCheck.allowed) {
+        return jsonError(c, guestCheck.status || 403, 'GUEST_REJECTED', '访客上传未通过限制检查。', guestCheck.reason);
+      }
+    }
+
+    const capabilities = await mediaResolveService.getCapabilities();
+    if (prefersV2Envelope(c)) {
+      return c.json({ success: true, data: capabilities, traceId: getTraceId(c) });
+    }
+    return c.json({ success: true, ...capabilities, traceId: getTraceId(c) });
+  });
+
+  // The request body carries the whole yt-dlp option surface. Only the keys this
+  // list names are forwarded; anything else in the payload is ignored rather
+  // than passed down to the option validators.
+  const RESOLVE_OPTION_KEYS = [
+    'preset', 'formatId', 'needsAudio', 'maxHeight', 'container',
+    'playlistItems',
+    'subtitles', 'autoSubtitles', 'subtitleLangs', 'subtitleFormat', 'embedSubtitles',
+    'writeThumbnail', 'embedThumbnail', 'embedMetadata', 'embedChapters', 'embedInfoJson', 'writeNfo',
+    'downloadSections', 'forceKeyframesAtCuts', 'splitChapters',
+    'sponsorblockMark', 'sponsorblockRemove',
+    'concurrentFragments', 'limitRate', 'sleepInterval', 'maxSleepInterval',
+    'liveFromStart', 'waitForVideo', 'hlsUseMpegts',
+    'impersonate', 'extractorArgs', 'sanitizeFilenames', 'trimFilenames',
+    'progress',
+  ];
+
+  function collectResolveOptions(payload) {
+    const options = {};
+    for (const key of RESOLVE_OPTION_KEYS) {
+      if (payload[key] !== undefined) options[key] = payload[key];
+    }
+    return options;
+  }
+
+  // One place that turns any thrown resolve/upload error into the documented
+  // JSON error contract, so every resolve route reports failures identically.
+  function respondResolveError(c, error, fallbackCode, fallbackMessage) {
+    if (error instanceof MediaResolveError || error instanceof YtdlpOptionError) {
+      return jsonError(c, error.status, error.code, error.message, error.detail, error.retriable);
+    }
+    if (error && error.code === 'JOB_NOT_FOUND') {
+      return jsonError(c, error.status || 404, error.code, error.message, error.detail);
+    }
+    safeLogError(error);
+    return jsonError(c, 502, fallbackCode, fallbackMessage, String(error?.message || 'unknown'));
+  }
+
   app.post('/api/resolve-url', async (c) => {
     const { authService, guestService, uploadService, mediaResolveService } = getServices(c);
     const auth = authService.checkAuthentication(c.req.raw);
@@ -2743,22 +2801,30 @@ function createApp() {
       }
     }
 
+    const resolveOptions = collectResolveOptions(payload);
+
     let resolved;
     try {
-      resolved = await mediaResolveService.resolve({ url: asString(payload.url) });
+      resolved = await mediaResolveService.resolve({
+        url: asString(payload.url),
+        options: resolveOptions,
+      });
     } catch (error) {
-      if (error instanceof MediaResolveError) {
-        return jsonError(c, error.status, error.code, error.message, error.detail, error.retriable);
-      }
-      safeLogError(error);
-      return jsonError(c, 502, 'MEDIA_RESOLVE_FAILED', '解析失败。', String(error?.message || 'unknown'));
+      return respondResolveError(c, error, 'MEDIA_RESOLVE_FAILED', '解析失败。');
     }
 
-    const item = resolved.items[0];
     const storageMode = asString(payload.storageMode || payload.storage);
     const storageId = asString(payload.storageId || payload.storage_config_id);
     const folderPath = normalizeFolderPath(payload.folderPath || payload.folder || '');
     const sourceUrl = asString(payload.url);
+
+    // Which item of a playlist this request is about. Defaults to the first, so
+    // the single-video flow is unchanged.
+    const itemIndex = clampIndex(payload.itemIndex, resolved.items.length);
+    const item = resolved.items[itemIndex];
+    if (!item) {
+      return jsonError(c, 400, 'MEDIA_RESOLVE_BAD_ITEM', '指定的合集条目不存在。', `itemIndex ${payload.itemIndex} is out of range.`);
+    }
 
     // A resolved video ends up in storage exactly like an upload, so it has to
     // obey the same ceilings: the remote-import cap, the global upload cap, and
@@ -2779,27 +2845,53 @@ function createApp() {
     // Resolve-only: return the direct URL plus metadata so callers can preview
     // or decide for themselves before anything is written to storage.
     if (payload.upload !== true) {
-      const media = {
-        source: resolved.source,
-        title: item.title,
-        uploader: item.uploader,
-        duration: item.duration,
-        thumbnail: item.thumbnail,
-        webpageUrl: item.webpageUrl,
-        extractor: item.extractor,
-        // Empty when the platform only serves separate tracks; such media can
-        // still be stored via upload:true, which downloads and muxes it.
-        downloadUrl: item.directUrl,
-        requiresMerge: item.requiresMerge,
-        ext: item.ext,
-        filesize: item.filesize,
-        width: item.width,
-        height: item.height,
-        maxImportBytes: importCap,
-        exceedsImportLimit: item.filesize > 0 && item.filesize > importCap,
+      // One entry per result item. The first is also flattened onto the response
+      // root below, because existing clients read `title` / `variants` straight
+      // off the top level rather than from the item list.
+      const items = resolved.items.map((entry) => ({
+        id: entry.id,
+        title: entry.title,
+        uploader: entry.uploader,
+        duration: entry.duration,
+        thumbnail: entry.thumbnail,
+        webpageUrl: entry.webpageUrl,
+        extractor: entry.extractor,
+        // Empty when the platform only serves separate tracks or the entry came
+        // from a flat playlist listing; such media can still be stored via
+        // upload:true, which downloads it.
+        downloadUrl: entry.directUrl,
+        requiresMerge: entry.requiresMerge,
+        flat: entry.flat,
+        playlistIndex: entry.playlistIndex,
+        ext: entry.ext,
+        filesize: entry.filesize,
+        width: entry.width,
+        height: entry.height,
+        isLive: entry.isLive,
+        availableSubtitles: entry.availableSubtitles,
+        availableAutoSubtitles: entry.availableAutoSubtitles,
+        chapters: entry.chapters,
         // Largest first. Hand one back as {formatId, needsAudio} with
         // upload:true to pin a quality instead of taking the biggest stream.
-        variants: item.variants,
+        variants: entry.variants,
+        audioVariants: entry.audioVariants,
+      }));
+
+      const media = {
+        source: resolved.source,
+        playlist: resolved.playlist,
+        // The options that were actually applied, after capability gating.
+        resolvedOptions: resolved.options,
+        warnings: resolved.warnings,
+        items,
+        // Which item the flat fields below describe.
+        item: item.id,
+        itemIndex,
+        maxImportBytes: importCap,
+        exceedsImportLimit: item.filesize > 0 && item.filesize > importCap,
+        // Flattened view of the selected item, for callers that predate the
+        // per-item list.
+        ...items[itemIndex],
       };
 
       if (prefersV2Envelope(c)) {
@@ -2819,19 +2911,62 @@ function createApp() {
       );
     }
 
-    let result;
+    // Detached mode: hand back a job id immediately and let the client poll.
+    // This is what makes a long download usable from a browser, and it is the
+    // only way to report progress on one.
+    if (payload.detach === true) {
+      // The request is accepted here and finishes long after the response, so
+      // the guest quota is charged now rather than when the job completes —
+      // otherwise a guest could queue any number of jobs against one allowance,
+      // since each request would see the same unused counter.
+      if (!auth.authenticated) {
+        guestService.incrementUsage(c.req.raw);
+      }
 
-    // An explicit quality choice must win: the direct-URL path can only serve
-    // whatever single file the platform offers, so it is bypassed once the
-    // caller pinned a format.
+      try {
+        const job = mediaResolveService.startJob({
+          url: item.webpageUrl || sourceUrl,
+          maxBytes: importCap,
+          options: resolveOptions,
+          // The store callback runs inside the job, so the detached path ends in
+          // the same storage result the synchronous path produces.
+          store: async (download) => storeResolvedMediaResult({
+            download,
+            item,
+            storageId,
+            storageMode,
+            folderPath,
+            resolveOptions,
+            mediaResolveService,
+            uploadService,
+          }),
+        });
+        if (prefersV2Envelope(c)) {
+          return c.json({ success: true, data: job, traceId: getTraceId(c) });
+        }
+        return c.json({ success: true, ...job, traceId: getTraceId(c) });
+      } catch (error) {
+        return respondResolveError(c, error, 'MEDIA_RESOLVE_JOB_FAILED', '无法启动后台任务。');
+      }
+    }
+
     const pinnedFormat = asString(payload.formatId);
 
-    if (item.directUrl && !pinnedFormat) {
+    // An explicit quality choice or an audio preset has to go through yt-dlp;
+    // the direct-URL path can only serve whatever single file the platform
+    // offers and cannot re-mux or extract.
+    const wantsPostprocessing = Boolean(pinnedFormat)
+      || resolveOptions.preset !== undefined
+      || resolveOptions.subtitles === true
+      || resolveOptions.embedMetadata === true
+      || resolveOptions.downloadSections !== undefined;
+
+    if (item.directUrl && !wantsPostprocessing) {
       // Single-file format: reuse the existing remote importer, which already
       // enforces the size cap and the SSRF rules. The headers yt-dlp reported
       // carry whichever Referer the CDN asks for.
       try {
-        result = await uploadService.uploadFromUrl({
+        const result = await uploadService.uploadFromUrl({
           url: item.directUrl,
           headers: item.directHeaders,
           storageMode,
@@ -2839,68 +2974,246 @@ function createApp() {
           folderPath,
           maxBytes: importCap,
         });
+
+        if (!auth.authenticated) {
+          guestService.incrementUsage(c.req.raw);
+        }
+        return uploadSuccessResponse(c, result);
       } catch (error) {
         const normalized = normalizeUploadError(c, error, 502);
         return c.json({ ...normalized, traceId: getTraceId(c) }, 502);
       }
-    } else {
-      // Separate video/audio tracks (Bilibili, YouTube, ...): yt-dlp has to
-      // fetch them and mux, which needs ffmpeg on the host.
-      // Resolve the pinned variant so requireMerge reflects the actual choice
-      // rather than the default best-format assumption.
-      const chosenVariant = pinnedFormat
-        ? (item.variants || []).find((variant) => variant.formatId === pinnedFormat)
-        : null;
+    }
 
-      let downloaded;
-      try {
-        downloaded = await mediaResolveService.download({
-          url: sourceUrl,
-          maxBytes: importCap,
-          requireMerge: chosenVariant ? chosenVariant.needsAudio : item.requiresMerge,
-          formatId: pinnedFormat,
-          needsAudio: payload.needsAudio === true,
-        });
-      } catch (error) {
-        if (error instanceof MediaResolveError) {
-          return jsonError(c, error.status, error.code, error.message, error.detail, error.retriable);
-        }
-        safeLogError(error);
-        return jsonError(c, 502, 'MEDIA_RESOLVE_DOWNLOAD_FAILED', '视频下载失败。', String(error?.message || 'unknown'));
+    // Separate video/audio tracks (Bilibili, YouTube, ...) or a postprocessing
+    // request: yt-dlp has to fetch it, which needs ffmpeg on the host for
+    // anything beyond a straight copy.
+    let downloaded;
+    try {
+      downloaded = await mediaResolveService.download({
+        url: item.webpageUrl || sourceUrl,
+        maxBytes: importCap,
+        options: resolveOptions,
+      });
+    } catch (error) {
+      return respondResolveError(c, error, 'MEDIA_RESOLVE_DOWNLOAD_FAILED', '视频下载失败。');
+    }
+
+    try {
+      const stored = await storeResolvedMediaResult({
+        download: downloaded,
+        item,
+        storageId,
+        storageMode,
+        folderPath,
+        resolveOptions,
+        mediaResolveService,
+        uploadService,
+      });
+
+      if (!auth.authenticated) {
+        guestService.incrementUsage(c.req.raw);
       }
+      return sendStoredMedia(c, stored);
+    } catch (error) {
+      const normalized = normalizeUploadError(c, error, 502);
+      return c.json({ ...normalized, traceId: getTraceId(c) }, 502);
+    } finally {
+      await mediaResolveService.removeDir(downloaded.jobDir);
+    }
+  });
 
+  /**
+   * Stores a downloaded media file plus its sidecars, returning the persisted
+   * descriptor. Shared by the synchronous route and the detached job path; the
+   * response envelope is applied by the callers, which need different shapes.
+   *
+   * Sidecars are uploaded individually: the storage layer treats every file as
+   * its own object, so there is no bundling available. A sidecar that fails to
+   * store is reported as a warning rather than an error — the video is the
+   * point, and a rejected subtitle should not fail the request.
+   */
+  async function storeResolvedMediaResult({
+    download,
+    item,
+    storageId,
+    storageMode,
+    folderPath,
+    resolveOptions,
+    mediaResolveService,
+    uploadService,
+  }) {
+    const safeTitle = String(item.title || item.id || 'video')
+      .replace(/[^\w\u4e00-\u9fa5.-]+/g, '_')
+      .replace(/^[._]+/, '')
+      .slice(0, 80);
+
+    const container = download.container || 'mp4';
+    const baseName = safeTitle || 'video';
+    const warnings = Array.isArray(download.warnings) ? download.warnings.slice() : [];
+
+    // The video is already on disk (yt-dlp just wrote it), so forward the bytes
+    // straight into the storage adapter. Reading it into a Buffer first was the
+    // single most expensive step on this path: it duplicated the file several
+    // times over and put the whole thing on the heap at once.
+    const result = await uploadService.uploadStream({
+      openStream: () => createReadStream(download.filePath),
+      fileSize: download.bytes,
+      fileName: `${baseName}.${container}`,
+      mimeType: mimeTypeForFile(`x.${container}`),
+      storageId,
+      storageMode,
+      folderPath,
+    });
+
+    const sidecars = download.sidecars.slice();
+
+    // An NFO is generated rather than downloaded, so it is produced here where
+    // the media's final name is known — Kodi matches a sidecar by stem.
+    if (resolveOptions.writeNfo === true) {
       try {
-        const safeTitle = String(item.title || item.id || 'video')
-          .replace(/[^\w\u4e00-\u9fa5.-]+/g, '_')
-          .replace(/^[._]+/, '')
-          .slice(0, 80);
+        const storedName = result?.file?.file_name || `${baseName}.${container}`;
+        sidecars.push(await mediaResolveService.writeNfo(download.jobDir, item, storedName));
+      } catch (error) {
+        safeLogError(error);
+        warnings.push({ code: 'NFO_FAILED', message: 'NFO 生成失败。' });
+      }
+    }
 
-        // The video is already on disk (yt-dlp just wrote it), so forward the
-        // bytes straight into the storage adapter. Reading it into a Buffer first
-        // was the single most expensive step on this path: it duplicated the file
-        // several times over and put the whole thing on the heap at once.
-        result = await uploadService.uploadStream({
-          openStream: () => createReadStream(downloaded.filePath),
-          fileSize: downloaded.bytes,
-          fileName: `${safeTitle || 'video'}.${item.ext || 'mp4'}`,
-          mimeType: 'video/mp4',
+    const storedSidecars = [];
+    for (const sidecar of sidecars) {
+      try {
+        const uploaded = await uploadService.uploadStream({
+          openStream: () => createReadStream(sidecar.path),
+          fileSize: sidecar.bytes,
+          fileName: sidecar.fileName,
+          mimeType: mimeTypeForFile(sidecar.fileName),
           storageId,
           storageMode,
           folderPath,
         });
+        storedSidecars.push({
+          kind: sidecar.kind,
+          fileName: sidecar.fileName,
+          src: uploaded?.src || '',
+          fileId: uploaded?.file?.id || '',
+        });
       } catch (error) {
-        const normalized = normalizeUploadError(c, error, 502);
-        return c.json({ ...normalized, traceId: getTraceId(c) }, 502);
-      } finally {
-        await mediaResolveService.cleanupFile(downloaded.filePath);
+        safeLogError(error);
+        warnings.push({
+          code: 'SIDECAR_UPLOAD_FAILED',
+          message: `附属文件 ${sidecar.fileName} 上传失败。`,
+        });
       }
     }
 
+    return {
+      src: result.src,
+      storageType: result.storage.type,
+      storageId: result.storage.id,
+      fileId: result.file?.id,
+      folderPath: result.file?.metadata?.folderPath || '',
+      container: download.container,
+      sidecars: storedSidecars,
+      warnings,
+    };
+  }
+
+  // Legacy clients read `data[0].src`, so the non-v2 envelope stays a bare array
+  // with `sidecars`/`warnings` as additive keys on the item.
+  function sendStoredMedia(c, payload) {
+    if (prefersV2Envelope(c)) {
+      return c.json({
+        success: true,
+        data: { ...payload, items: [payload] },
+        traceId: getTraceId(c),
+      });
+    }
+    return c.json([payload]);
+  }
+
+  // Clamps a requested playlist index into range, defaulting to the first item.
+  function clampIndex(value, length) {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) return 0;
+    return Math.min(parsed, Math.max(0, length - 1));
+  }
+
+  // --- Detached download jobs ---
+
+  app.get('/api/resolve-url/jobs', async (c) => {
+    const { authService, guestService, jobRegistry } = getServices(c);
+    const auth = authService.checkAuthentication(c.req.raw);
+
     if (!auth.authenticated) {
-      guestService.incrementUsage(c.req.raw);
+      const guestCheck = guestService.checkUploadAllowed(c.req.raw, 0);
+      if (!guestCheck.allowed) {
+        return jsonError(c, guestCheck.status || 403, 'GUEST_REJECTED', '访客上传未通过限制检查。', guestCheck.reason);
+      }
     }
 
-    return uploadSuccessResponse(c, result);
+    if (!jobRegistry) {
+      return jsonError(c, 503, 'MEDIA_RESOLVE_JOBS_UNAVAILABLE', '后台任务未启用。', 'No job registry is configured.');
+    }
+
+    const jobs = jobRegistry.list({
+      state: asString(c.req.query('state')),
+      limit: c.req.query('limit'),
+    });
+
+    if (prefersV2Envelope(c)) {
+      return c.json({ success: true, data: { jobs }, traceId: getTraceId(c) });
+    }
+    return c.json({ success: true, jobs, traceId: getTraceId(c) });
+  });
+
+  app.get('/api/resolve-url/jobs/:id', async (c) => {
+    const { authService, guestService, jobRegistry } = getServices(c);
+    const auth = authService.checkAuthentication(c.req.raw);
+
+    if (!auth.authenticated) {
+      const guestCheck = guestService.checkUploadAllowed(c.req.raw, 0);
+      if (!guestCheck.allowed) {
+        return jsonError(c, guestCheck.status || 403, 'GUEST_REJECTED', '访客上传未通过限制检查。', guestCheck.reason);
+      }
+    }
+
+    if (!jobRegistry) {
+      return jsonError(c, 503, 'MEDIA_RESOLVE_JOBS_UNAVAILABLE', '后台任务未启用。', 'No job registry is configured.');
+    }
+
+    let job;
+    try {
+      job = jobRegistry.require(c.req.param('id'));
+    } catch (error) {
+      return respondResolveError(c, error, 'MEDIA_RESOLVE_JOB_FAILED', '任务查询失败。');
+    }
+
+    if (prefersV2Envelope(c)) {
+      return c.json({ success: true, data: job, traceId: getTraceId(c) });
+    }
+    return c.json({ success: true, ...job, traceId: getTraceId(c) });
+  });
+
+  app.delete('/api/resolve-url/jobs/:id', async (c) => {
+    const { authService, guestService, jobRegistry } = getServices(c);
+    const auth = authService.checkAuthentication(c.req.raw);
+
+    // Cancelling a running download is a write, and a destructive one, so it is
+    // never available to guests.
+    if (!auth.authenticated) {
+      return jsonError(c, 401, 'AUTH_REQUIRED', '需要登录后才能取消任务。', 'Cancelling a job requires authentication.');
+    }
+
+    if (!jobRegistry) {
+      return jsonError(c, 503, 'MEDIA_RESOLVE_JOBS_UNAVAILABLE', '后台任务未启用。', 'No job registry is configured.');
+    }
+
+    const cancelled = jobRegistry.cancel(c.req.param('id'));
+    if (prefersV2Envelope(c)) {
+      return c.json({ success: true, data: { cancelled }, traceId: getTraceId(c) });
+    }
+    return c.json({ success: true, cancelled, traceId: getTraceId(c) });
   });
 
   // --- Chunk upload ---

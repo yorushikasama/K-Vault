@@ -42,7 +42,7 @@
 - **多格式支持** - 图片、视频、音频、文档、压缩包等
 - **在线预览** - 支持图片、视频、音频、文档（pdf、docx、txt）格式的预览
 - **分片上传** - 支持最大 200MB 文件（受 `UPLOAD_MAX_SIZE` 约束；分片按序流式转存，内存峰值与文件体积无关。建议配合 R2/S3/WebDAV/GitHub，Telegram 网页上传按平台限制处理）
-- **视频链接解析** - Docker/自托管模式集成 yt-dlp，粘贴抖音 / B站 / YouTube 等分享链接即可解析并转存
+- **视频链接解析** - Docker/自托管模式集成 yt-dlp，粘贴抖音 / B站 / YouTube 等分享链接即可解析并转存；支持清晰度/预设选择、字幕与封面、元数据与章节嵌入、NFO 生成、时间区间裁剪、SponsorBlock、合集选集、直播录制，以及带进度回报的后台下载任务
 - **访客上传** - 可选的访客上传功能，支持文件大小和每日次数限制
 - **API Token 认证** - 支持 `curl` / ShareX / 脚本等程序化上传与调用
 - **多种视图** - 网格、列表、瀑布流多种管理界面
@@ -585,23 +585,59 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 
 ### 接口
 
-1. `GET /api/resolve-url/status` — 探测 yt-dlp / ffmpeg 是否可用，并返回允许解析的站点列表（前端据此决定是否启用解析）。
-2. `POST /api/resolve-url` — 解析分享链接：
-   - `{"url": "<分享链接>"}` → 只解析，返回元数据（标题、作者、时长、体积、缩略图）与 `downloadUrl` / `requiresMerge` / `variants`。
-   - `{"url": "<分享链接>", "upload": true, "storageMode": "...", "folderPath": "...", "formatId": "30064", "needsAudio": true}` → 解析并直接入库：有合流直链则直接转存，否则下载合并后入库。`formatId` / `needsAudio` 来自上一次解析返回的 `variants`，用于指定清晰度；省略则由 yt-dlp 取最佳。响应格式与 `/api/upload-from-url` 一致（`[{ src }]`）。
+1. `GET /api/resolve-url/status` — 探测 yt-dlp / ffmpeg 是否可用，返回允许解析的站点列表与 `capabilities` 能力块（前端据此决定展示哪些选项）。
+2. `GET /api/resolve-url/capabilities` — 只取能力块（ffmpeg、JS 运行时、TLS 伪装、sidecar、合集、直播、进度各自的可用性），不触发完整状态探测。
+3. `POST /api/resolve-url` — 解析分享链接：
+   - `{"url": "<分享链接>"}` → 只解析，返回元数据（标题、作者、时长、体积、缩略图）与 `downloadUrl` / `requiresMerge` / `variants`，以及 `playlist`（合集信息）与 `resolvedOptions`（实际生效的选项，已过滤掉本机不支持的）。
+   - `{"url": "<分享链接>", "upload": true, "storageMode": "...", "folderPath": "...", "formatId": "30064", "needsAudio": true}` → 解析并直接入库：有合流直链则直接转存，否则下载合并后入库。`formatId` / `needsAudio` 来自上一次解析返回的 `variants`，用于指定清晰度；省略则由 yt-dlp 取最佳。响应格式与 `/api/upload-from-url` 一致（`[{ src }]`，另附 `sidecars` 与 `warnings`）。
+   - `{"url": "...", "upload": true, "detach": true, ...}` → 后台任务模式，立即返回 `{ id }`，用下面的接口轮询进度。
+4. `GET /api/resolve-url/jobs` — 列出后台任务；`GET /api/resolve-url/jobs/:id` — 查询单个任务（含 `progress` / `result` / `error`）；`DELETE /api/resolve-url/jobs/:id` — 取消任务。
 
-两个接口与网页上传共用同一套鉴权（登录用户，或满足限制的访客）。
+所有接口与网页上传共用同一套鉴权（登录用户，或满足限制的访客）；取消任务属于写操作，不允许访客调用。
+
+### 可调选项
+
+`POST /api/resolve-url` 的请求体除 `url` / `upload` / 存储相关字段外，还接受下列选项。**每个字段都经过白名单校验**，非法值会被拒绝而不是透传；本机不具备的能力（例如缺 ffmpeg）会通过 `warnings` 明确告知并跳过，不会静默忽略。
+
+| 选项 | 说明 |
+| :--- | :--- |
+| `preset` | 预设：`best`（默认，最佳画质不转码）、`mp4`（H.264+AAC，兼容性最好）、`mkv`、`small`（≤480p 最小体积）、`bestaudio`、`mp3`、`m4a`、`aac` |
+| `formatId` / `needsAudio` | 指定清晰度，取自解析返回的 `variants`；`audioVariants` 提供纯音频档位 |
+| `maxHeight` | 限制最大高度（144–4320），由 yt-dlp 直接筛选而非下载后再判断 |
+| `container` | 输出容器：`mp4` / `mkv` / `webm` / `mov` |
+| `playlistItems` | 合集选集，如 `"1,3,5-7"`；提供后自动启用合集解析 |
+| `subtitles` / `autoSubtitles` | 下载字幕 / 自动生成字幕 |
+| `subtitleLangs` / `subtitleFormat` | 字幕语言（如 `"zh.*,en"`）与格式（`srt` / `vtt` / `ass` / `lrc` 等） |
+| `embedSubtitles` | 把字幕嵌进视频（需 ffmpeg） |
+| `writeThumbnail` / `embedThumbnail` | 保存封面文件 / 嵌入封面（嵌入需 ffmpeg） |
+| `embedMetadata` / `embedChapters` | 嵌入元数据 / 章节（需 ffmpeg） |
+| `embedInfoJson` / `writeNfo` | 保存 yt-dlp info JSON / 生成 Kodi/Jellyfin 兼容 NFO |
+| `downloadSections` | 按时间区间裁剪，如 `"*00:01:00-00:03:00"`，支持 `inf` 作结尾 |
+| `forceKeyframesAtCuts` / `splitChapters` | 裁剪处对齐关键帧 / 按章节分片（均需 ffmpeg） |
+| `sponsorblockMark` / `sponsorblockRemove` | SponsorBlock 标记 / 移除片段类别 |
+| `concurrentFragments` | DASH/HLS 分片并发数（上限见 `MEDIA_RESOLVE_MAX_CONCURRENT_FRAGMENTS`） |
+| `limitRate` | 下载限速，如 `"4.2M"` |
+| `sleepInterval` / `maxSleepInterval` | 请求间隔，降低被限流概率 |
+| `liveFromStart` / `waitForVideo` / `hlsUseMpegts` | 直播相关：从头录制 / 等待开播 / 使用 MPEG-TS |
+| `impersonate` | TLS 指纹伪装，如 `"chrome:windows-10"`；仅在本机 yt-dlp 支持该目标时生效 |
+| `extractorArgs` | 站点级参数，如 `"youtube:player_client=default,-web"` |
+| `sanitizeFilenames` / `trimFilenames` | 文件名安全化 / 截断长度 |
+| `progress` | 输出进度行（仅在后台任务模式下可观察） |
+
+> **关于 `extractorArgs` 的安全边界。** 该字段**禁止**出现决定请求去向的键（`api_hostname`、`base_url`、`host`、`proxy`、`hls_key` 等），这类参数会把请求发往白名单之外的主机，因此只允许通过运维侧的 `MEDIA_RESOLVE_EXTRACTOR_ARGS` 配置，不允许请求方指定。
 
 ### 安装依赖
 
-- **Docker**：官方镜像已内置 yt-dlp 与 ffmpeg。构建时可用 `--build-arg YTDLP_VERSION=2026.09.05` 固定 yt-dlp 版本；其下载失败不会中断构建，此时功能会报告为不可用。
+- **Docker**：官方镜像已内置 yt-dlp 与 ffmpeg，并默认设置 `MEDIA_RESOLVE_JS_RUNTIME=node`（见下）。构建时可用 `--build-arg YTDLP_VERSION=2026.08.19` 固定 yt-dlp 版本；其下载失败不会中断构建，此时功能会报告为不可用。
 - **裸机 / 自托管**：
 
 ```bash
-sudo apt install -y ffmpeg            # 合并音视频，必需
+sudo apt install -y ffmpeg            # 合并音视频 + 所有后处理，必需
 sudo curl -fsSL -o /usr/local/bin/yt-dlp \
   https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux
 sudo chmod +x /usr/local/bin/yt-dlp
+# YouTube 自 2025.11.12 起需要外部 JS 运行时；已在用 Node 可直接启用
+sudo apt install -y nodejs            # 或 deno
 ```
 
   二进制不在 `PATH` 时，用 `MEDIA_RESOLVE_YTDLP_PATH` / `MEDIA_RESOLVE_FFMPEG_PATH` 指定绝对路径。
@@ -626,18 +662,52 @@ sudo chmod +x /usr/local/bin/yt-dlp
 | `MEDIA_RESOLVE_EXTRA_HOSTS` | 追加到内置站点白名单的域名（逗号或空格分隔） | - |
 | `MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS` | 允许任意站点（默认关闭，避免被当作通用请求转发器） | `false` |
 | `URL_IMPORT_MAX_SIZE` | 解析转存 / 远程 URL 导入的单文件体积上限（字节） | `UPLOAD_MAX_SIZE` |
+| **能力** | | |
+| `MEDIA_RESOLVE_JS_RUNTIME` | JS 运行时（`node` / `deno` / `quickjs` / `bun`），`none` 表示不传该参数 | `node` |
+| `MEDIA_RESOLVE_JS_RUNTIME_PATH` | 运行时不在 `PATH` 时的绝对路径 | - |
+| `MEDIA_RESOLVE_REMOTE_COMPONENTS` | 允许拉取 EJS 组件（`ejs:npm` / `ejs:github`）；官方构建已内置 | - |
+| **反爬与重试** | | |
+| `MEDIA_RESOLVE_EXTRACTOR_RETRIES` | 解析阶段重试次数 | `3` |
+| `MEDIA_RESOLVE_FRAGMENT_RETRIES` | 分片下载重试次数 | `10` |
+| `MEDIA_RESOLVE_RETRY_SLEEP` | 重试退避策略（yt-dlp 语法） | `http:exp=1:20` |
+| `MEDIA_RESOLVE_SOCKET_TIMEOUT` | 套接字超时（秒） | `20` |
+| `MEDIA_RESOLVE_CONCURRENT_FRAGMENTS` | 分片并发数（加速分段下载的受支持方式） | `4` |
+| `MEDIA_RESOLVE_MAX_CONCURRENT_FRAGMENTS` | 请求方可通过 `concurrentFragments` 指定的上限 | `16` |
+| `MEDIA_RESOLVE_LIMIT_RATE` | 全局下载限速，如 `4.2M`；留空不限 | - |
+| `MEDIA_RESOLVE_MAX_FILESIZE` | 下载前体积上限，如 `2G`；留空不限 | - |
+| `MEDIA_RESOLVE_EXTRACTOR_ARGS` | 运维级站点参数，始终生效（**可信输入**，唯一允许设置请求去向键的位置） | - |
+| `MEDIA_RESOLVE_IMPERSONATE` | TLS 指纹伪装默认值；本机不支持时会被忽略并告警 | - |
+| **媒体增强**（默认关闭，开启后对所有解析生效） | | |
+| `MEDIA_RESOLVE_WRITE_SUBTITLES` | 下载字幕文件 | `false` |
+| `MEDIA_RESOLVE_SUBTITLE_LANGS` | 字幕语言选择器 | `zh.*,en` |
+| `MEDIA_RESOLVE_WRITE_THUMBNAIL` | 保存封面文件 | `false` |
+| `MEDIA_RESOLVE_WRITE_INFO_JSON` | 保存 info JSON | `false` |
+| `MEDIA_RESOLVE_WRITE_NFO` | 生成 NFO | `false` |
+| `MEDIA_RESOLVE_EMBED_METADATA` / `MEDIA_RESOLVE_EMBED_THUMBNAIL` | 嵌入元数据 / 封面（需 ffmpeg） | `false` |
+| **扩展能力限制** | | |
+| `MEDIA_RESOLVE_SIDECAR_ENABLED` | 是否随媒体一并上传字幕/封面/NFO | `true` |
+| `MEDIA_RESOLVE_MAX_SIDECAR_FILES` | 单次解析最多产出的附属文件数 | `12` |
+| `MEDIA_RESOLVE_MAX_SIDECAR_BYTES` | 单个附属文件体积上限（字节） | `20971520` |
+| `MEDIA_RESOLVE_ALLOW_PLAYLISTS` | 是否允许合集/播放列表解析 | `true` |
+| `MEDIA_RESOLVE_MAX_PLAYLIST_ITEMS` | 单次请求最多返回的合集条目数 | `25` |
+| `MEDIA_RESOLVE_ALLOW_LIVE` | 是否允许直播下载 | `true` |
+| `MEDIA_RESOLVE_PROGRESS` | 是否启用后台任务进度回报 | `true` |
+| `MEDIA_RESOLVE_PROGRESS_HISTORY` | 保留的历史任务条数 | `64` |
 
 ### 实测行为与注意事项
 
 以下结论来自在自托管服务器（Ubuntu 24.04，海外机房）上的实测：
 
-- **User-Agent 必须不是浏览器样式。** B站对形如 `Mozilla/5.0 ...` 的 UA 一律返回 **412 Precondition Failed**（它期待完整的浏览器签名），而对 `yt-dlp`、`curl`、`wget` 这类 UA 正常放行。默认值 `yt-dlp` 正是为此选的，**不要改成浏览器 UA**，否则 B站 直接不可用。
+- **User-Agent 必须不是浏览器样式。** B站对形如 `Mozilla/5.0 ...` 的 UA 一律返回 **412 Precondition Failed**（它期待完整的浏览器签名），而对 `yt-dlp`、`curl`、`wget` 这类 UA 正常放行。默认值 `yt-dlp` 正是为此选的，**不要改成浏览器 UA**，否则 B站 直接不可用。这也是为什么 TLS 伪装（`MEDIA_RESOLVE_IMPERSONATE`）不是默认开启的全局选项 —— 它与这个 UA 策略方向相反，需要按站点权衡。
 - **B站 / YouTube 只有分离流，必须靠 ffmpeg 合并。** 实测某 B站 1080P 视频，yt-dlp 给出 15 个格式（3 条纯音频 + 12 条纯视频），合流格式为 **0**；YouTube 同样（53 个格式，0 合流）。
+- **YouTube 需要外部 JS 运行时。** yt-dlp 自 **2025.11.12** 起要求外部 JS 运行时才能完整支持 YouTube；缺了它 yt-dlp 会静默丢弃 `web` 播放器客户端，只剩降级回退（2026.08.19 的默认客户端为 `visionos,web`，`web` 被丢弃后余量极小）。官方镜像已默认 `MEDIA_RESOLVE_JS_RUNTIME=node`，裸机部署请自行安装 node 或 deno。
 - **CDN 防盗链也看 UA，但不影响 yt-dlp。** 部分 B站 CDN 节点（如 `upos-*.akamaized.net`）对非浏览器 UA 返回 403，而 yt-dlp 下载时会自带完整请求头，实测正常：某 1080P 视频约 55MB，约 20 秒完成，速率约 2.3MB/s。**所以请让 yt-dlp 自己下载，不要自己拿直链去拉 CDN。**
+- **时间区间裁剪由 ffmpeg 直接抓流。** `downloadSections` 会交给 ffmpeg 按区间读取远端流，在到 CDN 网络受限的环境里可能报 `ffmpeg exited with code ...`（实测某网络下为 `Connection ... failed: Error number -138`）。这属于环境问题而非参数错误 —— 同样的区间 yt-dlp 已正确解析（日志出现 `Downloading 1 time ranges: ...`）。
 - **转存上限取三者最小值**：`min(URL_IMPORT_MAX_SIZE, UPLOAD_MAX_SIZE, 目标存储后端上限)`。`URL_IMPORT_MAX_SIZE` 默认跟随 `UPLOAD_MAX_SIZE`，所以**调 `UPLOAD_MAX_SIZE` 一处即可同时约束普通上传与解析转存**；`MEDIA_RESOLVE_MAX_FILE_SIZE` 是另一条独立的解析期护栏（`0` 表示不限）。注意 `UPLOAD_MAX_SIZE` 必须与 `MemoryMax` 同步（转存同上传一样会把整个文件缓冲进内存），因此 2GB 这类上限只在内存足够时成立；实际部署中常先按服务器性能把它压到一个较小的值（例如 100MB），存储后端与 Bot API 侧的能力并不会因此改变。
-- **下载会占用磁盘。** 视频先落到 `MEDIA_RESOLVE_TEMP_DIR`（默认 `DATA_DIR/tmp`），入库后立即删除；请确保该分区能容纳至少一个视频。
+- **下载会占用磁盘。** 视频先落到 `MEDIA_RESOLVE_TEMP_DIR`（默认 `DATA_DIR/tmp`）下**每次下载独立的子目录**，入库后整个目录立即删除；请确保该分区能容纳至少一个视频。
 - **systemd 部署建议显式设置 `MEDIA_RESOLVE_TEMP_DIR`。** 单元文件里常见的 `PrivateTmp=true` 会让服务看到的 `/tmp` 变成私有挂载 —— 从宿主机既看不见也清理不了，排查问题时极具误导性。放在 `DATA_DIR` 下最省事，因为该路径通常已在 `ReadWritePaths` 中。
-- **孤儿文件有兜底清理。** 下载中途被强杀（OOM、重启）时 `finally` 不会执行，文件会留在临时目录。服务启动时会强制清扫一次，运行期间每 30 分钟一次，**只清 2 小时以上、且文件名以 `kv-resolve-` 开头的文件** —— 进行中的下载和其他人的文件都不会被误删。若清扫因权限不足失败，启动日志会出现 `media-resolve: N stale temp file(s) could not be removed`，说明该目录不属于服务账号。
+- **孤儿文件有兜底清理。** 下载中途被强杀（OOM、重启）时 `finally` 不会执行，文件会留在临时目录。服务启动时会强制清扫一次，运行期间每 30 分钟一次，**只清 2 小时以上、且文件名以 `kv-resolve-` 开头的文件或目录** —— 进行中的下载和其他人的文件都不会被误删。若清扫因权限不足失败，启动日志会出现 `media-resolve: N stale temp file(s) could not be removed`，说明该目录不属于服务账号。
+
 - **B站 1080P+ 与抖音需要 Cookie。** 导出 Netscape 格式的 `cookies.txt`，通过 `MEDIA_RESOLVE_COOKIES_FILE` 指定；否则可能只解析到试看片段或直接失败。**抖音的 Cookie 不需要登录账号**（游客 Cookie 即可，访问一次 douyin.com 就有），但会过期，需要定期重新生成；服务端对抖音请求会自动附带自身 `Referer`（缺它时接口返回空响应体，并被误报为"缺 Cookie"）。
   - 仓库自带 `scripts/douyin-cookie-harvest.py`（由 `scripts/kvault-bootstrap-media.sh` 安装 Playwright + Chromium 并注册每 3 天的续期定时器）：用服务器自己的 IP 抓游客 Cookie，并**先验证可用再原子替换**旧文件，抓不到或验证失败就保留旧文件。
   - **服务不会把主 Cookie 文件直接交给 yt-dlp。** 每次解析都会把主文件复制到 `MEDIA_RESOLVE_TEMP_DIR` 下的临时副本再用（yt-dlp 退出时会回写 `--cookies` 文件），用完即删。因此主文件只需**服务账号可读**，不必可写；副本机制也避免了并发解析互相覆盖同一个 jar。
