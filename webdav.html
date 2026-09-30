@@ -12,19 +12,19 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css" />
     <style>
       :root {
-        --wf-surface: rgba(255, 255, 255, 0.92);
+        --wf-surface: #ffffff;
         --wf-border: rgba(255, 255, 255, 0.58);
-        --wf-shadow: 0 10px 28px rgba(20, 32, 55, 0.12);
-        --wf-shadow-soft: 0 6px 18px rgba(20, 32, 55, 0.1);
+        --wf-shadow: var(--shadow-2);
+        --wf-shadow-soft: var(--shadow-1);
         --wf-primary: #8a4bff;
         --wf-primary-soft: rgba(138, 75, 255, 0.13);
       }
 
       html[data-theme="dark"] {
-        --wf-surface: rgba(16, 26, 43, 0.9);
+        --wf-surface: #101a2b;
         --wf-border: rgba(120, 145, 192, 0.32);
-        --wf-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
-        --wf-shadow-soft: 0 8px 20px rgba(0, 0, 0, 0.3);
+        --wf-shadow: var(--shadow-2-dark);
+        --wf-shadow-soft: var(--shadow-1-dark);
         --wf-primary: #9aa9ff;
         --wf-primary-soft: rgba(154, 169, 255, 0.2);
       }
@@ -36,20 +36,14 @@
       body {
         margin: 0;
         min-height: 100vh;
-        background:
-          radial-gradient(60vw 50vh at 12% 8%, rgba(138, 75, 255, 0.16), transparent 70%),
-          radial-gradient(50vw 45vh at 88% 14%, rgba(255, 166, 104, 0.2), transparent 72%),
-          linear-gradient(135deg, #ffd7e4 0%, #c8f1ff 100%);
+        background: #fafaf8;
         color: #1f2937;
         font-family: "Manrope", "Noto Sans SC", "PingFang SC", "Segoe UI", sans-serif;
       }
 
       html[data-theme="dark"] body {
         color: #e7eeff;
-        background:
-          radial-gradient(60vw 50vh at 12% 8%, rgba(64, 129, 255, 0.2), transparent 70%),
-          radial-gradient(50vw 45vh at 88% 14%, rgba(68, 170, 146, 0.2), transparent 72%),
-          linear-gradient(140deg, #0a1222 0%, #0d1729 52%, #132237 100%);
+        background: #101318;
       }
 
       .page {
@@ -67,12 +61,10 @@
         justify-content: space-between;
         gap: 12px;
         padding: 16px 24px;
-        border-radius: 16px;
+        border-radius: var(--radius-lg);
         background: var(--wf-surface);
         border: 1px solid var(--wf-border);
-        box-shadow: var(--wf-shadow-soft);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        box-shadow: var(--shadow-2);
         margin-bottom: 16px;
       }
 
@@ -105,7 +97,6 @@
         height: 30px;
         border-radius: 8px;
         object-fit: cover;
-        box-shadow: 0 4px 12px rgba(138, 75, 255, 0.2);
         background: rgba(255, 255, 255, 0.92);
       }
 
@@ -123,7 +114,7 @@
         color: inherit;
         text-decoration: none;
         cursor: pointer;
-        transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        transition: background 0.18s ease-out, border-color 0.18s ease-out;
         font-weight: 600;
       }
 
@@ -131,8 +122,6 @@
       .action-btn:hover {
         border-color: rgba(138, 75, 255, 0.4);
         background: var(--wf-primary-soft);
-        box-shadow: var(--wf-shadow-soft);
-        transform: translateY(-1px);
       }
 
       .action-link.active {
@@ -153,10 +142,10 @@
         justify-content: space-between;
         gap: 10px;
         padding: 12px 14px;
-        border-radius: 14px;
+        border-radius: var(--radius-lg);
         border: 1px solid var(--wf-border);
         background: var(--wf-surface);
-        box-shadow: var(--wf-shadow-soft);
+        box-shadow: var(--shadow-1);
       }
 
       .toolbar-left,
@@ -174,7 +163,7 @@
         padding: 8px 12px;
         border-radius: 999px;
         border: 1px solid var(--wf-border);
-        background: rgba(255, 255, 255, 0.72);
+        background: #ffffff;
         color: #586173;
         font-size: 0.88rem;
         font-weight: 600;
@@ -210,14 +199,9 @@
       .card {
         border: 1px solid var(--wf-border);
         background: var(--wf-surface);
-        border-radius: 16px;
-        box-shadow: var(--wf-shadow-soft);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-1);
         padding: 16px;
-        transition: box-shadow 0.2s ease;
-      }
-
-      .card:hover {
-        box-shadow: var(--wf-shadow);
       }
 
       .card-header {
@@ -260,28 +244,23 @@
         position: relative;
         flex: 1;
         min-height: 74px;
-        border-radius: 14px;
+        border-radius: var(--radius-md);
         border: 1px dashed rgba(138, 75, 255, 0.45);
-        background:
-          linear-gradient(140deg, rgba(255, 255, 255, 0.9) 0%, rgba(242, 233, 255, 0.86) 100%);
+        background: #ffffff;
         padding: 12px 14px;
         display: flex;
         align-items: center;
         gap: 12px;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        transition: border-color 0.18s ease-out, background 0.18s ease-out;
       }
 
       .file-picker:hover {
         border-color: rgba(138, 75, 255, 0.68);
-        box-shadow: 0 8px 20px rgba(138, 75, 255, 0.18);
-        transform: translateY(-1px);
       }
 
       .file-picker.is-dragover {
         border-color: rgba(16, 185, 129, 0.82);
-        box-shadow: 0 10px 22px rgba(16, 185, 129, 0.22);
-        background:
-          linear-gradient(140deg, rgba(236, 253, 245, 0.94) 0%, rgba(216, 255, 243, 0.9) 100%);
+        background: #ecfdf5;
       }
 
       .file-picker.has-files {
@@ -300,16 +279,15 @@
       }
 
       .file-choose-btn {
-        border-radius: 999px;
+        border-radius: var(--radius-sm);
         border: 1px solid rgba(138, 75, 255, 0.36);
-        background: rgba(255, 255, 255, 0.9);
+        background: #ffffff;
         min-height: 42px;
         padding: 9px 14px;
         display: inline-flex;
         align-items: center;
         gap: 8px;
         white-space: nowrap;
-        box-shadow: 0 4px 12px rgba(138, 75, 255, 0.14);
       }
 
       .file-picker-meta {
@@ -355,8 +333,8 @@
       .file-queue-wrap {
         margin-top: 12px;
         border: 1px solid var(--wf-border);
-        background: rgba(255, 255, 255, 0.72);
-        border-radius: 12px;
+        background: #ffffff;
+        border-radius: var(--radius-md);
         padding: 10px;
       }
 
@@ -378,11 +356,11 @@
       }
 
       .file-queue-clear {
-        border-radius: 999px;
+        border-radius: var(--radius-sm);
         padding: 6px 10px;
         font-size: 0.8rem;
         border: 1px solid rgba(245, 108, 108, 0.42);
-        background: rgba(255, 245, 245, 0.92);
+        background: #fff5f5;
         color: #d74b4b;
       }
 
@@ -399,15 +377,15 @@
         align-items: center;
         gap: 10px;
         border: 1px solid rgba(138, 75, 255, 0.18);
-        border-radius: 10px;
+        border-radius: var(--radius-md);
         padding: 7px 8px;
-        background: rgba(255, 255, 255, 0.88);
+        background: #ffffff;
       }
 
       .file-queue-icon {
         width: 30px;
         height: 30px;
-        border-radius: 9px;
+        border-radius: var(--radius-sm);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -476,7 +454,7 @@
       }
 
       .btn-primary {
-        background: linear-gradient(135deg, #8a4bff 0%, #b39ddb 100%);
+        background: #8a4bff;
         border-color: transparent;
         color: #fff;
       }
@@ -486,7 +464,7 @@
       }
 
       .btn-danger {
-        background: linear-gradient(135deg, #f56c6c 0%, #f89b9b 100%);
+        background: #f56c6c;
         border-color: transparent;
         color: #fff;
       }
@@ -523,20 +501,18 @@
 
       html[data-theme="dark"] .file-picker {
         border-color: rgba(130, 152, 196, 0.52);
-        background:
-          linear-gradient(140deg, rgba(19, 30, 52, 0.92) 0%, rgba(32, 45, 72, 0.9) 100%);
+        background: #1e2a44;
       }
 
       html[data-theme="dark"] .file-picker:hover {
         border-color: rgba(154, 169, 255, 0.72);
-        box-shadow: 0 8px 20px rgba(100, 123, 255, 0.26);
+        box-shadow: var(--shadow-2-dark);
       }
 
       html[data-theme="dark"] .file-picker.is-dragover {
         border-color: rgba(52, 211, 153, 0.76);
-        box-shadow: 0 10px 22px rgba(16, 185, 129, 0.24);
-        background:
-          linear-gradient(140deg, rgba(13, 49, 47, 0.92) 0%, rgba(23, 68, 62, 0.88) 100%);
+        box-shadow: var(--shadow-2-dark);
+        background: #123b37;
       }
 
       html[data-theme="dark"] .file-choose-btn {

@@ -17,11 +17,11 @@
       --primary-light: #b39ddb;
       --primary-dark: #6c3ce0;
       --accent: #ffd7e4;
-      --bg: linear-gradient(135deg, #ffd7e4 0%, #c8f1ff 100%);
-      --card-bg: rgba(255, 255, 255, 0.92);
-      --shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-      --shadow-hover: 0 8px 24px rgba(138, 75, 255, 0.12);
-      --transition: all 0.2s ease;
+      --bg: #ffd7e4;
+      --card-bg: #ffffff;
+      --shadow: var(--shadow-1);
+      --shadow-hover: var(--shadow-2);
+      --transition: all 0.2s ease-out;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -37,12 +37,6 @@
       max-width: 1600px; 
       margin: 0 auto; 
       padding: 20px;
-      animation: fadeIn 0.5s ease-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
     }
 
     /* 头部 */
@@ -52,9 +46,7 @@
       align-items: center;
       padding: 18px 28px;
       background: var(--card-bg);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border-radius: 18px;
+      border-radius: var(--radius-md);
       margin-bottom: 24px;
       box-shadow: var(--shadow);
       border: 1px solid rgba(255, 255, 255, 0.5);
@@ -86,9 +78,9 @@
       width: 100%;
       padding: 10px 16px;
       border: 2px solid #eee;
-      border-radius: 24px;
+      border-radius: var(--radius-sm);
       font-size: 0.95em;
-      transition: all 0.3s;
+      transition: all 0.2s ease-out;
     }
 
     .header-search input:focus {
@@ -108,14 +100,9 @@
     .header-actions .gallery-theme-toggle {
       margin-left: 2px;
       border: 1.5px solid rgba(138, 75, 255, 0.25);
-      background: linear-gradient(
-        135deg,
-        rgba(138, 75, 255, 0.16),
-        rgba(200, 241, 255, 0.42)
-      );
+      background: rgba(138, 75, 255, 0.16);
       color: #2f3243;
       font-weight: 600;
-      box-shadow: 0 6px 16px rgba(138, 75, 255, 0.14);
     }
 
     .header-actions .gallery-theme-toggle i {
@@ -126,16 +113,11 @@
 
     .header-actions .gallery-theme-toggle:hover {
       border-color: var(--primary-light);
-      transform: translateY(-1px);
     }
 
     html[data-theme="dark"] .header-actions .gallery-theme-toggle {
       border-color: rgba(154, 169, 255, 0.45);
-      background: linear-gradient(
-        135deg,
-        rgba(154, 169, 255, 0.2),
-        rgba(84, 106, 156, 0.35)
-      );
+      background: rgba(154, 169, 255, 0.2);
       color: #e8eeff;
     }
 
@@ -145,12 +127,12 @@
 
     .nav-btn {
       padding: 8px 16px;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       text-decoration: none;
       color: #666;
       font-size: 0.9em;
-      transition: all 0.3s;
-      background: rgba(255, 255, 255, 0.8);
+      transition: all 0.2s ease-out;
+      background: #ffffff;
       border: 1px solid #eee;
       cursor: pointer;
       display: flex;
@@ -177,8 +159,7 @@
       align-items: center;
       padding: 14px 24px;
       background: var(--card-bg);
-      backdrop-filter: blur(20px);
-      border-radius: 14px;
+      border-radius: var(--radius-md);
       margin-bottom: 20px;
       flex-wrap: wrap;
       gap: 12px;
@@ -190,8 +171,8 @@
 
     .stat-badge {
       padding: 8px 16px;
-      background: linear-gradient(135deg, rgba(138, 75, 255, 0.08), rgba(255, 215, 228, 0.15));
-      border-radius: 24px;
+      background: rgba(138, 75, 255, 0.08);
+      border-radius: var(--radius-sm);
       font-size: 0.88em;
       color: #555;
       font-weight: 500;
@@ -205,14 +186,14 @@
       gap: 4px;
       background: #f5f5f5;
       padding: 4px;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
     }
 
     .format-btn {
       padding: 6px 12px;
       border: none;
       background: transparent;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       cursor: pointer;
       font-size: 0.8em;
       transition: all 0.2s;
@@ -232,7 +213,7 @@
     .image-card {
       position: relative;
       aspect-ratio: 1;
-      border-radius: 16px;
+      border-radius: var(--radius-md);
       overflow: hidden;
       background: var(--card-bg);
       box-shadow: var(--shadow);
@@ -244,12 +225,11 @@
     }
 
     .image-card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-hover);
+      border-color: var(--primary-light);
     }
 
     .image-card.selected {
-      box-shadow: 0 0 0 3px var(--primary), var(--shadow-hover);
+      box-shadow: 0 0 0 3px var(--primary), var(--shadow-1);
     }
 
     .image-card img {
@@ -266,7 +246,7 @@
       top: 0; left: 0; right: 0; bottom: 0;
       background: linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(0,0,0,0.7) 100%);
       opacity: 0;
-      transition: opacity 0.3s;
+      transition: opacity 0.25s ease-out;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
@@ -295,8 +275,8 @@
       width: 32px;
       height: 32px;
       border: none;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.9);
+      border-radius: var(--radius-sm);
+      background: #ffffff;
       color: #333;
       cursor: pointer;
       display: flex;
@@ -309,7 +289,6 @@
     .card-btn:hover {
       background: var(--primary);
       color: white;
-      transform: scale(1.1);
     }
 
     .card-btn.delete:hover { background: #f56c6c; }
@@ -320,8 +299,8 @@
       left: 10px;
       width: 24px;
       height: 24px;
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 6px;
+      background: #ffffff;
+      border-radius: var(--radius-sm);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -344,14 +323,13 @@
       bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(51, 51, 51, 0.95);
-      backdrop-filter: blur(10px);
+      background: #333333;
       padding: 12px 24px;
-      border-radius: 16px;
+      border-radius: var(--radius-md);
       display: flex;
       align-items: center;
       gap: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      box-shadow: var(--shadow-2);
       z-index: 100;
     }
 
@@ -365,7 +343,7 @@
     .batch-btn {
       padding: 8px 16px;
       border: none;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       cursor: pointer;
       font-size: 0.85em;
       transition: all 0.2s;
@@ -379,7 +357,7 @@
     .batch-btn.danger { background: #f56c6c; color: white; }
     .batch-btn.default { background: rgba(255,255,255,0.2); color: white; }
 
-    .batch-btn:hover { transform: scale(1.05); filter: brightness(1.1); }
+    .batch-btn:hover { filter: brightness(1.1); }
 
     /* 预览弹窗 - 原生图片 / iframe */
     .preview-modal {
@@ -396,8 +374,8 @@
     .preview-modal img {
       max-width: 90%;
       max-height: 90%;
-      border-radius: 8px;
-      box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-3);
     }
 
     /* iframe 容器 - 90% 宽度，80% 高度 */
@@ -405,7 +383,7 @@
       width: 90vw;
       height: 80vh;
       position: relative;
-      border-radius: 8px;
+      border-radius: var(--radius-lg);
       overflow: hidden;
       background: #000;
     }
@@ -428,7 +406,7 @@
       color: white;
       font-size: 1.5em;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.2s ease-out;
     }
 
     .preview-close:hover {
@@ -443,7 +421,7 @@
       transform: translateX(-50%);
       background: rgba(0, 0, 0, 0.7);
       padding: 12px 24px;
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       color: white;
       display: flex;
       gap: 16px;
@@ -471,8 +449,8 @@
       width: 40px;
       height: 40px;
       border: none;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.9);
+      border-radius: var(--radius-sm);
+      background: #ffffff;
       cursor: pointer;
       transition: all 0.2s;
       font-size: 0.9em;
@@ -521,13 +499,13 @@
     .toast {
       padding: 12px 20px;
       background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-2);
       margin-bottom: 10px;
       display: flex;
       align-items: center;
       gap: 10px;
-      animation: slideIn 0.3s ease;
+      animation: slideIn 0.2s ease-out;
     }
 
     .toast.success { border-left: 4px solid #67c23a; }
@@ -661,7 +639,7 @@
       
       .header {
         padding: 12px 14px;
-        border-radius: 12px;
+        border-radius: var(--radius-md);
         gap: 10px;
       }
       
@@ -693,7 +671,7 @@
       .nav-btn {
         padding: 6px 10px;
         font-size: 0.78em;
-        border-radius: 8px;
+        border-radius: var(--radius-sm);
       }
       
       .nav-btn i {
@@ -702,7 +680,7 @@
       
       .toolbar {
         padding: 12px;
-        border-radius: 12px;
+        border-radius: var(--radius-md);
         gap: 10px;
       }
       
@@ -713,7 +691,7 @@
       .stat-badge {
         padding: 5px 10px;
         font-size: 0.75em;
-        border-radius: 6px;
+        border-radius: var(--radius-sm);
       }
       
       .format-btn {
@@ -728,7 +706,7 @@
       }
       
       .image-card {
-        border-radius: 10px;
+        border-radius: var(--radius-md);
       }
       
       .image-card-checkbox {
@@ -755,7 +733,7 @@
         bottom: 8px;
         padding: 10px;
         gap: 8px;
-        border-radius: 12px;
+        border-radius: var(--radius-md);
       }
       
       .batch-btn {
@@ -784,13 +762,13 @@
       .header {
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
-        background: rgba(255, 255, 255, 0.98);
+        background: #ffffff;
       }
 
       .toolbar {
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
-        background: rgba(255, 255, 255, 0.98);
+        background: #ffffff;
       }
 
       .image-card:hover {

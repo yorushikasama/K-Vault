@@ -14,15 +14,15 @@ html[data-theme="dark"] {
   --primary: #9aa9ff;
   --accent-color: #8d9dd8;
   --accent: #8d9dd8;
-  --bg-gradient: linear-gradient(140deg, #111a2d 0%, #0b1120 55%, #070b16 100%);
-  --bg: var(--bg-gradient);
-  --card-bg: rgba(15, 23, 39, 0.9);
-  --shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
-  --shadow-hover: 0 14px 32px rgba(0, 0, 0, 0.45);
+  --bg-gradient: #0b1120;
+  --bg: #0b1120;
+  --card-bg: #0f1727;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 1px rgba(0, 0, 0, 0.22);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.34);
 }
 
 html[data-theme="dark"] body {
-  background: var(--bg-gradient) !important;
+  background: #0b1120 !important;
   color: #e8eeff !important;
 }
 
@@ -68,11 +68,7 @@ html[data-theme="dark"] .batch-links {
 html[data-theme="dark"] .storage-switcher,
 html[data-theme="dark"] .stats-bar,
 html[data-theme="dark"] .guest-notice {
-  background: linear-gradient(
-    135deg,
-    rgba(20, 29, 49, 0.9) 0%,
-    rgba(25, 35, 58, 0.85) 100%
-  ) !important;
+  background: #141d31 !important;
   border-color: rgba(130, 152, 196, 0.35) !important;
 }
 
@@ -125,12 +121,12 @@ html[data-theme="dark"] .el-button:not(.el-button--primary):not(.el-button--dang
 }
 
 html[data-theme="dark"] .el-button--primary {
-  background: linear-gradient(135deg, #6f84ff 0%, #8ea4ff 100%) !important;
+  background: #6f84ff !important;
   border-color: transparent !important;
 }
 
 html[data-theme="dark"] .el-button--danger {
-  background: linear-gradient(135deg, #d0617d 0%, #eb839f 100%) !important;
+  background: #d0617d !important;
   border-color: transparent !important;
 }
 
@@ -152,19 +148,15 @@ html[data-theme="dark"] textarea::placeholder {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  border-radius: 11px;
-  border: 1.5px solid rgba(138, 75, 255, 0.25);
-  background: linear-gradient(
-    135deg,
-    rgba(138, 75, 255, 0.16),
-    rgba(200, 241, 255, 0.42)
-  );
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(138, 75, 255, 0.25);
+  background: #ffffff;
   color: #2f3243;
   font-size: 0.88em;
   font-weight: 600;
   line-height: 1;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
 }
 
 .theme-floating-toggle i {
@@ -174,8 +166,8 @@ html[data-theme="dark"] textarea::placeholder {
 }
 
 .theme-floating-toggle:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(138, 75, 255, 0.2);
+  border-color: rgba(138, 75, 255, 0.55);
+  background: #f6f3ff;
 }
 
 .theme-auto-inline-toggle {
@@ -183,18 +175,14 @@ html[data-theme="dark"] textarea::placeholder {
   align-items: center;
   gap: 8px;
   padding: 9px 13px;
-  border-radius: 10px;
-  border: 1.5px solid rgba(138, 75, 255, 0.25);
-  background: linear-gradient(
-    135deg,
-    rgba(138, 75, 255, 0.16),
-    rgba(200, 241, 255, 0.42)
-  );
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(138, 75, 255, 0.25);
+  background: #ffffff;
   color: #2f3243;
   font-size: 0.86em;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
 }
 
 .theme-auto-inline-toggle i {
@@ -204,8 +192,8 @@ html[data-theme="dark"] textarea::placeholder {
 }
 
 .theme-auto-inline-toggle:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(138, 75, 255, 0.2);
+  border-color: rgba(138, 75, 255, 0.55);
+  background: #f6f3ff;
 }
 
 .theme-admin-toggle {
@@ -214,16 +202,12 @@ html[data-theme="dark"] textarea::placeholder {
   justify-content: center;
   width: 38px;
   height: 38px;
-  border: 1.5px solid rgba(138, 75, 255, 0.25);
+  border: 1px solid rgba(138, 75, 255, 0.25);
   border-radius: 50%;
-  background: linear-gradient(
-    135deg,
-    rgba(138, 75, 255, 0.16),
-    rgba(200, 241, 255, 0.42)
-  );
+  background: #ffffff;
   color: #2f3243;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
   margin-right: 8px;
 }
 
@@ -237,17 +221,13 @@ html[data-theme="dark"] textarea::placeholder {
 }
 
 .theme-admin-toggle:hover {
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 8px 20px rgba(138, 75, 255, 0.2);
+  border-color: rgba(138, 75, 255, 0.55);
+  background: #f6f3ff;
 }
 
 html[data-theme="dark"] .theme-floating-toggle {
   border-color: rgba(154, 169, 255, 0.45);
-  background: linear-gradient(
-    135deg,
-    rgba(154, 169, 255, 0.2),
-    rgba(84, 106, 156, 0.35)
-  );
+  background: #1b2436;
   color: #e8eeff;
 }
 
@@ -258,11 +238,7 @@ html[data-theme="dark"] .theme-floating-toggle i {
 html[data-theme="dark"] .theme-auto-inline-toggle,
 html[data-theme="dark"] .theme-admin-toggle {
   border-color: rgba(154, 169, 255, 0.45);
-  background: linear-gradient(
-    135deg,
-    rgba(154, 169, 255, 0.2),
-    rgba(84, 106, 156, 0.35)
-  );
+  background: #1b2436;
   color: #e8eeff;
 }
 
@@ -280,7 +256,10 @@ html[data-theme="dark"] .theme-admin-toggle i {
   }
 }
 
-/* ===== Unified Background + Glass Layer ===== */
+/* ===== Unified Background + Surface Layer =====
+   De-slop rules (see DESIGN.md): surfaces are opaque with a hairline border,
+   no glassmorphism, no colored glows, a deliberate radius scale, and a
+   restrained neutral elevation scale. Brand hues are unchanged. */
 :root {
   --ui-page-bg: #fafaf8;
   --ui-page-bg-dark: #101318;
@@ -288,19 +267,36 @@ html[data-theme="dark"] .theme-admin-toggle i {
   --ui-surface-rgb-dark: 19, 24, 33;
   --ui-border-rgb: 198, 206, 218;
   --ui-border-rgb-dark: 92, 105, 126;
-  --ui-card-opacity: 0.86;
-  --ui-card-blur: 14px;
-  --ui-card-backdrop-filter: blur(var(--ui-card-blur)) saturate(115%);
+  /* Opaque surfaces, no blur. Glass is gone. */
+  --ui-card-opacity: 1;
+  --ui-card-blur: 0px;
+  --ui-card-backdrop-filter: none;
   --ui-noise-opacity: 0;
-  --ui-shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.09);
-  --ui-shadow-soft-dark: 0 14px 32px rgba(0, 0, 0, 0.34);
+
+  /* Radius scale (applied by role, not one global value) */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+
+  /* Neutral elevation scale (no colored glows) */
+  --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
+  --shadow-2: 0 4px 12px rgba(15, 23, 42, 0.08);
+  --shadow-3: 0 12px 28px rgba(15, 23, 42, 0.14);
+  --shadow-1-dark: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 1px rgba(0, 0, 0, 0.22);
+  --shadow-2-dark: 0 4px 12px rgba(0, 0, 0, 0.34);
+  --shadow-3-dark: 0 12px 28px rgba(0, 0, 0, 0.46);
+
+  /* Back-compat aliases: existing rules read --ui-shadow-soft */
+  --ui-shadow-soft: var(--shadow-1);
+  --ui-shadow-soft-dark: var(--shadow-1-dark);
 }
 
 html[data-theme="dark"] {
   --ui-surface-rgb: var(--ui-surface-rgb-dark);
   --ui-border-rgb: var(--ui-border-rgb-dark);
-  --shadow: var(--ui-shadow-soft-dark);
-  --shadow-hover: 0 18px 36px rgba(0, 0, 0, 0.42);
+  --ui-shadow-soft: var(--shadow-1-dark);
+  --shadow: var(--shadow-1-dark);
+  --shadow-hover: var(--shadow-2-dark);
 }
 
 html,
@@ -449,8 +445,8 @@ html[data-theme="dark"] .el-message-box {
 .theme-admin-toggle,
 .gallery-theme-toggle {
   border-color: rgba(var(--ui-border-rgb), 0.58) !important;
-  background: rgba(var(--ui-surface-rgb), 0.9) !important;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1) !important;
+  background: rgba(var(--ui-surface-rgb), 1) !important;
+  box-shadow: var(--shadow-1) !important;
   color: #344054 !important;
 }
 
