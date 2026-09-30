@@ -366,10 +366,15 @@
          原先它落在 Element UI 的默认白底上，内部分区又各铺一层
          rgba(surface, --ui-card-opacity)，叠起来接近不透明 —— 所以看起来
          和卡片不是一套。这里让**只有弹窗根**铺表面 + 磨砂，内部分区透明。 */
+      /* 和 .card 用完全同一套表面：同一个 --card-bg、同一档 20px 磨砂。
+         注意别改成 var(--ui-card-backdrop-filter) —— 那条变量由后台的
+         cardBlur 驱动，线上 cardBlur=0 时它是 none；而 .card/.header 是
+         硬编码 blur(20px)/blur(10px)，根本不看这条变量。跟着变量走的结果
+         就是「卡片有磨砂、弹窗没有」，看起来不统一。 */
       html .quality-picker-dialog {
-        background: rgba(var(--ui-surface-rgb), var(--ui-card-opacity)) !important;
-        backdrop-filter: var(--ui-card-backdrop-filter);
-        -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
+        background: var(--card-bg) !important;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         border: 1px solid var(--surface-border);
         border-radius: var(--border-radius);
         box-shadow: var(--shadow);
@@ -378,7 +383,7 @@
 
       /* 必须带 html 前缀：theme.css 里有 `html[data-theme="dark"] .el-dialog__body`
          这类 (0,2,1) 的选择器并带 !important，普通两类的选择器压不住它 ——
-         压不住时暗色下内部分区仍会各铺一层 0.9 的底，叠成近乎不透明，
+         压不住时暗色下内部分区仍会各铺一层 0.9 的底，叠起来近乎不透明，
          磨砂就白做了。带上 html 提到 (0,3,1) 才稳。 */
       html .quality-picker-dialog .el-dialog__header,
       html .quality-picker-dialog .el-dialog__body,
@@ -2391,14 +2396,10 @@
           font-size: 13px !important;
         }
 
-        /* 移动端禁用高消耗效果 */
-        .header {
-          backdrop-filter: none;
-          -webkit-backdrop-filter: none;
-          background: var(--card-bg);
-        }
-
-        .card {
+        /* 移动端禁用高消耗效果（弹窗与卡片同处理） */
+        .header,
+        .card,
+        html .quality-picker-dialog {
           backdrop-filter: none;
           -webkit-backdrop-filter: none;
           background: var(--card-bg);
