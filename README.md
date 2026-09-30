@@ -565,6 +565,8 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 
 在 Web 上传页的「URL 上传」中输入框里直接粘贴视频分享链接（抖音、B站、快手、微博、小红书、YouTube、TikTok 等），服务端会调用 yt-dlp 解析出平台 CDN 的直链并转存到当前存储后端。
 
+**分享口令可以直接整段粘贴。** 抖音「复制链接」给的不是纯 URL，而是一整句口令（`0.12 复制打开抖音，看看【…】… https://v.douyin.com/xxxx/ …`），前端会把其中的链接抠出来再提交。服务端还会把抖音的短链与分享页地址**归一化成 `https://www.douyin.com/video/{id}`** —— yt-dlp 的抖音 extractor 只认这一种形态：短链会 302 到 `www.iesdouyin.com/share/video/…`，该形态直接报 `Unsupported URL`；换成规范页面并带上游客 Cookie 则能正常解析出全部分辨率（2026-09-30 实测：同一条视频，规范页 32 个格式，短链 0 个）。
+
 > **仅 Docker / 自托管运行时可用。** Cloudflare Pages Functions 没有 `child_process`，因此 Pages 部署不会注册这两个接口，前端会自动隐藏解析相关提示。
 
 ### 两条转存路径
@@ -637,6 +639,9 @@ sudo chmod +x /usr/local/bin/yt-dlp
 - **systemd 部署建议显式设置 `MEDIA_RESOLVE_TEMP_DIR`。** 单元文件里常见的 `PrivateTmp=true` 会让服务看到的 `/tmp` 变成私有挂载 —— 从宿主机既看不见也清理不了，排查问题时极具误导性。放在 `DATA_DIR` 下最省事，因为该路径通常已在 `ReadWritePaths` 中。
 - **孤儿文件有兜底清理。** 下载中途被强杀（OOM、重启）时 `finally` 不会执行，文件会留在临时目录。服务启动时会强制清扫一次，运行期间每 30 分钟一次，**只清 2 小时以上、且文件名以 `kv-resolve-` 开头的文件** —— 进行中的下载和其他人的文件都不会被误删。若清扫因权限不足失败，启动日志会出现 `media-resolve: N stale temp file(s) could not be removed`，说明该目录不属于服务账号。
 - **B站 1080P+ 与抖音需要 Cookie。** 导出 Netscape 格式的 `cookies.txt`，通过 `MEDIA_RESOLVE_COOKIES_FILE` 指定；否则可能只解析到试看片段或直接失败。**抖音的 Cookie 不需要登录账号**（游客 Cookie 即可，访问一次 douyin.com 就有），但会过期，需要定期重新生成；服务端对抖音请求会自动附带自身 `Referer`（缺它时接口返回空响应体，并被误报为"缺 Cookie"）。
+  - 仓库自带 `scripts/douyin-cookie-harvest.py`（由 `scripts/kvault-bootstrap-media.sh` 安装 Playwright + Chromium 并注册每 3 天的续期定时器）：用服务器自己的 IP 抓游客 Cookie，并**先验证可用再原子替换**旧文件，抓不到或验证失败就保留旧文件。
+  - **服务不会把主 Cookie 文件直接交给 yt-dlp。** 每次解析都会把主文件复制到 `MEDIA_RESOLVE_TEMP_DIR` 下的临时副本再用（yt-dlp 退出时会回写 `--cookies` 文件），用完即删。因此主文件只需**服务账号可读**，不必可写；副本机制也避免了并发解析互相覆盖同一个 jar。
+  - ⚠️ 抓取脚本以 root 运行、服务以专用账号运行，脚本写入后会把主文件 `chown` 给服务账号。若看到文件是 `root:root 600`，服务就**读不到**，症状是抖音/ B站 解析一直报"缺 Cookie"（而不是权限错误）——那种情况重跑一次 `sudo kvault-bootstrap-media` 即可修正。
 - **直链是带签名的临时地址**（通常 24 小时内有效），因此「解析」与「转存」应在同一次请求内完成，不建议取到直链后留存稍后再用。
 - 默认只允许白名单内的站点。需要其他站点时用 `MEDIA_RESOLVE_EXTRA_HOSTS` 追加；开放 `MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS` 会让服务端能够请求任意公网地址（仍受 SSRF 防护约束），请谨慎评估。
 - 请遵守各平台服务条款与版权规定，仅用于个人合法用途。

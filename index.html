@@ -4303,15 +4303,32 @@
             return data;
           },
 
+          // 抖音等平台的"复制链接"给的是整段分享文案，形如
+          //   "0.71 复制打开抖音，看看【…】… https://v.douyin.com/xxxx/ 12/12 …"
+          // 链接夹在中间，直接 new URL() 必然失败。这里先把链接抠出来再用。
+          extractUrlFromText(text) {
+            const match = String(text || "").match(
+              /https?:\/\/[^\s<>"'`）)】\]]+/i,
+            );
+            return match ? match[0].replace(/[.,;:！。，、）)】\]]+$/, "") : "";
+          },
+
           async uploadFromUrl() {
-            if (!this.urlToUpload.trim()) {
+            const pasted = String(this.urlToUpload || "").trim();
+            if (!pasted) {
               this.showToast("请输入有效的URL", "error");
               return;
             }
 
+            // 分享文案里抽出真正的链接，并回填输入框，让用户看清将要解析的是什么
+            const submittedUrl = this.extractUrlFromText(pasted) || pasted;
+            if (submittedUrl !== pasted) {
+              this.urlToUpload = submittedUrl;
+            }
+
             // 验证URL格式
             try {
-              const url = new URL(this.urlToUpload);
+              const url = new URL(submittedUrl);
               if (!["http:", "https:"].includes(url.protocol)) {
                 this.showToast("仅支持HTTP/HTTPS协议的URL", "error");
                 return;
@@ -4322,12 +4339,11 @@
             }
 
             // 分享链接：交给服务端解析，先把可选清晰度摆出来让用户定，再转存
-            if (this.isMediaShareLink(this.urlToUpload)) {
-              await this.openQualityPicker(this.urlToUpload);
+            if (this.isMediaShareLink(submittedUrl)) {
+              await this.openQualityPicker(submittedUrl);
               return;
             }
 
-            const submittedUrl = this.urlToUpload;
             this.urlUploading = true;
             try {
               const data = await this.uploadPlainUrlToServer(submittedUrl);

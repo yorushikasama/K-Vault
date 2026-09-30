@@ -24,6 +24,7 @@ const os = require('node:os');
 const path = require('node:path');
 
 const { assertSafeRemoteUrl } = require('../utils/ssrf-guard');
+const { fetchRemote } = require('../utils/remote-fetch');
 const { createSemaphore } = require('../utils/semaphore');
 
 // Hosts we are willing to hand to yt-dlp. Suffix-matched, so "bilibili.com"
@@ -71,6 +72,19 @@ const QUEUE_LIMIT_FACTOR = 4;
 const SWEEP_INTERVAL_MS = 30 * 60 * 1000;
 const SWEEP_MIN_AGE_MS = 2 * 60 * 60 * 1000;
 const TEMP_FILE_PREFIX = 'kv-resolve-';
+
+// --- Share-text and short-link normalisation --------------------------------
+// A Douyin "copy link" is a whole sentence, and the short link inside it
+// redirects to a share page that yt-dlp's extractor does not match. Both are
+// handled before yt-dlp sees anything: the link is lifted out of the text, then
+// rewritten to the canonical /video/{id} page. Measured 2026-09-30 on one video:
+// /video/{id} -> 32 formats, v.douyin.com short link -> "Unsupported URL".
+const URL_IN_TEXT_RE = /https?:\/\/[^\s<>"'`）)】\]]+/i;
+const TRAILING_PUNCT_RE = /[.,;:！。，、）)】\]]+$/;
+const DOUYIN_AWEME_RE = /(?:\/video\/|\/note\/|\/share\/(?:video|note)\/)(\d{6,})/;
+const DOUYIN_MODAL_ID_RE = /[?&]modal_id=(\d{6,})/;
+const DOUYIN_CANONICAL_BASE = 'https://www.douyin.com/video/';
+const SHORT_LINK_TIMEOUT_MS = 15000;
 
 // Timeouts, capacity pressure and a missing binary can all be fixed by
 // retrying later; everything else is a property of the request itself.
@@ -143,6 +157,26 @@ function hostMatches(hostname, allowedHosts) {
     if (hostname === allowed || hostname.endsWith(`.${allowed}`)) return true;
   }
   return false;
+}
+
+// The pasted "copy link" text is a sentence; the URL is one token inside it.
+function extractFirstUrl(text) {
+  const match = String(text || '').match(URL_IN_TEXT_RE);
+  return match ? match[0].replace(TRAILING_PUNCT_RE, '') : '';
+}
+
+function isDouyinHost(hostname) {
+  return /(^|\.)(douyin\.com|iesdouyin\.com)$/.test(String(hostname || '').toLowerCase());
+}
+
+// The canonical page, the share page and the discover page all carry the same
+// numeric id; pull it whichever form the caller pasted.
+function douyinAwemeId(href) {
+  const text = String(href || '');
+  const direct = text.match(DOUYIN_AWEME_RE);
+  if (direct) return direct[1];
+  const modal = text.match(DOUYIN_MODAL_ID_RE);
+  return modal ? modal[1] : '';
 }
 
 // yt-dlp runs with --no-config, but it still needs enough environment to find
@@ -356,6 +390,79 @@ class MediaResolveService {
     return parsed;
   }
 
+  // Everything both public entry points need before yt-dlp runs: tolerate a
+  // pasted share sentence, enforce the host allow-list, then rewrite the URL to
+  // a form the extractor actually understands.
+  async prepareTarget(rawUrl) {
+    const text = String(rawUrl || '').trim();
+    const candidate = extractFirstUrl(text) || text;
+    const parsed = this.assertUrlAllowed(candidate);
+    return this.normalizeShareUrl(parsed);
+  }
+
+  // Douyin's canonical /video/{id} page is the only form yt-dlp's extractor
+  // matches; its short links and share pages are not. Other hosts pass through
+  // untouched — the rewrite is meaningless there and could only break an
+  // extractor that depends on the original URL.
+  async normalizeShareUrl(parsed) {
+    if (!isDouyinHost(parsed.hostname)) return parsed;
+
+    let id = douyinAwemeId(parsed.href);
+    if (!id) {
+      const resolved = await this.followShortLink(parsed.href);
+      if (resolved) id = douyinAwemeId(resolved);
+    }
+    if (!id) return parsed;
+
+    try {
+      return new URL(`${DOUYIN_CANONICAL_BASE}${id}`);
+    } catch {
+      return parsed;
+    }
+  }
+
+  // A v.douyin.com link is a 302 to the share page; only the Location chain is
+  // needed, so the body is dropped as soon as the final URL is known. Failure is
+  // deliberately not fatal: fall back to the original URL and let yt-dlp report
+  // the real reason.
+  async followShortLink(url) {
+    try {
+      const { response, finalUrl } = await fetchRemote({
+        url,
+        headers: { 'User-Agent': this.userAgent },
+        timeoutMs: SHORT_LINK_TIMEOUT_MS,
+      });
+      try {
+        await response.body?.cancel();
+      } catch {
+        // Body already released.
+      }
+      return finalUrl;
+    } catch {
+      return '';
+    }
+  }
+
+  // yt-dlp rewrites its --cookies file on exit, and the master jar is owned by
+  // the harvester, not by the service user. Handing yt-dlp a throwaway copy
+  // keeps the master immutable and sidesteps the ownership mismatch entirely.
+  // Returns '' when nothing readable is configured, which yt-dlp then reports as
+  // the familiar "fresh cookies needed".
+  async materializeCookies() {
+    if (!this.cookiesFile) return '';
+    try {
+      await fs.promises.mkdir(this.tempDir, { recursive: true });
+      const dest = path.join(
+        this.tempDir,
+        `${TEMP_FILE_PREFIX}cookies-${crypto.randomBytes(4).toString('hex')}.txt`
+      );
+      await fs.promises.copyFile(this.cookiesFile, dest);
+      return dest;
+    } catch {
+      return '';
+    }
+  }
+
   // Probing shells out too, so cache both outcomes: successes for a few
   // minutes, failures briefly (a missing binary is fixed by the operator).
   async probe({ force = false } = {}) {
@@ -447,7 +554,7 @@ class MediaResolveService {
     this.gate.release();
   }
 
-  buildCommonArgs(url) {
+  buildCommonArgs(url, cookiesPath = '') {
     const args = [
       // Respect the ?p= / ?v= selector in the URL instead of expanding a
       // channel or collection into every item.
@@ -467,8 +574,10 @@ class MediaResolveService {
     if (this.userAgent) {
       args.push('--user-agent', this.userAgent);
     }
-    if (this.cookiesFile && fs.existsSync(this.cookiesFile)) {
-      args.push('--cookies', this.cookiesFile);
+    // cookiesPath is a per-call copy (see materializeCookies); the configured
+    // master jar is never handed to yt-dlp directly.
+    if (cookiesPath) {
+      args.push('--cookies', cookiesPath);
     }
     if (this.proxy) {
       args.push('--proxy', this.proxy);
@@ -486,19 +595,25 @@ class MediaResolveService {
     } catch {
       host = '';
     }
-    if (/(^|\.)douyin\.com$/.test(host) || /(^|\.)iesdouyin\.com$/.test(host)) {
+    if (isDouyinHost(host)) {
       args.push('--add-header', 'Referer: https://www.douyin.com/');
     }
     return args;
   }
 
-  buildArgs(url) {
+  buildArgs(url, cookiesPath = '') {
     // "--" terminates option parsing so a hostile URL can never be read as a flag.
-    return [...this.buildCommonArgs(url), '--dump-single-json', '--skip-download', '--', url];
+    return [
+      ...this.buildCommonArgs(url, cookiesPath),
+      '--dump-single-json',
+      '--skip-download',
+      '--',
+      url,
+    ];
   }
 
-  buildDownloadArgs(url, destination, hasFfmpeg, formatSelector) {
-    const args = this.buildCommonArgs(url);
+  buildDownloadArgs(url, destination, hasFfmpeg, formatSelector, cookiesPath = '') {
+    const args = this.buildCommonArgs(url, cookiesPath);
     // An explicit selector comes from the quality picker; otherwise ask for the
     // best video plus the best audio and let yt-dlp mux them (needs ffmpeg).
     // Without ffmpeg only a single-file format can be used at all.
@@ -673,7 +788,7 @@ class MediaResolveService {
       });
     }
 
-    const parsed = this.assertUrlAllowed(url);
+    const parsed = await this.prepareTarget(url);
 
     const probe = await this.probe();
     if (!probe.available) {
@@ -683,12 +798,17 @@ class MediaResolveService {
       });
     }
 
-    await this.acquire();
+    const cookiesPath = await this.materializeCookies();
     let stdout;
     try {
-      stdout = await this.runProcess(this.buildArgs(parsed.href), this.timeoutMs);
+      await this.acquire();
+      try {
+        stdout = await this.runProcess(this.buildArgs(parsed.href, cookiesPath), this.timeoutMs);
+      } finally {
+        this.release();
+      }
     } finally {
-      this.release();
+      await this.cleanupFile(cookiesPath);
     }
 
     let info;
@@ -744,7 +864,7 @@ class MediaResolveService {
       });
     }
 
-    const parsed = this.assertUrlAllowed(url);
+    const parsed = await this.prepareTarget(url);
 
     const probe = await this.probe();
     if (!probe.available) {
@@ -785,11 +905,12 @@ class MediaResolveService {
       `kv-resolve-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.mp4`
     );
 
+    const cookiesPath = await this.materializeCookies();
     await this.acquire();
     try {
       await this.runProcessWith(
         this.resolveBinaryPath(),
-        this.buildDownloadArgs(parsed.href, destination, ffmpeg.available, formatSelector),
+        this.buildDownloadArgs(parsed.href, destination, ffmpeg.available, formatSelector, cookiesPath),
         Math.max(this.timeoutMs, Number(timeoutMs) || this.downloadTimeoutMs)
       );
 
@@ -830,6 +951,7 @@ class MediaResolveService {
       throw error;
     } finally {
       this.release();
+      await this.cleanupFile(cookiesPath);
     }
   }
 

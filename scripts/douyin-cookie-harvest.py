@@ -12,9 +12,11 @@ cookies.txt 供 MEDIA_RESOLVE_COOKIES_FILE 使用。写入采用"验证通过才
 import asyncio
 import json
 import os
+import re
 import subprocess
 import sys
 import time
+import urllib.request
 
 from playwright.async_api import async_playwright
 
@@ -92,13 +94,37 @@ async def harvest():
         return cookies
 
 
+def normalize_probe_url(url):
+    """把短链/分享页归一化成 yt-dlp 认得的 https://www.douyin.com/video/{id}。
+
+    抖音"复制链接"给的是 v.douyin.com 短链，它 302 到 iesdouyin 的分享页，而 yt-dlp 的
+    Douyin extractor 只认 /video/{id} 形态（2026-09-30 实测：短链报 Unsupported URL,
+    规范页带 Cookie 正常出 32 个格式）。验证若锚在短链上，续期会一直失败、Cookie 永不刷新。
+    """
+    pattern = r"(?:/video/|/note/|/share/(?:video|note)/)(\d{6,})"
+    match = re.search(pattern, url or "")
+    if not match:
+        match = re.search(r"[?&]modal_id=(\d{6,})", url or "")
+    if not match:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "yt-dlp"})
+            with urllib.request.urlopen(req, timeout=25) as resp:
+                match = re.search(pattern, resp.geturl())
+        except Exception:
+            return url
+    return f"https://www.douyin.com/video/{match.group(1)}" if match else url
+
+
 def verify(path):
     """候选 Cookie 必须真的能解析，否则保留旧文件。"""
+    probe = normalize_probe_url(PROBE_URL)
+    if probe != PROBE_URL:
+        print(f"  probe url normalized: {probe}")
     r = subprocess.run(
         ["yt-dlp", "--no-playlist", "--no-config", "--no-warnings", "--no-progress",
          "--socket-timeout", "20", "--retries", "1", "--dump-single-json", "--skip-download",
          "--add-header", "Referer: https://www.douyin.com/",
-         "--cookies", path, PROBE_URL],
+         "--cookies", path, probe],
         capture_output=True, text=True, timeout=120,
     )
     if r.returncode != 0 or not r.stdout.strip():
