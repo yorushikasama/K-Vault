@@ -49,11 +49,23 @@ describe('ytdlp-options validation', function () {
   it('rejects malformed download sections and playlist items', function () {
     assert.throws(() => normalizeOptions({ downloadSections: '*../../etc/passwd' }), { code: 'MEDIA_RESOLVE_INVALID_OPTION' });
     assert.throws(() => normalizeOptions({ playlistItems: '1;rm -rf /' }), { code: 'MEDIA_RESOLVE_INVALID_OPTION' });
-    assert.strictEqual(
+    assert.deepStrictEqual(
       normalizeOptions({ downloadSections: '*00:01:00-00:03:00' }).options.downloadSections,
-      '*00:01:00-00:03:00'
+      ['*00:01:00-00:03:00']
     );
+    assert.deepStrictEqual(normalizeOptions({ downloadSections: '' }).options.downloadSections, []);
     assert.strictEqual(normalizeOptions({ playlistItems: '1,3,5-7' }).options.playlistItems, '1,3,5-7');
+  });
+
+  it('emits one --download-sections flag per range', function () {
+    // Comma-joining made yt-dlp exit with "invalid --download-sections time
+    // range"; each spec needs its own flag.
+    const { options } = normalizeOptions({ downloadSections: '*0-10,*30-40' });
+    const args = buildDownloadArgs(options, { hasFfmpeg: true, outputTemplate: '/tmp/%(id)s.%(ext)s' });
+    const flags = args.filter((arg) => arg === '--download-sections');
+    assert.strictEqual(flags.length, 2);
+    assert.ok(args.includes('*0-10'));
+    assert.ok(args.includes('*30-40'));
   });
 
   it('rejects unknown presets, sponsorblock categories and impersonate targets', function () {

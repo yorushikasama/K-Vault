@@ -4,6 +4,8 @@ const {
   extractStreamCandidates,
   extractIframeSrcs,
   isStreamTargetUrl,
+  extractHtmlTitle,
+  looksLikeStreamFileTitle,
   MediaResolveService,
 } = require('../server/lib/services/media-resolve-service');
 
@@ -130,6 +132,24 @@ describe('isStreamTargetUrl', function () {
   it('returns false for garbage', function () {
     assert.strictEqual(isStreamTargetUrl(''), false);
     assert.strictEqual(isStreamTargetUrl('not a url'), false);
+  });
+});
+
+describe('page-title fallback for sniffed streams', function () {
+  it('extracts and unescapes the page <title>', function () {
+    assert.strictEqual(
+      extractHtmlTitle('<html><head><title>《当妈妈成为杀人犯》HD中字 - 大地影库</title></head>'),
+      '《当妈妈成为杀人犯》HD中字 - 大地影库'
+    );
+    assert.strictEqual(extractHtmlTitle('<title>A &amp; B</title>'), 'A & B');
+    assert.strictEqual(extractHtmlTitle('<div>no title</div>'), '');
+  });
+
+  it('treats file-stem titles as replaceable', function () {
+    assert.strictEqual(looksLikeStreamFileTitle('index', 'https://cdn.example.com/20260927/x/index.m3u8'), true);
+    assert.strictEqual(looksLikeStreamFileTitle('', 'https://cdn.example.com/a.mp4'), true);
+    assert.strictEqual(looksLikeStreamFileTitle('index', 'https://www.example.com/play/1.html'), false);
+    assert.strictEqual(looksLikeStreamFileTitle('一部真正的电影', 'https://cdn.example.com/index.m3u8'), false);
   });
 });
 

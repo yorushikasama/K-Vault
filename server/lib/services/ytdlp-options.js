@@ -311,18 +311,20 @@ const FFMPEG_ONLY_OPTIONS = [
   ['splitChapters', '按章节分片'],
 ];
 
-// `--download-sections` accepts several comma-separated specs, each of which is
-// either a named SponsorBlock section or `[*]START-END` with `inf` allowed as
-// the end. Anything outside this shape is rejected so nothing surprising can be
-// pasted into the same argv slot.
+// `--download-sections` takes one spec per flag: a named SponsorBlock section
+// or `[*]START-END` with `inf` allowed as the end, repeated for multiple
+// ranges (a comma-joined value makes yt-dlp exit with "invalid
+// --download-sections time range", measured 2026-10-01). Input is still a
+// comma/newline separated string; it is validated spec by spec so nothing
+// surprising can be pasted into the same argv slot.
 const SECTION_SPEC_RE = /^\*?[A-Za-z0-9_:.\-]+$/;
 const SECTION_SPEC_LANGUAGE_KEYS = new Set(['intro', 'outro', 'sponsor', 'selfpromo', 'preview', 'filler', 'interaction', 'music_offtopic', 'poi_highlight', 'hook']);
 
 function normalizeSections(value, field) {
   const text = assertString(value, field, { max: MAX_SECTION_LENGTH });
-  if (!text) return '';
-  const specs = text.split(',').map((item) => item.trim()).filter(Boolean);
-  if (!specs.length) return '';
+  if (!text) return [];
+  const specs = text.split(/[,\n]+/).map((item) => item.trim()).filter(Boolean);
+  if (!specs.length) return [];
   if (specs.length > 16) throw optionError(field, 'no more than 16 ranges are allowed.');
   for (const spec of specs) {
     if (!SECTION_SPEC_RE.test(spec)) {
@@ -334,7 +336,7 @@ function normalizeSections(value, field) {
       throw optionError(field, `range "${spec.slice(0, 24)}" is neither a timestamp nor a known section name.`);
     }
   }
-  return specs.join(',');
+  return specs;
 }
 
 // `--playlist-items` uses yt-dlp's own index syntax: single indices and
@@ -749,9 +751,12 @@ function buildEnrichmentArgs(options) {
 
 function buildCutArgs(options) {
   const args = [];
-  if (options.downloadSections) {
-    args.push('--download-sections', options.downloadSections);
-    if (options.forceKeyframesAtCuts) args.push('--force-keyframes-at-cuts');
+  // One flag per spec — see normalizeSections.
+  for (const spec of options.downloadSections || []) {
+    args.push('--download-sections', spec);
+  }
+  if (options.downloadSections && options.downloadSections.length && options.forceKeyframesAtCuts) {
+    args.push('--force-keyframes-at-cuts');
   }
   if (options.splitChapters) args.push('--split-chapters');
   return args;

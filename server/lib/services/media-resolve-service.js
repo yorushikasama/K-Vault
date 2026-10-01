@@ -269,6 +269,36 @@ function isParsableUrl(text) {
   }
 }
 
+// CMS play pages carry a real <title>; the sniffed HLS stream usually does not
+// (yt-dlp names it after the file, e.g. "index"). The page title is what the
+// quality picker should show instead.
+const HTML_TITLE_RE = /<title[^>]*>([\s\S]*?)<\/title>/i;
+const HTML_ENTITIES = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'", '&nbsp;': ' ' };
+
+function extractHtmlTitle(htmlText) {
+  const match = String(htmlText || '').match(HTML_TITLE_RE);
+  if (!match) return '';
+  let title = match[1].replace(/\s+/g, ' ').trim();
+  for (const [entity, char] of Object.entries(HTML_ENTITIES)) {
+    title = title.split(entity).join(char);
+  }
+  return title.slice(0, 300);
+}
+
+// yt-dlp titles an extensionless stream after its file stem; treat that as
+// "no real title" so the page title can take over.
+function looksLikeStreamFileTitle(title, targetUrl) {
+  const text = String(title || '').trim().toLowerCase();
+  if (!text) return true;
+  try {
+    const url = new URL(String(targetUrl || ''));
+    const stem = decodeURIComponent(url.pathname.split('/').pop() || '').replace(/\.[a-z0-9]+$/i, '');
+    return Boolean(stem) && text === stem.toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
 function isDouyinHost(hostname) {
   return /(^|\.)(douyin\.com|iesdouyin\.com)$/.test(String(hostname || '').toLowerCase());
 }
@@ -859,9 +889,9 @@ class MediaResolveService {
         && !hostMatches(normalized.hostname, this.allowedHosts)
         && !isStreamTargetUrl(normalized.href)) {
       const sniffed = await this.sniffStreamUrl(normalized.href);
-      if (sniffed) return sniffed;
+      if (sniffed) return { ...sniffed, pageTitle: sniffed.pageTitle || '' };
     }
-    return { parsed: normalized, referer: '' };
+    return { parsed: normalized, referer: '', pageTitle: '' };
   }
 
   // One bounded page fetch; every discovered candidate goes through the same
@@ -884,7 +914,9 @@ class MediaResolveService {
     }
 
     const found = this.pickAllowedStream(extractStreamCandidates(html), pageUrl);
-    if (found) return found;
+    if (found) {
+      return { ...found, pageTitle: extractHtmlTitle(html) };
+    }
 
     // The page itself is stream-less. Many CMS sites hand the video to a
     // nested player iframe instead; follow one hop, bounded in count and
@@ -912,7 +944,11 @@ class MediaResolveService {
       if (outcome.status !== 'fulfilled') continue;
       const { iframeUrl, html: iframeHtml } = outcome.value;
       const iframeFound = this.pickAllowedStream(extractStreamCandidates(iframeHtml), iframeUrl);
-      if (iframeFound) return iframeFound;
+      if (iframeFound) {
+        // The wrapper page usually has the human title; the player iframe is
+        // the fallback.
+        return { ...iframeFound, pageTitle: extractHtmlTitle(html) || extractHtmlTitle(iframeHtml) };
+      }
     }
     return null;
   }
@@ -1388,7 +1424,7 @@ class MediaResolveService {
       });
     }
 
-    const { parsed, referer } = await this.prepareTarget(url);
+    const { parsed, referer, pageTitle } = await this.prepareTarget(url);
     const capabilities = await this.getCapabilities();
     const { options, warnings } = this.normalizeRequestOptions(rawOptions, capabilities);
     if (referer) {
@@ -1482,6 +1518,17 @@ class MediaResolveService {
         status: 422,
         detail: 'Every entry in the response was unusable.',
       });
+    }
+
+    // A sniffed HLS stream is titled after its file ("index") — the play page's
+    // <title> is the only human-readable name available, so it stands in for
+    // entries that have none or carry just the file stem.
+    if (pageTitle) {
+      for (const item of items) {
+        if (looksLikeStreamFileTitle(item.title, parsed.href)) {
+          item.title = pageTitle;
+        }
+      }
     }
 
     const truncated = entries.length > this.maxPlaylistItems;
@@ -2261,4 +2308,6 @@ module.exports = {
   extractStreamCandidates,
   extractIframeSrcs,
   isStreamTargetUrl,
+  extractHtmlTitle,
+  looksLikeStreamFileTitle,
 };

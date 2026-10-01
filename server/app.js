@@ -2961,7 +2961,7 @@ function createApp() {
       || resolveOptions.preset !== undefined
       || resolveOptions.subtitles === true
       || resolveOptions.embedMetadata === true
-      || resolveOptions.downloadSections !== undefined;
+      || (Array.isArray(resolveOptions.downloadSections) && resolveOptions.downloadSections.length > 0);
 
     if (item.directUrl && !wantsPostprocessing) {
       // Single-file format: reuse the existing remote importer, which already
