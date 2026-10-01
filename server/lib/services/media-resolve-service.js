@@ -2199,4 +2199,5 @@ module.exports = {
   classifyFailure,
   isPrivateOrLocalHost,
   extractStreamCandidates,
+  extractIframeSrcs,
 };
