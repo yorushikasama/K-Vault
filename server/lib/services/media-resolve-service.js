@@ -1756,9 +1756,19 @@ class MediaResolveService {
         const stdout = Buffer.concat(stdoutChunks).toString('utf8');
 
         if (exitCode !== 0) {
-          reject(classifyFailure(stderrTail, exitCode, {
+          const failure = classifyFailure(stderrTail, exitCode, {
             cookiesConfigured: Boolean(this.cookiesFile) || this.cookiesByHost.size > 0,
-          }));
+          });
+          // The classifier covers the common reasons; whatever falls through to
+          // the generic code is exactly what an operator cannot diagnose from
+          // "exited with code 1" alone, so keep the tail in the journal.
+          if (failure.code === 'MEDIA_RESOLVE_FAILED') {
+            console.warn(
+              `media-resolve: unclassified yt-dlp failure (exit ${exitCode}): `
+              + stderrTail.slice(-400).replace(/\s+/g, ' ').trim()
+            );
+          }
+          reject(failure);
           return;
         }
         if (!stdout.trim() && !onStdoutLine) {
