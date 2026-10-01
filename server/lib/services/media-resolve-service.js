@@ -487,6 +487,108 @@ function classifyFailure(stderr, exitCode, { cookiesConfigured = false } = {}) {
   });
 }
 
+// --- CMS play-page stream sniffing ------------------------------------------
+//
+// Most self-built streaming sites (MacCMS and its countless forks) render the
+// player in JS: the page carries no <video> tag, but an inline `player_aaaa`
+// JSON blob or a bare .m3u8/.mp4 link does. yt-dlp's generic extractor cannot
+// see through that, so the fallback pulls the stream URL out of the HTML and
+// hands yt-dlp the stream directly instead of the page.
+
+const CMS_PLAYER_RE = /player_aaaa\s*=\s*(\{.+?\})\s*[;<]/s;
+const M3U8_URL_RE = /https?:\/\/[^\s"'<>\\]+?\.m3u8[^\s"'<>\\]*/i;
+const MP4_URL_RE = /https?:\/\/[^\s"'<>\\]+?\.mp4[^\s"'<>\\]*/i;
+const SOURCE_TAG_RE = /<(?:video|source)\b[^>]*?\bsrc=["']([^"']+)["']/gi;
+// MacCMS "encrypt" values: 0 plain, 1 URI-encoded, 2 base64.
+const CMS_ENCRYPT_PLAIN = 0;
+const CMS_ENCRYPT_URI = 1;
+const CMS_ENCRYPT_BASE64 = 2;
+const SNIFF_MAX_HTML_BYTES = 2 * 1024 * 1024;
+const SNIFF_TIMEOUT_MS = 15000;
+// The page is fetched as a browser would fetch it: some CMS skins serve
+// players only when the request does not look like a bot.
+const SNIFF_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+
+function decodeCmsStreamUrl(rawUrl, encrypt) {
+  let text = String(rawUrl || '').trim();
+  if (!text) return '';
+  try {
+    if (encrypt === CMS_ENCRYPT_URI) text = decodeURIComponent(text);
+    else if (encrypt === CMS_ENCRYPT_BASE64) text = Buffer.from(text, 'base64').toString('utf8');
+  } catch {
+    return '';
+  }
+  text = text.replace(/\\\//g, '/').trim();
+  return /^https?:\/\/\S+$/i.test(text) ? text : '';
+}
+
+function collectStreamMatches(text, regex) {
+  const flags = regex.flags.includes('g') ? regex.flags : `${regex.flags}g`;
+  const found = [];
+  for (const match of text.matchAll(new RegExp(regex.source, flags))) {
+    found.push(match[0].replace(/\\\//g, '/').trim());
+  }
+  return found;
+}
+
+// Order is preference: an explicit CMS player config beats a source tag beats
+// a blind URL sweep.
+function extractStreamCandidates(htmlText) {
+  const text = String(htmlText || '');
+  if (!text) return [];
+  const candidates = [];
+
+  const playerMatch = text.match(CMS_PLAYER_RE);
+  if (playerMatch) {
+    let player = null;
+    try {
+      player = JSON.parse(playerMatch[1].replace(/\\\//g, '/'));
+    } catch {
+      player = null;
+    }
+    const encrypt = Number(player && player.encrypt) || CMS_ENCRYPT_PLAIN;
+    for (const key of ['url', 'url_next']) {
+      const decoded = decodeCmsStreamUrl(player && player[key], encrypt);
+      if (decoded) candidates.push(decoded);
+    }
+  }
+
+  for (const match of text.matchAll(SOURCE_TAG_RE)) {
+    const trimmed = String(match[1] || '').trim();
+    // Relative <source> targets are legitimate; the caller absolutizes them.
+    const decoded = decodeCmsStreamUrl(trimmed, CMS_ENCRYPT_PLAIN)
+      || (/^\/\S+$/.test(trimmed) ? trimmed.replace(/\\\//g, '/') : '');
+    if (decoded) candidates.push(decoded);
+  }
+
+  candidates.push(...collectStreamMatches(text, M3U8_URL_RE));
+  candidates.push(...collectStreamMatches(text, MP4_URL_RE));
+  return [...new Set(candidates)].slice(0, 8);
+}
+
+// A hostile page can answer with gigabytes; scan at most the first few MB.
+async function readBodyBounded(body, maxBytes) {
+  if (!body || typeof body.getReader !== 'function') return '';
+  const reader = body.getReader();
+  const chunks = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      chunks.push(value);
+      if (total >= maxBytes) {
+        try { await reader.cancel(); } catch { /* stream already closed */ }
+        break;
+      }
+    }
+  } catch {
+    // Partial HTML is still worth scanning.
+  }
+  return Buffer.concat(chunks).toString('utf8');
+}
+
 class MediaResolveService {
   constructor({ config, jobRegistry = null }) {
     const settings = (config && config.mediaResolve) || {};
@@ -629,12 +731,59 @@ class MediaResolveService {
 
   // Everything both public entry points need before yt-dlp runs: tolerate a
   // pasted share sentence, enforce the host allow-list, then rewrite the URL to
-  // a form the extractor actually understands.
+  // a form the extractor actually understands. Returns the parsed target plus
+  // the Referer yt-dlp should present (set when the target was sniffed out of
+  // a play page, so the CDN sees the page it came from).
   async prepareTarget(rawUrl) {
     const text = String(rawUrl || '').trim();
     const candidate = extractFirstUrl(text) || text;
     const parsed = this.assertUrlAllowed(candidate);
-    return this.normalizeShareUrl(parsed);
+    const normalized = await this.normalizeShareUrl(parsed);
+
+    // Known hosts have real extractors and must not pay for an extra page
+    // fetch. Hosts outside the allow-list are reachable only when
+    // allowUnknownHosts is on, and those pages may be CMS player wrappers —
+    // sniff them once for a direct stream.
+    if (this.allowUnknownHosts && !hostMatches(normalized.hostname, this.allowedHosts)) {
+      const sniffed = await this.sniffStreamUrl(normalized.href);
+      if (sniffed) return sniffed;
+    }
+    return { parsed: normalized, referer: '' };
+  }
+
+  // One bounded page fetch; every discovered candidate goes through the same
+  // host policy as a pasted URL, so a page cannot aim the server at an
+  // internal address that pasting it directly would have refused.
+  async sniffStreamUrl(pageUrl) {
+    let html = '';
+    try {
+      const { response } = await fetchRemote({
+        url: pageUrl,
+        headers: {
+          'User-Agent': SNIFF_USER_AGENT,
+          Accept: 'text/html,application/xhtml+xml,*/*;q=0.8',
+        },
+        timeoutMs: SNIFF_TIMEOUT_MS,
+      });
+      html = await readBodyBounded(response.body, SNIFF_MAX_HTML_BYTES);
+    } catch {
+      return null;
+    }
+    for (const candidate of extractStreamCandidates(html)) {
+      let absolute = candidate;
+      try {
+        absolute = new URL(candidate, pageUrl).href;
+      } catch {
+        continue;
+      }
+      try {
+        const parsed = this.assertUrlAllowed(absolute);
+        return { parsed, referer: pageUrl };
+      } catch {
+        continue;
+      }
+    }
+    return null;
   }
 
   // Douyin's canonical /video/{id} page is the only form yt-dlp's extractor
@@ -972,7 +1121,7 @@ class MediaResolveService {
    * image or the operator's home directory, which would make behaviour depend on
    * something the deployment does not control.
    */
-  buildCommonArgs(url, cookiesPath = '') {
+  buildCommonArgs(url, cookiesPath = '', { referer = '' } = {}) {
     const args = [
       '--no-playlist',
       '--no-warnings',
@@ -1059,6 +1208,11 @@ class MediaResolveService {
     if (isDouyinHost(host)) {
       args.push('--add-header', 'Referer: https://www.douyin.com/');
     }
+    // A stream sniffed out of a play page presents the page it came from —
+    // some stream CDNs check it, and the ones that do not ignore it.
+    if (referer) {
+      args.push('--referer', referer);
+    }
     return args;
   }
 
@@ -1086,9 +1240,15 @@ class MediaResolveService {
       });
     }
 
-    const parsed = await this.prepareTarget(url);
+    const { parsed, referer } = await this.prepareTarget(url);
     const capabilities = await this.getCapabilities();
     const { options, warnings } = this.normalizeRequestOptions(rawOptions, capabilities);
+    if (referer) {
+      warnings.push({
+        code: 'STREAM_SNIFFED',
+        message: '该页面未直接提供视频流，已从页面中嗅探到流地址并按其下载。',
+      });
+    }
 
     const probe = await this.probe();
     if (!probe.available) {
@@ -1112,7 +1272,7 @@ class MediaResolveService {
       await this.acquire();
       try {
         stdout = await this.runProcess(
-          this.buildMetadataArgs(parsed.href, cookiesPath, options),
+          this.buildMetadataArgs(parsed.href, cookiesPath, options, referer),
           this.timeoutMs
         );
       } finally {
@@ -1297,8 +1457,8 @@ class MediaResolveService {
     return [info];
   }
 
-  buildMetadataArgs(url, cookiesPath, options) {
-    const args = this.buildCommonArgs(url, cookiesPath);
+  buildMetadataArgs(url, cookiesPath, options, referer = '') {
+    const args = this.buildCommonArgs(url, cookiesPath, { referer });
 
     // Playlist selection is meaningful for metadata even though the download
     // path may refuse it later; without it the picker cannot show the item the
@@ -1425,9 +1585,15 @@ class MediaResolveService {
       });
     }
 
-    const parsed = await this.prepareTarget(url);
+    const { parsed, referer } = await this.prepareTarget(url);
     const capabilities = await this.getCapabilities();
     const { options, warnings } = this.normalizeRequestOptions(rawOptions, capabilities);
+    if (referer) {
+      warnings.push({
+        code: 'STREAM_SNIFFED',
+        message: '该页面未直接提供视频流，已从页面中嗅探到流地址并按其下载。',
+      });
+    }
 
     const probe = await this.probe();
     if (!probe.available) {
@@ -1479,7 +1645,7 @@ class MediaResolveService {
       : [];
 
     const args = [
-      ...this.buildCommonArgs(parsed.href, cookiesPath),
+      ...this.buildCommonArgs(parsed.href, cookiesPath, { referer }),
       ...progressArgs,
       ...buildDownloadArgs(options, {
         hasFfmpeg: capabilities.ffmpeg,
@@ -1926,4 +2092,5 @@ module.exports = {
   parseProgressLine,
   classifyFailure,
   isPrivateOrLocalHost,
+  extractStreamCandidates,
 };
