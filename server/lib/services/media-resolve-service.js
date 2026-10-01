@@ -391,9 +391,9 @@ function classifyFailure(stderr, exitCode, { cookiesConfigured = false } = {}) {
   const text = String(stderr || '').toLowerCase();
 
   if (text.includes('unsupported url')) {
-    return new MediaResolveError('MEDIA_RESOLVE_UNSUPPORTED_SITE', '该链接暂不受支持的站点。', {
+    return new MediaResolveError('MEDIA_RESOLVE_UNSUPPORTED_SITE', '该链接暂不受支持的站点（页面中也未嗅探到视频流）。', {
       status: 422,
-      detail: 'yt-dlp reported an unsupported URL.',
+      detail: 'yt-dlp reported an unsupported URL and the page sniffer found no stream either.',
     });
   }
   if (text.includes('sign in') || text.includes('login required')
@@ -495,16 +495,25 @@ function classifyFailure(stderr, exitCode, { cookiesConfigured = false } = {}) {
 // see through that, so the fallback pulls the stream URL out of the HTML and
 // hands yt-dlp the stream directly instead of the page.
 
-const CMS_PLAYER_RE = /player_aaaa\s*=\s*(\{.+?\})\s*[;<]/s;
+const CMS_PLAYER_RE = /(?:player_aaaa|player_data)\s*=\s*(\{.+?\})\s*[;<]/s;
 const M3U8_URL_RE = /https?:\/\/[^\s"'<>\\]+?\.m3u8[^\s"'<>\\]*/i;
 const MP4_URL_RE = /https?:\/\/[^\s"'<>\\]+?\.mp4[^\s"'<>\\]*/i;
+const MPD_URL_RE = /https?:\/\/[^\s"'<>\\]+?\.mpd[^\s"'<>\\]*/i;
 const SOURCE_TAG_RE = /<(?:video|source)\b[^>]*?\bsrc=["']([^"']+)["']/gi;
+const IFRAME_SRC_RE = /<iframe\b[^>]*?\bsrc=["']([^"']+)["']/gi;
+const JSON_LD_RE = /<script\b[^>]*?type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+const IFRAME_PLAYER_HINT_RE = /(?:player|video|stream|embed|[?&]url=|vid=)/i;
+// Schema.org VideoObject contentUrl is the standard place a page declares its
+// stream; tokenized endpoints without a file extension are accepted too, but
+// only inside structured data, never from a blind sweep.
+const STREAM_FILE_RE = /\.(m3u8|mp4|mpd)([?#]|$)/i;
 // MacCMS "encrypt" values: 0 plain, 1 URI-encoded, 2 base64.
 const CMS_ENCRYPT_PLAIN = 0;
 const CMS_ENCRYPT_URI = 1;
 const CMS_ENCRYPT_BASE64 = 2;
 const SNIFF_MAX_HTML_BYTES = 2 * 1024 * 1024;
 const SNIFF_TIMEOUT_MS = 15000;
+const SNIFF_MAX_IFRAMES = 3;
 // The page is fetched as a browser would fetch it: some CMS skins serve
 // players only when the request does not look like a bot.
 const SNIFF_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
@@ -519,6 +528,10 @@ function decodeCmsStreamUrl(rawUrl, encrypt) {
     return '';
   }
   text = text.replace(/\\\//g, '/').trim();
+  // Some forks chain the encodings: base64 wrapping a URI-encoded URL.
+  if (/^https?%3a/i.test(text)) {
+    try { text = decodeURIComponent(text); } catch { /* keep as-is */ }
+  }
   return /^https?:\/\/\S+$/i.test(text) ? text : '';
 }
 
@@ -532,7 +545,7 @@ function collectStreamMatches(text, regex) {
 }
 
 // Order is preference: an explicit CMS player config beats a source tag beats
-// a blind URL sweep.
+// structured data beats a blind URL sweep.
 function extractStreamCandidates(htmlText) {
   const text = String(htmlText || '');
   if (!text) return [];
@@ -561,9 +574,61 @@ function extractStreamCandidates(htmlText) {
     if (decoded) candidates.push(decoded);
   }
 
+  for (const url of extractJsonLdStreams(text)) candidates.push(url);
+
   candidates.push(...collectStreamMatches(text, M3U8_URL_RE));
   candidates.push(...collectStreamMatches(text, MP4_URL_RE));
+  candidates.push(...collectStreamMatches(text, MPD_URL_RE));
   return [...new Set(candidates)].slice(0, 8);
+}
+
+function findJsonLdValue(node, key, out) {
+  if (Array.isArray(node)) {
+    for (const item of node) findJsonLdValue(item, key, out);
+    return;
+  }
+  if (node && typeof node === 'object') {
+    for (const [name, value] of Object.entries(node)) {
+      if (name.toLowerCase() === key && typeof value === 'string') out.push(value);
+      else findJsonLdValue(value, key, out);
+    }
+  }
+}
+
+function extractJsonLdStreams(htmlText) {
+  const values = [];
+  for (const match of String(htmlText || '').matchAll(JSON_LD_RE)) {
+    let data = null;
+    try {
+      data = JSON.parse(match[1].trim());
+    } catch {
+      continue;
+    }
+    findJsonLdValue(data, 'contenturl', values);
+  }
+  // Only stream-shaped URLs, so a VideoObject linking to its watch page is
+  // not treated as the video itself.
+  return values.filter((url) => STREAM_FILE_RE.test(url));
+}
+
+// Nested player iframes are the other common hiding spot for the real stream.
+// Prefer iframes whose address smells like a player; the caller caps fetches.
+function extractIframeSrcs(htmlText, baseUrl) {
+  const srcs = [];
+  for (const match of String(htmlText || '').matchAll(IFRAME_SRC_RE)) {
+    const raw = String(match[1] || '').trim().replace(/\\\//g, '/');
+    if (!raw) continue;
+    let absolute = '';
+    try {
+      absolute = new URL(raw, baseUrl).href;
+    } catch {
+      continue;
+    }
+    if (!/^https?:/i.test(absolute)) continue;
+    srcs.push(absolute);
+  }
+  const hinted = srcs.filter((url) => IFRAME_PLAYER_HINT_RE.test(url));
+  return [...new Set([...hinted, ...srcs])];
 }
 
 // A hostile page can answer with gigabytes; scan at most the first few MB.
@@ -769,16 +834,57 @@ class MediaResolveService {
     } catch {
       return null;
     }
-    for (const candidate of extractStreamCandidates(html)) {
+
+    const found = this.pickAllowedStream(extractStreamCandidates(html), pageUrl);
+    if (found) return found;
+
+    // The page itself is stream-less. Many CMS sites hand the video to a
+    // nested player iframe instead; follow one hop, bounded in count and
+    // size, with the iframe target passing the same host policy.
+    const iframeSrcs = extractIframeSrcs(html, pageUrl)
+      .filter((url) => url !== pageUrl)
+      .slice(0, SNIFF_MAX_IFRAMES);
+    for (const iframeUrl of iframeSrcs) {
+      try {
+        this.assertUrlAllowed(iframeUrl);
+      } catch {
+        continue;
+      }
+      let iframeHtml = '';
+      try {
+        const { response } = await fetchRemote({
+          url: iframeUrl,
+          headers: {
+            'User-Agent': SNIFF_USER_AGENT,
+            Accept: 'text/html,application/xhtml+xml,*/*;q=0.8',
+            Referer: pageUrl,
+          },
+          timeoutMs: SNIFF_TIMEOUT_MS,
+        });
+        iframeHtml = await readBodyBounded(response.body, SNIFF_MAX_HTML_BYTES);
+      } catch {
+        continue;
+      }
+      const iframeFound = this.pickAllowedStream(extractStreamCandidates(iframeHtml), iframeUrl);
+      if (iframeFound) return iframeFound;
+    }
+    return null;
+  }
+
+  // Absolutize candidates against the page whose HTML contained them and
+  // apply the host policy; the first survivor wins. The Referer is that page —
+  // what a browser would have presented when loading the stream.
+  pickAllowedStream(candidates, containingPageUrl) {
+    for (const candidate of candidates) {
       let absolute = candidate;
       try {
-        absolute = new URL(candidate, pageUrl).href;
+        absolute = new URL(candidate, containingPageUrl).href;
       } catch {
         continue;
       }
       try {
         const parsed = this.assertUrlAllowed(absolute);
-        return { parsed, referer: pageUrl };
+        return { parsed, referer: containingPageUrl };
       } catch {
         continue;
       }

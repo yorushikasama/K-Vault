@@ -1,6 +1,14 @@
 const assert = require('assert');
 
-const { extractStreamCandidates } = require('../server/lib/services/media-resolve-service');
+const {
+  extractStreamCandidates,
+  extractIframeSrcs,
+  MediaResolveService,
+} = require('../server/lib/services/media-resolve-service');
+
+function serviceWith(settings) {
+  return new MediaResolveService({ config: { mediaResolve: settings } });
+}
 
 // The exact player config shape used by MacCMS-family play pages (slashes
 // escaped as \/ because the blob sits inside a <script> block).
@@ -57,5 +65,70 @@ describe('extractStreamCandidates', function () {
   it('returns nothing for pages without streams', function () {
     assert.deepStrictEqual(extractStreamCandidates('<div>hello</div>'), []);
     assert.deepStrictEqual(extractStreamCandidates(''), []);
+  });
+
+  it('accepts DASH manifests and player_data variants in the sweep', function () {
+    const page = '<script>var player_data={"encrypt":0,"url":"https://cdn.example.com/dash.mpd"};</script>';
+    assert.strictEqual(extractStreamCandidates(page)[0], 'https://cdn.example.com/dash.mpd');
+  });
+
+  it('accepts a tokenized stream URL declared via JSON-LD contentUrl', function () {
+    const page = `<script type="application/ld+json">
+      {"@type":"VideoObject","contentUrl":"https://cdn.example.com/manifest.m3u8?tok=abc"}</script>`;
+    assert.strictEqual(extractStreamCandidates(page)[0], 'https://cdn.example.com/manifest.m3u8?tok=abc');
+  });
+
+  it('ignores JSON-LD contentUrl pointing at a watch page, not a stream', function () {
+    const page = `<script type="application/ld+json">
+      {"@type":"VideoObject","contentUrl":"https://example.com/watch/123"}</script>`;
+    assert.deepStrictEqual(extractStreamCandidates(page), []);
+  });
+
+  it('decodes chained base64+URI-encoded configs', function () {
+    const inner = encodeURIComponent('https://v.example.com/c.m3u8');
+    const page = `<script>player_data={"encrypt":2,"url":"${Buffer.from(inner).toString('base64')}"}</script>`;
+    assert.strictEqual(extractStreamCandidates(page)[0], 'https://v.example.com/c.m3u8');
+  });
+});
+
+describe('extractIframeSrcs', function () {
+  it('absolutizes iframes and puts player-looking ones first', function () {
+    const page = `
+      <iframe src="/ads/banner.html"></iframe>
+      <iframe src="https://cdn.example.com/static/player/?url=abc123"></iframe>
+      <iframe src="//other.example.com/embed/9"></iframe>`;
+    const srcs = extractIframeSrcs(page, 'https://www.example.com/play/1.html');
+    assert.strictEqual(srcs[0], 'https://cdn.example.com/static/player/?url=abc123');
+    assert.ok(srcs.includes('https://other.example.com/embed/9'));
+    assert.ok(srcs.includes('https://www.example.com/ads/banner.html'));
+  });
+});
+
+describe('pickAllowedStream policy gate', function () {
+  const service = serviceWith({ allowUnknownHosts: true });
+
+  it('skips candidates that fail the host policy and keeps scanning', function () {
+    const found = service.pickAllowedStream(
+      ['http://169.254.169.254/latest.m3u8', 'https://cdn.example.com/ok.m3u8'],
+      'https://www.example.com/play/1.html'
+    );
+    assert.strictEqual(found.parsed.href, 'https://cdn.example.com/ok.m3u8');
+    assert.strictEqual(found.referer, 'https://www.example.com/play/1.html');
+  });
+
+  it('absolutizes relative candidates against the containing page', function () {
+    const found = service.pickAllowedStream(
+      ['/hls/ep1/index.m3u8'],
+      'https://www.example.com/play/1.html'
+    );
+    assert.strictEqual(found.parsed.href, 'https://www.example.com/hls/ep1/index.m3u8');
+  });
+
+  it('returns null when every candidate is refused', function () {
+    const found = service.pickAllowedStream(
+      ['http://127.0.0.1:8787/x.m3u8'],
+      'https://www.example.com/play/1.html'
+    );
+    assert.strictEqual(found, null);
   });
 });

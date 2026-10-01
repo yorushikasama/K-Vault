@@ -718,7 +718,7 @@ sudo apt install -y nodejs            # 或 deno
   - ⚠️ 抓取脚本以 root 运行、服务以专用账号运行，脚本写入后会把主文件 `chown` 给服务账号。若看到文件是 `root:root 600`，服务就**读不到**，症状是抖音/ B站 解析一直报"缺 Cookie"（而不是权限错误）——那种情况重跑一次 `sudo kvault-bootstrap-media` 即可修正。
 - **直链是带签名的临时地址**（通常 24 小时内有效），因此「解析」与「转存」应在同一次请求内完成，不建议取到直链后留存稍后再用。
 - 默认只允许白名单内的站点。需要其他站点时用 `MEDIA_RESOLVE_EXTRA_HOSTS` 追加；开放 `MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS` 后**任意公网站点**都能解析——yt-dlp 自带 1000+ 站点 extractor，其余页面落到 generic extractor（直链视频、内嵌播放器大概率可用；重度 JS 渲染或需要登录的页面仍会失败）。回环 / RFC1918 / CGNAT / 链路本地（含云元数据 169.254.169.254）/ IPv6 ULA 地址**始终拒绝**，即使开了该开关；只有 `MEDIA_RESOLVE_EXTRA_HOSTS` 里显式写明的内网主机才放行。
-  - **CMS 影视站播放页自动嗅探**：MacCMS 及其衍生架构（大量自建影视站）把视频源藏在页面的 `player_aaaa` JS 配置或裸 `.m3u8/.mp4` 链接里，yt-dlp 的 generic extractor 看不到。对白名单之外的站点，服务端会抓一次页面（上限 2MB / 15 秒），嗅探出直链流后**改为直接向流地址下载**，并自动带上原页面作 `Referer`（`encrypt=1` URL 编码与 `encrypt=2` base64 的配置也会解码）；嗅探出的流地址同样要过整套主机安全策略。响应的 `warnings` 里会出现 `STREAM_SNIFFED` 表示走了这条路径。
+  - **CMS 影视站播放页自动嗅探**：MacCMS 及其衍生架构（大量自建影视站）把视频源藏在页面的 `player_aaaa`/`player_data` JS 配置或裸 `.m3u8/.mp4/.mpd` 链接里，yt-dlp 的 generic extractor 看不到。对白名单之外的站点，服务端会抓一次页面（上限 2MB / 15 秒），按优先级嗅探直链流：播放器 JS 配置（含 `encrypt=1` URL 编码与 `encrypt=2` base64，及其叠加形态）→ `<video>/<source>` 标签 → JSON-LD `contentUrl` → 裸 URL 扫描；**页面本身没有流时会再跟随一层播放器 iframe**（最多 3 个）重复同样的嗅探。找到后**改为直接向流地址下载**，并自动带上包含流的那个页面作 `Referer`；嗅探出的流地址同样要过整套主机安全策略。响应的 `warnings` 里会出现 `STREAM_SNIFFED` 表示走了这条路径。
 - 请遵守各平台服务条款与版权规定，仅用于个人合法用途。
 
 ### 调用示例
