@@ -18,6 +18,10 @@ describe('isPrivateOrLocalHost', function () {
     '::ffff:192.168.0.1', '::ffff:127.0.0.1',
     // Non-dotted encodings that still resolve to loopback.
     '2130706433', '0x7f000001', '0177.0.0.1', 'metadata.google.internal',
+    // WHATWG URL normalization turns dotted IPv4-mapped IPv6 into hex:
+    // ::ffff:7f00:1 is 127.0.0.1, ::ffff:c0a8:1 is 192.168.0.1,
+    // ::ffff:a9fe:101 is 169.254.1.1.
+    '::ffff:7f00:1', '::ffff:c0a8:1', '::ffff:a9fe:101',
   ];
   for (const host of privateCases) {
     it(`refuses ${host}`, function () {
@@ -27,7 +31,7 @@ describe('isPrivateOrLocalHost', function () {
 
   const publicCases = [
     'example.com', 'www.bilibili.com', '8.8.8.8', '172.32.0.1', '100.128.0.1',
-    '2606:4700::1111', '1.2.3.4',
+    '2606:4700::1111', '1.2.3.4', '::ffff:808:808',
   ];
   for (const host of publicCases) {
     it(`allows ${host}`, function () {

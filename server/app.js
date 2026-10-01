@@ -2926,6 +2926,8 @@ function createApp() {
       try {
         const job = mediaResolveService.startJob({
           url: item.webpageUrl || sourceUrl,
+          targetUrl: resolved.source && resolved.source.referer ? resolved.source.url : '',
+          targetReferer: (resolved.source && resolved.source.referer) || '',
           maxBytes: importCap,
           options: resolveOptions,
           // The store callback runs inside the job, so the detached path ends in
@@ -2992,6 +2994,11 @@ function createApp() {
     try {
       downloaded = await mediaResolveService.download({
         url: item.webpageUrl || sourceUrl,
+        // The sniffed stream carries its Referer and must not be re-prepared:
+        // a second sniff would re-fetch the page and, for a master playlist,
+        // could only ever pick a worse (variant) stream.
+        targetUrl: resolved.source && resolved.source.referer ? resolved.source.url : '',
+        targetReferer: (resolved.source && resolved.source.referer) || '',
         maxBytes: importCap,
         options: resolveOptions,
       });

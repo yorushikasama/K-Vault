@@ -196,13 +196,20 @@ function isPrivateOrLocalHost(hostname) {
   if (PRIVATE_HOSTNAME_RE.test(host)) return true;
 
   // IPv6 literals: loopback, link-local (fe80::/10), unique-local (fc00::/7),
-  // and the ::ffff:a.b.c.d mapped form, which is checked via its embedded v4.
+  // and IPv4-mapped forms — WHATWG URL normalization rewrites the dotted
+  // spelling into hex (::ffff:192.168.0.1 becomes ::ffff:c0a8:1), so the
+  // embedded 32 bits have to be decoded from either shape.
   if (host.includes(':')) {
     if (host === '::' || host === '::1') return true;
     if (/^f[cd][0-9a-f]{2}:/.test(host)) return true;
     if (/^fe[89ab][0-9a-f]:/.test(host)) return true;
-    const mapped = host.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/);
-    if (mapped) return isPrivateIpv4(mapped[1]);
+    const mapped = host.match(/^::ffff:(?:(\d{1,3}(?:\.\d{1,3}){3})|([0-9a-f]{1,4}):([0-9a-f]{1,4}))$/i);
+    if (mapped) {
+      if (mapped[1]) return isPrivateIpv4(mapped[1]);
+      const hi = parseInt(mapped[2], 16);
+      const lo = parseInt(mapped[3], 16);
+      return isPrivateIpv4(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`);
+    }
     return false;
   }
 
@@ -524,6 +531,20 @@ const CMS_ENCRYPT_BASE64 = 2;
 const SNIFF_MAX_HTML_BYTES = 2 * 1024 * 1024;
 const SNIFF_TIMEOUT_MS = 15000;
 const SNIFF_MAX_IFRAMES = 3;
+
+// A URL that IS the stream (a master playlist, a direct file) must never be
+// sniffed: fetching it returns playlist text, and the blind sweep would
+// "discover" the variant playlists inside a master and silently downgrade the
+// request to the first one. Pathname only — query strings may carry tokens.
+const STREAM_PATH_RE = /\.(m3u8|mpd|mp4|m4a|mp3|flv|ts|webm|mkv)$/i;
+
+function isStreamTargetUrl(href) {
+  try {
+    return STREAM_PATH_RE.test(new URL(String(href || '')).pathname);
+  } catch {
+    return false;
+  }
+}
 // The page is fetched as a browser would fetch it: some CMS skins serve
 // players only when the request does not look like a bot.
 const SNIFF_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
@@ -819,7 +840,9 @@ class MediaResolveService {
     // fetch. Hosts outside the allow-list are reachable only when
     // allowUnknownHosts is on, and those pages may be CMS player wrappers —
     // sniff them once for a direct stream.
-    if (this.allowUnknownHosts && !hostMatches(normalized.hostname, this.allowedHosts)) {
+    if (this.allowUnknownHosts
+        && !hostMatches(normalized.hostname, this.allowedHosts)
+        && !isStreamTargetUrl(normalized.href)) {
       const sniffed = await this.sniffStreamUrl(normalized.href);
       if (sniffed) return sniffed;
     }
@@ -850,31 +873,29 @@ class MediaResolveService {
 
     // The page itself is stream-less. Many CMS sites hand the video to a
     // nested player iframe instead; follow one hop, bounded in count and
-    // size, with the iframe target passing the same host policy.
+    // size, with the iframe target passing the same host policy. Fetched in
+    // parallel — three sequential 15s timeouts would otherwise stack up to
+    // 45s on a stream-less page — and examined in the original (hinted-first)
+    // order, which Promise.allSettled preserves.
     const iframeSrcs = extractIframeSrcs(html, pageUrl)
       .filter((url) => url !== pageUrl)
       .slice(0, SNIFF_MAX_IFRAMES);
-    for (const iframeUrl of iframeSrcs) {
-      try {
-        this.assertUrlAllowed(iframeUrl);
-      } catch {
-        continue;
-      }
-      let iframeHtml = '';
-      try {
-        const { response } = await fetchRemote({
-          url: iframeUrl,
-          headers: {
-            'User-Agent': SNIFF_USER_AGENT,
-            Accept: 'text/html,application/xhtml+xml,*/*;q=0.8',
-            Referer: pageUrl,
-          },
-          timeoutMs: SNIFF_TIMEOUT_MS,
-        });
-        iframeHtml = await readBodyBounded(response.body, SNIFF_MAX_HTML_BYTES);
-      } catch {
-        continue;
-      }
+    const fetched = await Promise.allSettled(iframeSrcs.map(async (iframeUrl) => {
+      this.assertUrlAllowed(iframeUrl);
+      const { response } = await fetchRemote({
+        url: iframeUrl,
+        headers: {
+          'User-Agent': SNIFF_USER_AGENT,
+          Accept: 'text/html,application/xhtml+xml,*/*;q=0.8',
+          Referer: pageUrl,
+        },
+        timeoutMs: SNIFF_TIMEOUT_MS,
+      });
+      return { iframeUrl, html: await readBodyBounded(response.body, SNIFF_MAX_HTML_BYTES) };
+    }));
+    for (const outcome of fetched) {
+      if (outcome.status !== 'fulfilled') continue;
+      const { iframeUrl, html: iframeHtml } = outcome.value;
       const iframeFound = this.pickAllowedStream(extractStreamCandidates(iframeHtml), iframeUrl);
       if (iframeFound) return iframeFound;
     }
@@ -1093,20 +1114,28 @@ class MediaResolveService {
     if (!this.jsRuntime || this.jsRuntime === 'none') {
       return { configured: '', available: false, path: '' };
     }
+    // Cached like the other probes: getCapabilities runs on every resolve and
+    // every download, and this used to spawn the runtime twice per call.
+    if (this.jsRuntimeCache && Date.now() - this.jsRuntimeCache.at < PROBE_OK_TTL_MS) {
+      return this.jsRuntimeCache.result;
+    }
     const binary = this.jsRuntimePath || this.jsRuntime;
+    let result;
     try {
       await this.runProcessWith(binary, ['--version'], PROBE_TIMEOUT_MS);
-      return { configured: this.jsRuntime, available: true, path: binary };
+      result = { configured: this.jsRuntime, available: true, path: binary };
     } catch {
       // Fall back to PATH resolution; a runtime installed under a different name
       // still counts as long as the configured name starts one.
       try {
         await this.runProcessWith(this.jsRuntime, ['--version'], PROBE_TIMEOUT_MS);
-        return { configured: this.jsRuntime, available: true, path: this.jsRuntime };
+        result = { configured: this.jsRuntime, available: true, path: this.jsRuntime };
       } catch {
-        return { configured: this.jsRuntime, available: false, path: binary };
+        result = { configured: this.jsRuntime, available: false, path: binary };
       }
     }
+    this.jsRuntimeCache = { at: Date.now(), result };
+    return result;
   }
 
   // PO tokens are what YouTube's `web` client needs for higher resolutions. The
@@ -1332,18 +1361,6 @@ class MediaResolveService {
     return args;
   }
 
-  buildArgs(url, cookiesPath = '') {
-    // "--" terminates option parsing so a hostile URL can never be read as a flag.
-    return [
-      ...this.buildCommonArgs(url, cookiesPath),
-      '--dump-single-json',
-      '--skip-download',
-      '--flat-playlist',
-      '--',
-      url,
-    ];
-  }
-
   /**
    * Metadata for a URL. `playlistItems` and the impersonation target are the
    * only request-level options that affect extraction.
@@ -1478,6 +1495,10 @@ class MediaResolveService {
       source: {
         url: parsed.href,
         host: parsed.hostname.toLowerCase(),
+        // Set when prepareTarget sniffed the real stream out of a play page.
+        // Callers handing this target to download() keep the Referer the CDN
+        // expects instead of losing it to a re-prepare.
+        ...(referer ? { referer } : {}),
       },
       playlist: {
         isPlaylist,
@@ -1688,6 +1709,11 @@ class MediaResolveService {
    */
   async download({
     url,
+    // Pre-resolved target from resolve() (a sniffed stream). Skipping
+    // prepareTarget avoids a second page fetch and — before the stream-path
+    // guard — the variant downgrade; the URL is still policy-checked here.
+    targetUrl = '',
+    targetReferer = '',
     maxBytes = 0,
     timeoutMs = 0,
     options: rawOptions = {},
@@ -1701,7 +1727,14 @@ class MediaResolveService {
       });
     }
 
-    const { parsed, referer } = await this.prepareTarget(url);
+    let parsed;
+    let referer;
+    if (targetUrl) {
+      parsed = this.assertUrlAllowed(targetUrl);
+      referer = targetReferer || '';
+    } else {
+      ({ parsed, referer } = await this.prepareTarget(url));
+    }
     const capabilities = await this.getCapabilities();
     const { options, warnings } = this.normalizeRequestOptions(rawOptions, capabilities);
     if (referer) {
@@ -2088,7 +2121,7 @@ class MediaResolveService {
    * is removed once `store` has had its chance, so a detached download cannot
    * leave media behind in the temp dir.
    */
-  startJob({ url, maxBytes = 0, timeoutMs = 0, options = {}, store = null }) {
+  startJob({ url, targetUrl = '', targetReferer = '', maxBytes = 0, timeoutMs = 0, options = {}, store = null }) {
     if (!this.jobRegistry) {
       throw new MediaResolveError('MEDIA_RESOLVE_JOBS_UNAVAILABLE', '后台任务未启用。', {
         status: 503,
@@ -2106,6 +2139,8 @@ class MediaResolveService {
         job.setProgress({ stage: 'queued', percent: 0 });
         const download = await this.download({
           url,
+          targetUrl,
+          targetReferer,
           maxBytes,
           timeoutMs,
           options,
@@ -2210,4 +2245,5 @@ module.exports = {
   isPrivateOrLocalHost,
   extractStreamCandidates,
   extractIframeSrcs,
+  isStreamTargetUrl,
 };

@@ -3,6 +3,7 @@ const assert = require('assert');
 const {
   extractStreamCandidates,
   extractIframeSrcs,
+  isStreamTargetUrl,
   MediaResolveService,
 } = require('../server/lib/services/media-resolve-service');
 
@@ -101,6 +102,34 @@ describe('extractIframeSrcs', function () {
     assert.strictEqual(srcs[0], 'https://cdn.example.com/static/player/?url=abc123');
     assert.ok(srcs.includes('https://other.example.com/embed/9'));
     assert.ok(srcs.includes('https://www.example.com/ads/banner.html'));
+  });
+});
+
+describe('isStreamTargetUrl', function () {
+  it('recognises stream targets regardless of query strings', function () {
+    for (const url of [
+      'https://cdn.example.com/movie/index.m3u8',
+      'https://cdn.example.com/hls/ep1/playlist.m3u8?token=abc',
+      'https://cdn.example.com/video.mp4',
+      'https://cdn.example.com/dash/manifest.mpd',
+    ]) {
+      assert.strictEqual(isStreamTargetUrl(url), true, `expected ${url} to be a stream target`);
+    }
+  });
+
+  it('treats pages and extension-less endpoints as sniffable', function () {
+    for (const url of [
+      'https://www.example.com/play/2148260166/2/1.html',
+      'https://www.example.com/video',
+      'https://www.example.com/get/stream?format=m3u8',
+    ]) {
+      assert.strictEqual(isStreamTargetUrl(url), false, `expected ${url} to be sniffable`);
+    }
+  });
+
+  it('returns false for garbage', function () {
+    assert.strictEqual(isStreamTargetUrl(''), false);
+    assert.strictEqual(isStreamTargetUrl('not a url'), false);
   });
 });
 
