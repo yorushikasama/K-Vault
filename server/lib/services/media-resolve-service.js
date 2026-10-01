@@ -428,6 +428,15 @@ function classifyFailure(stderr, exitCode, { cookiesConfigured = false } = {}) {
       detail: 'The platform reports the video as unavailable.',
     });
   }
+  // Bilibili words its region block this way; an overseas server IP cannot see
+  // mainland-only videos, and no retry changes that.
+  if (text.includes('deleted or geo-restricted')) {
+    return new MediaResolveError('MEDIA_RESOLVE_UNAVAILABLE_VIDEO',
+      '视频不可用或已被删除（该视频可能有地区限制）。', {
+        status: 422,
+        detail: 'The platform reports the video as deleted or geo-restricted; a mainland IP (or MEDIA_RESOLVE_PROXY) may be required.',
+      });
+  }
   // 403 and "unable to download video data" are what the anti-bot checks emit
   // once cookies have gone stale; the remedy is operator action, not a retry.
   if (text.includes('403') || text.includes('forbidden')
