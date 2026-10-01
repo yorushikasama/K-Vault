@@ -38,6 +38,16 @@ describe('classifyFailure unchanged branches', function () {
     assert.strictEqual(error.code, 'MEDIA_RESOLVE_UNSUPPORTED_SITE');
   });
 
+  it('reports yt-dlp piracy blocklist hits as blocked sites', function () {
+    const stderr = [
+      'ERROR: [Piracy] This website is no longer supported since it has been',
+      'determined to be primarily used for piracy. DO NOT open issues for it',
+    ].join(' ');
+    const error = classifyFailure(stderr, 1, { cookiesConfigured: true });
+    assert.strictEqual(error.code, 'MEDIA_RESOLVE_BLOCKED_SITE');
+    assert.strictEqual(error.status, 422);
+  });
+
   it('still maps genuinely unavailable videos', function () {
     const error = classifyFailure('ERROR: This video is unavailable', 1);
     assert.strictEqual(error.code, 'MEDIA_RESOLVE_UNAVAILABLE_VIDEO');

@@ -396,6 +396,16 @@ function classifyFailure(stderr, exitCode, { cookiesConfigured = false } = {}) {
       detail: 'yt-dlp reported an unsupported URL and the page sniffer found no stream either.',
     });
   }
+  // yt-dlp maintainers keep a piracy blocklist: the extractor refuses these
+  // domains up front with a "DO NOT open issues" notice. That is an upstream
+  // policy decision, not a capability gap — report it as such rather than
+  // dressing it up as a generic failure (or trying to route around it).
+  if (text.includes('[piracy]') || text.includes('used for piracy')) {
+    return new MediaResolveError('MEDIA_RESOLVE_BLOCKED_SITE', '该站点被 yt-dlp 官方列入盗版黑名单，解析器拒绝处理。', {
+      status: 422,
+      detail: 'yt-dlp maintainers blocklist this domain; the service does not bypass that decision.',
+    });
+  }
   if (text.includes('sign in') || text.includes('login required')
       || text.includes('account authentication')) {
     return new MediaResolveError('MEDIA_RESOLVE_AUTH_REQUIRED', '该视频需要登录凭证才能解析。', {
