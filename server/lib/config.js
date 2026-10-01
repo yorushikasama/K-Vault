@@ -34,6 +34,31 @@ function normalizeEnvString(value, fallback = '') {
   return normalized || fallback;
 }
 
+// "host=path;host2=path2" — one cookie jar per site, because yt-dlp takes a
+// single --cookies file per run and a logged-in Bilibili jar must not be sent
+// to Douyin (or anywhere else). Semicolons and newlines separate pairs since
+// both are far rarer in file paths than commas. Invalid pairs are dropped
+// rather than fatal: a typo in one mapping should not take resolution down.
+const COOKIE_HOST_RE = /^[a-z0-9._:-]+$/;
+
+function parseCookiesByHost(value) {
+  const text = stripWrappingQuotes(value);
+  if (!text) return [];
+  const pairs = [];
+  for (const rawPair of text.split(/[;\n]+/)) {
+    const pair = rawPair.trim();
+    if (!pair) continue;
+    const eq = pair.indexOf('=');
+    if (eq <= 0 || eq === pair.length - 1) continue;
+    const host = pair.slice(0, eq).trim().toLowerCase().replace(/^\[|\]$/g, '');
+    const jarPath = pair.slice(eq + 1).trim();
+    if (!host || !jarPath) continue;
+    if (!COOKIE_HOST_RE.test(host)) continue;
+    pairs.push({ host, path: jarPath });
+  }
+  return pairs;
+}
+
 function pickEnvAlias(env, aliases = [], fallback = '') {
   for (const alias of aliases) {
     const value = env[alias];
@@ -164,6 +189,9 @@ function loadConfig(env = process.env) {
       // writable (and usually a volume) on both Docker and bare-metal setups.
       tempDir: normalizeEnvString(env.MEDIA_RESOLVE_TEMP_DIR) || path.join(dataDir, 'tmp'),
       cookiesFile: normalizeEnvString(env.MEDIA_RESOLVE_COOKIES_FILE),
+      // Per-site jars layered on top of cookiesFile; the most specific match
+      // wins and everything else falls back to cookiesFile.
+      cookiesByHost: parseCookiesByHost(env.MEDIA_RESOLVE_COOKIES_BY_HOST),
       proxy: normalizeEnvString(env.MEDIA_RESOLVE_PROXY),
       allowUnknownHosts: toBool(env.MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS, false),
       extraHosts: normalizeEnvString(env.MEDIA_RESOLVE_EXTRA_HOSTS),
@@ -308,4 +336,5 @@ module.exports = {
   loadConfig,
   toBool,
   toInt,
+  parseCookiesByHost,
 };

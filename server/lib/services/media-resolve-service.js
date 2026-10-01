@@ -181,6 +181,72 @@ function hostMatches(hostname, allowedHosts) {
   return false;
 }
 
+// Loopback, RFC1918, CGNAT, link-local (including the cloud-metadata address),
+// unique-local and IPv4-mapped IPv6. These are refused EVEN when unknown hosts
+// are allowed — a pasted URL pointing back at the server's own network is the
+// SSRF primitive the allow-list exists to stop. Explicit allow-list entries
+// bypass this check: an operator who adds an internal host to EXTRA_HOSTS has
+// made that call deliberately.
+const PRIVATE_HOSTNAME_RE = /(^|\.)localhost$|(^|\.)local$|(^|\.)internal$/;
+
+function isPrivateOrLocalHost(hostname) {
+  const host = String(hostname || '').toLowerCase().replace(/^\[|\]$/g, '');
+  if (!host) return true;
+  if (host === '*' || host.endsWith('.*')) return true;
+  if (PRIVATE_HOSTNAME_RE.test(host)) return true;
+
+  // IPv6 literals: loopback, link-local (fe80::/10), unique-local (fc00::/7),
+  // and the ::ffff:a.b.c.d mapped form, which is checked via its embedded v4.
+  if (host.includes(':')) {
+    if (host === '::' || host === '::1') return true;
+    if (/^f[cd][0-9a-f]{2}:/.test(host)) return true;
+    if (/^fe[89ab][0-9a-f]:/.test(host)) return true;
+    const mapped = host.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/);
+    if (mapped) return isPrivateIpv4(mapped[1]);
+    return false;
+  }
+
+  // Dotted quad, including all the decimal/octal/hex label tricks a URL can
+  // carry (e.g. http://0x7f000001 or http://2130706433 still resolve to
+  // 127.0.0.1): normalize every label the same way the OS resolver would.
+  const labels = host.split('.');
+  if (labels.length === 1) {
+    // A single label packs the whole 32-bit address.
+    const label = labels[0];
+    let packed;
+    if (/^0x[0-9a-f]+$/i.test(label)) packed = parseInt(label.slice(2), 16);
+    else if (/^0[0-7]+$/.test(label)) packed = parseInt(label, 8);
+    else if (/^\d+$/.test(label)) packed = parseInt(label, 10);
+    else return false;
+    if (!Number.isFinite(packed) || packed < 0 || packed > 0xffffffff) return false;
+    return isPrivateIpv4(
+      [(packed >>> 24) & 255, (packed >>> 16) & 255, (packed >>> 8) & 255, packed & 255].join('.')
+    );
+  }
+  if (labels.length !== 4) return false;
+  const octets = [];
+  for (const label of labels) {
+    let value;
+    if (/^0x[0-9a-f]+$/i.test(label)) value = parseInt(label.slice(2), 16);
+    else if (/^0[0-7]+$/.test(label)) value = parseInt(label, 8);
+    else if (/^\d+$/.test(label)) value = parseInt(label, 10);
+    else return false;
+    if (!Number.isFinite(value) || value < 0 || value > 255) return false;
+    octets.push(value);
+  }
+  return isPrivateIpv4(octets.join('.'));
+}
+
+function isPrivateIpv4(ip) {
+  const [a, b] = ip.split('.').map(Number);
+  if (a === 10 || a === 127 || a === 0) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true;
+  return false;
+}
+
 // The pasted "copy link" text is a sentence; the URL is one token inside it.
 function extractFirstUrl(text) {
   const match = String(text || '').match(URL_IN_TEXT_RE);
@@ -416,6 +482,15 @@ class MediaResolveService {
     this.maxFileSizeBytes = Math.max(0, Number(settings.maxFileSizeBytes) || 0);
     this.maxUrlLength = Math.max(64, Number(settings.maxUrlLength) || 2048);
     this.cookiesFile = String(settings.cookiesFile || '').trim();
+    // Per-site jars: yt-dlp accepts one --cookies file per run, so a logged-in
+    // Bilibili jar and a guest Douyin jar cannot ride in the same file without
+    // each platform receiving the other's cookies. The most specific host match
+    // wins; everything else falls back to cookiesFile.
+    this.cookiesByHost = new Map(
+      (Array.isArray(settings.cookiesByHost) ? settings.cookiesByHost : [])
+        .map((pair) => [String(pair.host || '').toLowerCase(), String(pair.path || '').trim()])
+        .filter(([host, jarPath]) => host && jarPath)
+    );
     this.proxy = String(settings.proxy || '').trim();
     this.allowUnknownHosts = settings.allowUnknownHosts === true;
     this.allowedHosts = buildAllowedHosts(settings.extraHosts);
@@ -483,8 +558,12 @@ class MediaResolveService {
   }
 
   isHostAllowed(hostname) {
-    if (this.allowUnknownHosts) return true;
-    return hostMatches(hostname, this.allowedHosts);
+    if (hostMatches(hostname, this.allowedHosts)) return true;
+    // Unknown hosts are allowed only when they are demonstrably public; the
+    // loopback/private ranges stay refused so "allow all" cannot be turned
+    // into a tunnel back at the server's own network.
+    if (this.allowUnknownHosts) return !isPrivateOrLocalHost(hostname);
+    return false;
   }
 
   assertUrlAllowed(rawUrl) {
@@ -588,19 +667,39 @@ class MediaResolveService {
   // keeps the master immutable and sidesteps the ownership mismatch entirely.
   // Returns '' when nothing readable is configured, which yt-dlp then reports as
   // the familiar "fresh cookies needed".
-  async materializeCookies() {
-    if (!this.cookiesFile) return '';
+  async materializeCookies(hostname = '') {
+    const jarPath = this.selectCookiesFile(hostname);
+    if (!jarPath) return '';
     try {
       await fs.promises.mkdir(this.tempDir, { recursive: true });
       const dest = path.join(
         this.tempDir,
         `${TEMP_FILE_PREFIX}cookies-${crypto.randomBytes(4).toString('hex')}.txt`
       );
-      await fs.promises.copyFile(this.cookiesFile, dest);
+      await fs.promises.copyFile(jarPath, dest);
       return dest;
     } catch {
       return '';
     }
+  }
+
+  // Exact hostname first, then the longest domain-suffix mapping
+  // ("bilibili.com" covers www.bilibili.com), then the generic jar.
+  selectCookiesFile(hostname) {
+    const host = String(hostname || '').toLowerCase().replace(/^\[|\]$/g, '');
+    if (host) {
+      if (this.cookiesByHost.has(host)) return this.cookiesByHost.get(host);
+      let best = '';
+      let bestLength = 0;
+      for (const [mapped, jarPath] of this.cookiesByHost) {
+        if (host.endsWith(`.${mapped}`) && mapped.length > bestLength) {
+          best = jarPath;
+          bestLength = mapped.length;
+        }
+      }
+      if (best) return best;
+    }
+    return this.cookiesFile;
   }
 
   // Probing shells out too, so cache both outcomes: successes for a few
@@ -810,7 +909,9 @@ class MediaResolveService {
       timeoutMs: this.timeoutMs,
       downloadTimeoutMs: this.downloadTimeoutMs,
       userAgent: this.userAgent,
-      cookiesConfigured: Boolean(this.cookiesFile),
+      cookiesConfigured: Boolean(this.cookiesFile) || this.cookiesByHost.size > 0,
+      // Hostnames only — jar paths are server-side details the API must not leak.
+      cookieHosts: Array.from(this.cookiesByHost.keys()).sort(),
       proxyConfigured: Boolean(this.proxy),
       allowUnknownHosts: this.allowUnknownHosts,
       allowedHosts: this.allowUnknownHosts ? [] : Array.from(this.allowedHosts).sort(),
@@ -972,7 +1073,7 @@ class MediaResolveService {
       });
     }
 
-    const cookiesPath = await this.materializeCookies();
+    const cookiesPath = await this.materializeCookies(parsed.hostname);
     let stdout;
     try {
       await this.acquire();
@@ -1338,7 +1439,7 @@ class MediaResolveService {
     await fs.promises.mkdir(jobDir, { recursive: true });
 
     const outputTemplate = path.join(jobDir, '%(id)s.%(ext)s');
-    const cookiesPath = await this.materializeCookies();
+    const cookiesPath = await this.materializeCookies(parsed.hostname);
 
     const progressArgs = (this.progressEnabled && typeof onProgress === 'function')
       ? buildProgressArgs({ ...options, progress: true })
@@ -1631,7 +1732,9 @@ class MediaResolveService {
         const stdout = Buffer.concat(stdoutChunks).toString('utf8');
 
         if (exitCode !== 0) {
-          reject(classifyFailure(stderrTail, exitCode, { cookiesConfigured: Boolean(this.cookiesFile) }));
+          reject(classifyFailure(stderrTail, exitCode, {
+            cookiesConfigured: Boolean(this.cookiesFile) || this.cookiesByHost.size > 0,
+          }));
           return;
         }
         if (!stdout.trim() && !onStdoutLine) {
@@ -1779,4 +1882,5 @@ module.exports = {
   PROGRESS_PREFIX,
   parseProgressLine,
   classifyFailure,
+  isPrivateOrLocalHost,
 };

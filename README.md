@@ -658,9 +658,10 @@ sudo apt install -y nodejs            # 或 deno
 | `MEDIA_RESOLVE_MAX_URL_LENGTH` | 分享链接最大长度 | `2048` |
 | `MEDIA_RESOLVE_TEMP_DIR` | 下载临时目录（入库后自动删除） | `DATA_DIR/tmp` |
 | `MEDIA_RESOLVE_COOKIES_FILE` | cookies.txt 路径，用于解锁需登录的内容 | - |
+| `MEDIA_RESOLVE_COOKIES_BY_HOST` | 按站点指定各自的 cookies.txt（`host=path`，`;` 或换行分隔），未命中的站点回退到 `MEDIA_RESOLVE_COOKIES_FILE` | - |
 | `MEDIA_RESOLVE_PROXY` | 访问平台时使用的代理，如 `http://127.0.0.1:7890` | - |
 | `MEDIA_RESOLVE_EXTRA_HOSTS` | 追加到内置站点白名单的域名（逗号或空格分隔） | - |
-| `MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS` | 允许任意站点（默认关闭，避免被当作通用请求转发器） | `false` |
+| `MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS` | 允许解析白名单之外的**公网**站点（走 yt-dlp 的站点 extractor 与 generic extractor）；回环 / 内网 / 云元数据地址始终拒绝 | `false` |
 | `URL_IMPORT_MAX_SIZE` | 解析转存 / 远程 URL 导入的单文件体积上限（字节） | `UPLOAD_MAX_SIZE` |
 | **能力** | | |
 | `MEDIA_RESOLVE_JS_RUNTIME` | JS 运行时（`node` / `deno` / `quickjs` / `bun`），`none` 表示不传该参数 | `node` |
@@ -709,12 +710,14 @@ sudo apt install -y nodejs            # 或 deno
 - **孤儿文件有兜底清理。** 下载中途被强杀（OOM、重启）时 `finally` 不会执行，文件会留在临时目录。服务启动时会强制清扫一次，运行期间每 30 分钟一次，**只清 2 小时以上、且文件名以 `kv-resolve-` 开头的文件或目录** —— 进行中的下载和其他人的文件都不会被误删。若清扫因权限不足失败，启动日志会出现 `media-resolve: N stale temp file(s) could not be removed`，说明该目录不属于服务账号。
 
 - **B站 1080P+ 与抖音需要 Cookie。** 导出 Netscape 格式的 `cookies.txt`，通过 `MEDIA_RESOLVE_COOKIES_FILE` 指定；否则可能只解析到试看片段或直接失败。**抖音的 Cookie 不需要登录账号**（游客 Cookie 即可，访问一次 douyin.com 就有），但会过期，需要定期重新生成；服务端对抖音请求会自动附带自身 `Referer`（缺它时接口返回空响应体，并被误报为"缺 Cookie"）。
+  - **B站的清晰度由 Cookie 的登录状态决定**：未登录最高 360P/480P，普通登录 720P/1080P，大会员 1080P 高码率 / 1080P60 / 4K / HDR / 杜比。想拿高清晰度就给 B站挂一个**已登录**（需要高码率则大会员）账号的 jar——由于 yt-dlp 单次只能挂一个 jar，推荐用 `MEDIA_RESOLVE_COOKIES_BY_HOST="bilibili.com=/path/to/bilibili.cookies.txt"` 按站点挂载，抖音与 B站互不干扰（也不会把 A 站的 Cookie 发给 B 站）。域名的子域自动命中（`bilibili.com` 覆盖 `www.bilibili.com`）。
+  - YouTube 与清晰度无关的限制只剩 PO Token（未配置时 capabilities 会如实报告）；实测无 PO Token 也能列出并下载到 4K，配置了 JS 运行时即可。
   - 仓库自带 `scripts/douyin-cookie-harvest.py`（由 `scripts/kvault-bootstrap-media.sh` 安装 Playwright + Chromium 并注册**每天 04:30 ± 30 分钟**的续期定时器）：用服务器自己的 IP 抓游客 Cookie，并**先验证可用再原子替换**旧文件，抓不到或验证失败就保留旧文件。
   - 抖音 extractor 对**任何**失败（包括视频已删除）都报 `Fresh cookies are needed`——已实测：删除的视频和空 Cookie jar 产生逐字节相同的报错。因此服务端在**已配置 Cookie** 时会把该错误归类为「视频不可用（或 Cookie 已失效）」，而不是误导性的「需要登录凭证」；未配置 Cookie 时仍按缺 Cookie 处理。
   - **服务不会把主 Cookie 文件直接交给 yt-dlp。** 每次解析都会把主文件复制到 `MEDIA_RESOLVE_TEMP_DIR` 下的临时副本再用（yt-dlp 退出时会回写 `--cookies` 文件），用完即删。因此主文件只需**服务账号可读**，不必可写；副本机制也避免了并发解析互相覆盖同一个 jar。
   - ⚠️ 抓取脚本以 root 运行、服务以专用账号运行，脚本写入后会把主文件 `chown` 给服务账号。若看到文件是 `root:root 600`，服务就**读不到**，症状是抖音/ B站 解析一直报"缺 Cookie"（而不是权限错误）——那种情况重跑一次 `sudo kvault-bootstrap-media` 即可修正。
 - **直链是带签名的临时地址**（通常 24 小时内有效），因此「解析」与「转存」应在同一次请求内完成，不建议取到直链后留存稍后再用。
-- 默认只允许白名单内的站点。需要其他站点时用 `MEDIA_RESOLVE_EXTRA_HOSTS` 追加；开放 `MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS` 会让服务端能够请求任意公网地址（仍受 SSRF 防护约束），请谨慎评估。
+- 默认只允许白名单内的站点。需要其他站点时用 `MEDIA_RESOLVE_EXTRA_HOSTS` 追加；开放 `MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS` 后**任意公网站点**都能解析——yt-dlp 自带 1000+ 站点 extractor，其余页面落到 generic extractor（直链视频、内嵌播放器大概率可用；重度 JS 渲染或需要登录的页面仍会失败）。回环 / RFC1918 / CGNAT / 链路本地（含云元数据 169.254.169.254）/ IPv6 ULA 地址**始终拒绝**，即使开了该开关；只有 `MEDIA_RESOLVE_EXTRA_HOSTS` 里显式写明的内网主机才放行。
 - 请遵守各平台服务条款与版权规定，仅用于个人合法用途。
 
 ### 调用示例
@@ -805,6 +808,7 @@ curl -u admin:your_password -X POST http://127.0.0.1:8787/api/resolve-url \
 | `MEDIA_RESOLVE_MAX_CONCURRENCY` | 最大并发解析数 | `2` |
 | `MEDIA_RESOLVE_TEMP_DIR` | 下载临时目录（入库后自动删除） | `DATA_DIR/tmp` |
 | `MEDIA_RESOLVE_COOKIES_FILE` | cookies.txt 路径（解锁 B站 1080P+ / 抖音） | - |
+| `MEDIA_RESOLVE_COOKIES_BY_HOST` | 按站点各自的 cookies.txt（`host=path`，`;`/换行分隔） | - |
 | `MEDIA_RESOLVE_PROXY` | 访问平台时使用的代理 | - |
 | `DEFAULT_STORAGE_TYPE` | 启动时默认存储类型（`telegram`/`r2`/`s3`/`discord`/`huggingface`/`webdav`/`github`） | `telegram` |
 | `SETTINGS_STORE` | 基础设置存储后端（`sqlite` 或 `redis`） | `sqlite` |
@@ -935,9 +939,10 @@ curl -u admin:your_password -X POST http://127.0.0.1:8787/api/resolve-url \
 | `MEDIA_RESOLVE_MAX_FILE_SIZE` | 允许解析的最大文件体积（字节），`0` 不限制 | 可选 |
 | `MEDIA_RESOLVE_MAX_URL_LENGTH` | 分享链接最大长度 | 可选 |
 | `MEDIA_RESOLVE_COOKIES_FILE` | cookies.txt 路径（解锁 B站 1080P+ / 抖音） | 可选 |
+| `MEDIA_RESOLVE_COOKIES_BY_HOST` | 按站点各自的 cookies.txt（`host=path`，`;`/换行分隔） | 可选 |
 | `MEDIA_RESOLVE_PROXY` | 访问平台时使用的代理 | 可选 |
 | `MEDIA_RESOLVE_EXTRA_HOSTS` | 追加到内置站点白名单的域名 | 可选 |
-| `MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS` | 允许任意站点解析（默认仅白名单） | 可选 |
+| `MEDIA_RESOLVE_ALLOW_UNKNOWN_HOSTS` | 允许解析白名单外的公网站点（内网地址始终拒绝） | 可选 |
 
 ---
 
