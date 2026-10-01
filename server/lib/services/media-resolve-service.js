@@ -321,7 +321,7 @@ function firstEntry(info) {
 
 // yt-dlp's stderr is the only place the actual reason lives; map the common
 // ones onto codes the caller can act on instead of a generic failure.
-function classifyFailure(stderr, exitCode) {
+function classifyFailure(stderr, exitCode, { cookiesConfigured = false } = {}) {
   const text = String(stderr || '').toLowerCase();
 
   if (text.includes('unsupported url')) {
@@ -331,7 +331,26 @@ function classifyFailure(stderr, exitCode) {
     });
   }
   if (text.includes('sign in') || text.includes('login required')
-      || text.includes('cookies') || text.includes('account authentication')) {
+      || text.includes('account authentication')) {
+    return new MediaResolveError('MEDIA_RESOLVE_AUTH_REQUIRED', '该视频需要登录凭证才能解析。', {
+      status: 422,
+      detail: 'The platform requires cookies; configure MEDIA_RESOLVE_COOKIES_FILE.',
+    });
+  }
+  if (text.includes('cookies')) {
+    // Douyin's extractor raises "Fresh cookies ..." for every failure it hits:
+    // measured on 2026-09-30, a deleted video and an empty cookie jar produce
+    // byte-identical stderr on the same request. Once a cookie jar is configured
+    // the message therefore cannot mean "you need cookies" — it usually means
+    // the video is gone. AUTH_REQUIRED stays only for the no-jar case, where
+    // configuring one really is the remedy.
+    if (cookiesConfigured && text.includes('fresh cookies')) {
+      return new MediaResolveError('MEDIA_RESOLVE_UNAVAILABLE_VIDEO',
+        '视频不可用或已被删除（若视频在客户端可见，也可能是 Cookie 已失效）。', {
+          status: 422,
+          detail: 'Douyin reports this error for unavailable videos even with a valid jar; refresh MEDIA_RESOLVE_COOKIES_FILE only if the video is confirmed visible.',
+        });
+    }
     return new MediaResolveError('MEDIA_RESOLVE_AUTH_REQUIRED', '该视频需要登录凭证才能解析。', {
       status: 422,
       detail: 'The platform requires cookies; configure MEDIA_RESOLVE_COOKIES_FILE.',
@@ -1612,7 +1631,7 @@ class MediaResolveService {
         const stdout = Buffer.concat(stdoutChunks).toString('utf8');
 
         if (exitCode !== 0) {
-          reject(classifyFailure(stderrTail, exitCode));
+          reject(classifyFailure(stderrTail, exitCode, { cookiesConfigured: Boolean(this.cookiesFile) }));
           return;
         }
         if (!stdout.trim() && !onStdoutLine) {
@@ -1759,4 +1778,5 @@ module.exports = {
   DEFAULT_PRESET,
   PROGRESS_PREFIX,
   parseProgressLine,
+  classifyFailure,
 };

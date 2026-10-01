@@ -709,7 +709,8 @@ sudo apt install -y nodejs            # 或 deno
 - **孤儿文件有兜底清理。** 下载中途被强杀（OOM、重启）时 `finally` 不会执行，文件会留在临时目录。服务启动时会强制清扫一次，运行期间每 30 分钟一次，**只清 2 小时以上、且文件名以 `kv-resolve-` 开头的文件或目录** —— 进行中的下载和其他人的文件都不会被误删。若清扫因权限不足失败，启动日志会出现 `media-resolve: N stale temp file(s) could not be removed`，说明该目录不属于服务账号。
 
 - **B站 1080P+ 与抖音需要 Cookie。** 导出 Netscape 格式的 `cookies.txt`，通过 `MEDIA_RESOLVE_COOKIES_FILE` 指定；否则可能只解析到试看片段或直接失败。**抖音的 Cookie 不需要登录账号**（游客 Cookie 即可，访问一次 douyin.com 就有），但会过期，需要定期重新生成；服务端对抖音请求会自动附带自身 `Referer`（缺它时接口返回空响应体，并被误报为"缺 Cookie"）。
-  - 仓库自带 `scripts/douyin-cookie-harvest.py`（由 `scripts/kvault-bootstrap-media.sh` 安装 Playwright + Chromium 并注册每 3 天的续期定时器）：用服务器自己的 IP 抓游客 Cookie，并**先验证可用再原子替换**旧文件，抓不到或验证失败就保留旧文件。
+  - 仓库自带 `scripts/douyin-cookie-harvest.py`（由 `scripts/kvault-bootstrap-media.sh` 安装 Playwright + Chromium 并注册**每天 04:30 ± 30 分钟**的续期定时器）：用服务器自己的 IP 抓游客 Cookie，并**先验证可用再原子替换**旧文件，抓不到或验证失败就保留旧文件。
+  - 抖音 extractor 对**任何**失败（包括视频已删除）都报 `Fresh cookies are needed`——已实测：删除的视频和空 Cookie jar 产生逐字节相同的报错。因此服务端在**已配置 Cookie** 时会把该错误归类为「视频不可用（或 Cookie 已失效）」，而不是误导性的「需要登录凭证」；未配置 Cookie 时仍按缺 Cookie 处理。
   - **服务不会把主 Cookie 文件直接交给 yt-dlp。** 每次解析都会把主文件复制到 `MEDIA_RESOLVE_TEMP_DIR` 下的临时副本再用（yt-dlp 退出时会回写 `--cookies` 文件），用完即删。因此主文件只需**服务账号可读**，不必可写；副本机制也避免了并发解析互相覆盖同一个 jar。
   - ⚠️ 抓取脚本以 root 运行、服务以专用账号运行，脚本写入后会把主文件 `chown` 给服务账号。若看到文件是 `root:root 600`，服务就**读不到**，症状是抖音/ B站 解析一直报"缺 Cookie"（而不是权限错误）——那种情况重跑一次 `sudo kvault-bootstrap-media` 即可修正。
 - **直链是带签名的临时地址**（通常 24 小时内有效），因此「解析」与「转存」应在同一次请求内完成，不建议取到直链后留存稍后再用。

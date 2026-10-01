@@ -85,7 +85,7 @@ TimeoutStartSec=600
 UNIT
 cat > /tmp/kv-douyin.timer <<UNIT
 [Unit]
-Description=K-Vault - refresh Douyin guest cookies every 3 days
+Description=K-Vault - refresh Douyin guest cookies daily at 04:30
 
 [Timer]
 OnCalendar=*-*-* 04:30:00
