@@ -58,6 +58,17 @@ describe('host allow-list under allowUnknownHosts', function () {
     const service = serviceWith({});
     assert.strictEqual(service.isHostAllowed('example.com'), false);
   });
+
+  it('lets bracketed IPv6 pastes reach the host-policy layer', async function () {
+    // The share-sentence extractor truncates at ']', which IPv6 literals
+    // contain; prepareTarget falls back to the full text so the policy —
+    // not a parse error — decides.
+    const service = serviceWith({ allowUnknownHosts: true });
+    await assert.rejects(
+      service.prepareTarget('http://[::ffff:127.0.0.1]:8787/index.html'),
+      (error) => error.code === 'MEDIA_RESOLVE_HOST_NOT_ALLOWED'
+    );
+  });
 });
 
 describe('parseCookiesByHost', function () {

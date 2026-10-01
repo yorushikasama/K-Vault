@@ -260,6 +260,15 @@ function extractFirstUrl(text) {
   return match ? match[0].replace(TRAILING_PUNCT_RE, '') : '';
 }
 
+function isParsableUrl(text) {
+  try {
+    const parsed = new URL(String(text || '').trim());
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 function isDouyinHost(hostname) {
   return /(^|\.)(douyin\.com|iesdouyin\.com)$/.test(String(hostname || '').toLowerCase());
 }
@@ -832,7 +841,13 @@ class MediaResolveService {
   // a play page, so the CDN sees the page it came from).
   async prepareTarget(rawUrl) {
     const text = String(rawUrl || '').trim();
-    const candidate = extractFirstUrl(text) || text;
+    // The share-sentence extractor stops at ']' — a character IPv6 literals
+    // legitimately contain. When what it extracted cannot parse but the whole
+    // text can, trust the whole text.
+    let candidate = extractFirstUrl(text) || text;
+    if (candidate !== text && !isParsableUrl(candidate) && isParsableUrl(text)) {
+      candidate = text;
+    }
     const parsed = this.assertUrlAllowed(candidate);
     const normalized = await this.normalizeShareUrl(parsed);
 
