@@ -858,6 +858,17 @@ class MediaResolveService {
           label: preset.label,
           audioOnly: preset.audioOnly,
         })),
+        limits: {
+          maxPlaylistItems: this.maxPlaylistItems,
+          maxSidecarFiles: this.maxSidecarFiles,
+          maxConcurrentFragments: this.maxConcurrentFragments,
+          maxFileSizeBytes: this.maxFileSizeBytes,
+          maxDurationSeconds: this.maxDurationSeconds,
+        },
+        hostPolicy: {
+          allowUnknownHosts: this.allowUnknownHosts,
+          cookieHosts: Array.from(this.cookiesByHost.keys()).sort(),
+        },
       };
     }
 
@@ -889,6 +900,10 @@ class MediaResolveService {
         maxConcurrentFragments: this.maxConcurrentFragments,
         maxFileSizeBytes: this.maxFileSizeBytes,
         maxDurationSeconds: this.maxDurationSeconds,
+      },
+      hostPolicy: {
+        allowUnknownHosts: this.allowUnknownHosts,
+        cookieHosts: Array.from(this.cookiesByHost.keys()).sort(),
       },
     };
   }
