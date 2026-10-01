@@ -462,6 +462,15 @@ function classifyFailure(stderr, exitCode, { cookiesConfigured = false } = {}) {
       detail: 'The platform is rate limiting this server.',
     });
   }
+  // Bilibili answers risk control with 412 (Precondition Failed) instead of
+  // 429: measured on 2026-10-01 after repeated requests from one IP. It clears
+  // on its own, so the remedy is waiting, not retrying harder.
+  if (text.includes('http error 412') || text.includes('precondition failed')) {
+    return new MediaResolveError('MEDIA_RESOLVE_RATE_LIMITED', '触发了平台风控，请稍后再试。', {
+      status: 503,
+      detail: 'The platform answered HTTP 412 (risk control); this usually clears on its own after a cooldown.',
+    });
+  }
 
   return new MediaResolveError('MEDIA_RESOLVE_FAILED', '解析失败。', {
     status: 502,
