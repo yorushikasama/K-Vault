@@ -1,7 +1,7 @@
 /**
  * Lucide 1.49.0 子集 — 由 scripts/build-icon-subset.cjs 生成，请勿手改。
  *
- * 只包含仓库实际用到的 168 个图标（全量 2117 个）。
+ * 只包含仓库实际用到的 136 个图标（全量 2117 个）。
  * 暴露形状与官方 UMD 一致（window.lucide.icons / createIcons / 具名导出），
  * 因此 icons.js、theme-core.js、admin.html 的 kv-icon 都无需改动。
  *
@@ -154,11 +154,6 @@ const defaultAttributes = {
     ["path", { d: "M10 12h4" }]
   ];
 
-  const ArrowDown = [
-    ["path", { d: "M12 5v14" }],
-    ["path", { d: "m19 12-7 7-7-7" }]
-  ];
-
   const ArrowDownAZ = [
     ["path", { d: "m3 16 4 4 4-4" }],
     ["path", { d: "M7 20V4" }],
@@ -178,16 +173,6 @@ const defaultAttributes = {
   const ArrowLeft = [
     ["path", { d: "m12 19-7-7 7-7" }],
     ["path", { d: "M19 12H5" }]
-  ];
-
-  const ArrowRight = [
-    ["path", { d: "M5 12h14" }],
-    ["path", { d: "m12 5 7 7-7 7" }]
-  ];
-
-  const ArrowUp = [
-    ["path", { d: "m5 12 7-7 7 7" }],
-    ["path", { d: "M12 19V5" }]
   ];
 
   const ArrowUpRight = [
@@ -257,12 +242,6 @@ const defaultAttributes = {
     ["path", { d: "M12 22V12" }]
   ];
 
-  const Brush = [
-    ["path", { d: "m11 10 3 3" }],
-    ["path", { d: "M6.5 21A3.5 3.5 0 1 0 3 17.5a2.62 2.62 0 0 1-.708 1.792A1 1 0 0 0 3 21z" }],
-    ["path", { d: "M9.969 17.031 21.378 5.624a1 1 0 0 0-3.002-3.002L6.967 14.031" }]
-  ];
-
   const Captions = [
     ["rect", { width: "18", height: "14", x: "3", y: "5", rx: "2", ry: "2" }],
     ["path", { d: "M7 15h4M15 15h2M7 11h2M13 11h4" }]
@@ -274,11 +253,6 @@ const defaultAttributes = {
   ];
 
   const Check = [["path", { d: "M20 6 9 17l-5-5" }]];
-
-  const CheckCheck = [
-    ["path", { d: "M18 6 7 17l-5-5" }],
-    ["path", { d: "m22 10-7.5 7.5L13 16" }]
-  ];
 
   const ChevronDown = [["path", { d: "m6 9 6 6 6-6" }]];
 
@@ -296,10 +270,6 @@ const defaultAttributes = {
     ["path", { d: "m13 17 5-5-5-5" }]
   ];
 
-  const ChevronUp = [["path", { d: "m18 15-6-6-6 6" }]];
-
-  const Circle = [["circle", { cx: "12", cy: "12", r: "10" }]];
-
   const CircleAlert = [
     ["circle", { cx: "12", cy: "12", r: "10" }],
     ["line", { x1: "12", x2: "12", y1: "8", y2: "12" }],
@@ -309,16 +279,6 @@ const defaultAttributes = {
   const CircleCheck = [
     ["circle", { cx: "12", cy: "12", r: "10" }],
     ["path", { d: "m16 9-5.5 5.5L8 12" }]
-  ];
-
-  const CircleCheckBig = [
-    ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335" }],
-    ["path", { d: "m9 11 3 3L22 4" }]
-  ];
-
-  const CircleDot = [
-    ["circle", { cx: "12", cy: "12", r: "1" }],
-    ["circle", { cx: "12", cy: "12", r: "10" }]
   ];
 
   const CircleX = [
@@ -336,18 +296,6 @@ const defaultAttributes = {
     ["rect", { width: "8", height: "4", x: "8", y: "2", rx: "1", ry: "1" }],
     ["path", { d: "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" }],
     ["path", { d: "m9 14 2 2 4-4" }]
-  ];
-
-  const Clock = [
-    ["circle", { cx: "12", cy: "12", r: "10" }],
-    ["path", { d: "M12 6v6l4 2" }]
-  ];
-
-  const ClockArrowDown = [
-    ["path", { d: "M12 6v6l2 1" }],
-    ["path", { d: "M12.337 21.994a10 10 0 1 1 9.588-8.767" }],
-    ["path", { d: "m14 18 4 4 4-4" }],
-    ["path", { d: "M18 14v8" }]
   ];
 
   const Cloud = [["path", { d: "M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" }]];
@@ -448,14 +396,6 @@ const defaultAttributes = {
     ["path", { d: "M12 15V3" }],
     ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }],
     ["path", { d: "m7 10 5 5 5-5" }]
-  ];
-
-  const DraftingCompass = [
-    ["path", { d: "m12.99 6.74 1.93 3.44" }],
-    ["path", { d: "M19.136 12a10 10 0 0 1-14.271 0" }],
-    ["path", { d: "m21 21-2.16-3.84" }],
-    ["path", { d: "m3 21 8.02-14.26" }],
-    ["circle", { cx: "12", cy: "5", r: "2" }]
   ];
 
   const Ear = [
@@ -568,20 +508,6 @@ const defaultAttributes = {
     ["path", { d: "m9 15 3 3 3-3" }]
   ];
 
-  const FileHeadphone = [
-    [
-      "path",
-      {
-        d: "M4 6.835V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2h-.343"
-      }
-    ],
-    ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5" }],
-    [
-      "path",
-      { d: "M2 19a2 2 0 0 1 4 0v1a2 2 0 0 1-4 0v-4a6 6 0 0 1 12 0v4a2 2 0 0 1-4 0v-1a2 2 0 0 1 4 0" }
-    ]
-  ];
-
   const FileImage = [
     [
       "path",
@@ -604,22 +530,6 @@ const defaultAttributes = {
     ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5" }],
     ["path", { d: "m5 11-3 3" }],
     ["path", { d: "m5 17-3-3h10" }]
-  ];
-
-  const FilePlay = [
-    [
-      "path",
-      {
-        d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"
-      }
-    ],
-    ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5" }],
-    [
-      "path",
-      {
-        d: "M15.033 13.44a.647.647 0 0 1 0 1.12l-4.065 2.352a.645.645 0 0 1-.968-.56v-4.704a.645.645 0 0 1 .967-.56z"
-      }
-    ]
   ];
 
   const FileSpreadsheet = [
@@ -647,18 +557,6 @@ const defaultAttributes = {
     ["path", { d: "M10 9H8" }],
     ["path", { d: "M16 13H8" }],
     ["path", { d: "M16 17H8" }]
-  ];
-
-  const FileUp = [
-    [
-      "path",
-      {
-        d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"
-      }
-    ],
-    ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5" }],
-    ["path", { d: "M12 12v6" }],
-    ["path", { d: "m15 15-3-3-3 3" }]
   ];
 
   const FileVideoCamera = [
@@ -754,12 +652,6 @@ const defaultAttributes = {
     ]
   ];
 
-  const Globe = [
-    ["circle", { cx: "12", cy: "12", r: "10" }],
-    ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" }],
-    ["path", { d: "M2 12h20" }]
-  ];
-
   const Grid3x3 = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2" }],
     ["path", { d: "M3 9h18" }],
@@ -784,17 +676,6 @@ const defaultAttributes = {
     ["path", { d: "M7 21H5c-1.1 0-2-.9-2-2v-2" }],
     ["rect", { width: "7", height: "5", x: "7", y: "7", rx: "1" }],
     ["rect", { width: "7", height: "5", x: "10", y: "12", rx: "1" }]
-  ];
-
-  const Hammer = [
-    ["path", { d: "m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9" }],
-    ["path", { d: "m18 15 4-4" }],
-    [
-      "path",
-      {
-        d: "m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"
-      }
-    ]
   ];
 
   const HardDrive = [
@@ -918,13 +799,6 @@ const defaultAttributes = {
     ["path", { d: "M8 19h13" }]
   ];
 
-  const ListCheck = [
-    ["path", { d: "M16 5H3" }],
-    ["path", { d: "M16 12H3" }],
-    ["path", { d: "M11 19H3" }],
-    ["path", { d: "m15 18 2 2 4-4" }]
-  ];
-
   const ListChecks = [
     ["path", { d: "M13 5h8" }],
     ["path", { d: "M13 12h8" }],
@@ -970,25 +844,6 @@ const defaultAttributes = {
     ["rect", { x: "2", y: "4", width: "20", height: "16", rx: "2" }]
   ];
 
-  const MapPin = [
-    [
-      "path",
-      {
-        d: "M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
-      }
-    ],
-    ["circle", { cx: "12", cy: "10", r: "3" }]
-  ];
-
-  const Minimize = [
-    ["path", { d: "M8 3v3a2 2 0 0 1-2 2H3" }],
-    ["path", { d: "M21 8h-3a2 2 0 0 1-2-2V3" }],
-    ["path", { d: "M3 16h3a2 2 0 0 1 2 2v3" }],
-    ["path", { d: "M16 21v-3a2 2 0 0 1 2-2h3" }]
-  ];
-
-  const Minus = [["path", { d: "M5 12h14" }]];
-
   const Moon = [
     [
       "path",
@@ -1012,8 +867,6 @@ const defaultAttributes = {
     ["circle", { cx: "6", cy: "18", r: "3" }],
     ["circle", { cx: "18", cy: "16", r: "3" }]
   ];
-
-  const Navigation = [["polygon", { points: "3 11 22 2 13 21 11 13 3 11" }]];
 
   const Network = [
     ["rect", { x: "16", y: "16", width: "6", height: "6", rx: "1" }],
@@ -1090,11 +943,6 @@ const defaultAttributes = {
     ["path", { d: "M7 12h.01" }]
   ];
 
-  const Redo = [
-    ["path", { d: "M21 7v6h-6" }],
-    ["path", { d: "M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7" }]
-  ];
-
   const RefreshCw = [
     ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" }],
     ["path", { d: "M21 3v5h-5" }],
@@ -1105,17 +953,6 @@ const defaultAttributes = {
   const RotateCw = [
     ["path", { d: "M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" }],
     ["path", { d: "M21 3v5h-5" }]
-  ];
-
-  const Save = [
-    [
-      "path",
-      {
-        d: "M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"
-      }
-    ],
-    ["path", { d: "M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" }],
-    ["path", { d: "M7 3v4a1 1 0 0 0 1 1h7" }]
   ];
 
   const Scroll = [
@@ -1152,29 +989,11 @@ const defaultAttributes = {
     ["line", { x1: "6", x2: "6.01", y1: "18", y2: "18" }]
   ];
 
-  const Settings = [
-    [
-      "path",
-      {
-        d: "M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"
-      }
-    ],
-    ["circle", { cx: "12", cy: "12", r: "3" }]
-  ];
-
   const Settings2 = [
     ["path", { d: "M14 17H5" }],
     ["path", { d: "M19 7h-9" }],
     ["circle", { cx: "17", cy: "17", r: "3" }],
     ["circle", { cx: "7", cy: "7", r: "3" }]
-  ];
-
-  const Share2 = [
-    ["circle", { cx: "18", cy: "5", r: "3" }],
-    ["circle", { cx: "6", cy: "12", r: "3" }],
-    ["circle", { cx: "18", cy: "19", r: "3" }],
-    ["line", { x1: "8.59", x2: "15.42", y1: "13.51", y2: "17.49" }],
-    ["line", { x1: "15.41", x2: "8.59", y1: "6.51", y2: "10.49" }]
   ];
 
   const Shell = [
@@ -1195,25 +1014,6 @@ const defaultAttributes = {
     ]
   ];
 
-  const Shrink = [
-    ["path", { d: "m15 15 6 6m-6-6v4.8m0-4.8h4.8" }],
-    ["path", { d: "M9 19.8V15m0 0H4.2M9 15l-6 6" }],
-    ["path", { d: "M15 4.2V9m0 0h4.8M15 9l6-6" }],
-    ["path", { d: "M9 4.2V9m0 0H4.2M9 9 3 3" }]
-  ];
-
-  const SlidersHorizontal = [
-    ["path", { d: "M10 5H3" }],
-    ["path", { d: "M12 19H3" }],
-    ["path", { d: "M14 3v4" }],
-    ["path", { d: "M16 17v4" }],
-    ["path", { d: "M21 12h-9" }],
-    ["path", { d: "M21 19h-5" }],
-    ["path", { d: "M21 5h-7" }],
-    ["path", { d: "M8 10v4" }],
-    ["path", { d: "M8 12H3" }]
-  ];
-
   const Square = [["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2" }]];
 
   const SquareBookmark = [
@@ -1229,20 +1029,6 @@ const defaultAttributes = {
   const SquareCheck = [
     ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2" }],
     ["path", { d: "m16 9-5.5 5.5L8 12" }]
-  ];
-
-  const SquareCheckBig = [
-    ["path", { d: "M21 10.656V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12.344" }],
-    ["path", { d: "m9 11 3 3L22 4" }]
-  ];
-
-  const Star = [
-    [
-      "path",
-      {
-        d: "M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
-      }
-    ]
   ];
 
   const Sticker = [
@@ -1347,22 +1133,6 @@ const defaultAttributes = {
     ["rect", { x: "2", y: "6", width: "14", height: "12", rx: "2" }]
   ];
 
-  const WandSparkles = [
-    [
-      "path",
-      {
-        d: "m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"
-      }
-    ],
-    ["path", { d: "m14 7 3 3" }],
-    ["path", { d: "M5 6v4" }],
-    ["path", { d: "M19 14v4" }],
-    ["path", { d: "M10 2v2" }],
-    ["path", { d: "M7 8H3" }],
-    ["path", { d: "M21 16h-4" }],
-    ["path", { d: "M11 3H9" }]
-  ];
-
   const WavesLadder = [
     ["path", { d: "M19 5a2 2 0 0 0-2 2v11" }],
     [
@@ -1422,12 +1192,9 @@ const defaultAttributes = {
     Activity: Activity,
     Album: SquareBookmark,
     Archive: Archive,
-    ArrowDown: ArrowDown,
     ArrowDownAZ: ArrowDownAZ,
     ArrowDownWideNarrow: ArrowDownWideNarrow,
     ArrowLeft: ArrowLeft,
-    ArrowRight: ArrowRight,
-    ArrowUp: ArrowUp,
     ArrowUpRight: ArrowUpRight,
     AudioLines: AudioLines,
     AudioWaveform: AudioWaveform,
@@ -1436,27 +1203,18 @@ const defaultAttributes = {
     BookmarkCheck: BookmarkCheck,
     Bot: Bot,
     Box: Box,
-    Brush: Brush,
     ChartLine: ChartLine,
     Check: Check,
-    CheckCheck: CheckCheck,
-    CheckCircle: CircleCheckBig,
-    CheckSquare: SquareCheckBig,
     ChevronDown: ChevronDown,
     ChevronLeft: ChevronLeft,
     ChevronRight: ChevronRight,
     ChevronsLeft: ChevronsLeft,
     ChevronsRight: ChevronsRight,
-    ChevronUp: ChevronUp,
-    Circle: Circle,
     CircleAlert: CircleAlert,
     CircleCheck: CircleCheck,
-    CircleDot: CircleDot,
     CircleX: CircleX,
     Clipboard: Clipboard,
     ClipboardCheck: ClipboardCheck,
-    Clock: Clock,
-    ClockArrowDown: ClockArrowDown,
     Cloud: Cloud,
     CloudDownload: CloudDownload,
     CloudUpload: CloudUpload,
@@ -1471,7 +1229,6 @@ const defaultAttributes = {
     Disc: Disc,
     Dot: Dot,
     Download: Download,
-    DraftingCompass: DraftingCompass,
     Ear: Ear,
     Engine: Engine,
     Expand: Expand,
@@ -1480,16 +1237,12 @@ const defaultAttributes = {
     EyeOff: EyeOff,
     File: File,
     FileArchive: FileArchive,
-    FileAudio: FileHeadphone,
-    FileAudio2: FileHeadphone,
     FileCode: FileCode,
     FileDown: FileDown,
     FileImage: FileImage,
     FileOutput: FileOutput,
     FileSpreadsheet: FileSpreadsheet,
     FileText: FileText,
-    FileUp: FileUp,
-    FileVideo: FilePlay,
     FileVideoCamera: FileVideoCamera,
     Film: Film,
     Filter: Funnel,
@@ -1500,11 +1253,9 @@ const defaultAttributes = {
     FolderTree: FolderTree,
     FormInput: RectangleEllipsis,
     Funnel: Funnel,
-    Globe: Globe,
     Grid: Grid3x3,
     GripHorizontal: GripHorizontal,
     Group: Group,
-    Hammer: Hammer,
     HardDrive: HardDrive,
     Heading1: Heading1,
     Heading2: Heading2,
@@ -1521,7 +1272,6 @@ const defaultAttributes = {
     LayoutGrid: LayoutGrid,
     Link: Link,
     List: List,
-    ListCheck: ListCheck,
     ListChecks: ListChecks,
     ListTodo: ListTodo,
     LoaderCircle: LoaderCircle,
@@ -1530,13 +1280,9 @@ const defaultAttributes = {
     LogIn: LogIn,
     LogOut: LogOut,
     Mail: Mail,
-    MapPin: MapPin,
-    Minimize: Minimize,
-    Minus: Minus,
     Moon: Moon,
     Move: Move,
     Music: Music,
-    Navigation: Navigation,
     Network: Network,
     Palette: Palette,
     Pencil: Pencil,
@@ -1545,25 +1291,18 @@ const defaultAttributes = {
     Plus: Plus,
     Presentation: Presentation,
     Radio: Radio,
-    Redo: Redo,
     RefreshCw: RefreshCw,
     RotateCw: RotateCw,
-    Save: Save,
     Scroll: Scroll,
     Search: Search,
     SearchX: SearchX,
     Section: Section,
     Server: Server,
-    Settings: Settings,
     Settings2: Settings2,
-    Share2: Share2,
     Shell: Shell,
     Shield: Shield,
-    Shrink: Shrink,
-    SlidersHorizontal: SlidersHorizontal,
     Square: Square,
     SquareCheck: SquareCheck,
-    Star: Star,
     Sticker: Sticker,
     Subtitles: Captions,
     Summary: Summary,
@@ -1580,7 +1319,6 @@ const defaultAttributes = {
     User: User,
     UserRound: UserRound,
     Video: Video,
-    WandSparkles: WandSparkles,
     WavesLadder: WavesLadder,
     Webhook: Webhook,
     Weight: Weight,
