@@ -1,0 +1,24 @@
+# 没有这个文件时，Windows 上的检出会把文本文件变成 CRLF，而仓库里存的是 LF，
+# 于是 git diff/status 会对没动过的文件刷一堆
+# "LF will be replaced by CRLF the next time Git touches it"，
+# 真正的改动被噪音埋掉。
+* text=auto eol=lf
+
+# shell 脚本和 Docker entrypoint 必须是 LF：CRLF 会让 shebang 解析失败，
+# 容器启动直接报 "no such file or directory"。
+*.sh text eol=lf
+docker/entrypoint.sh text eol=lf
+
+# 二进制文件不做行尾转换，也不要在 diff 里展开。
+*.png binary
+*.ico binary
+*.webp binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.woff binary
+*.woff2 binary
+*.db binary
+
+# 生成的产物：改动审查时折叠起来，但仍参与 diff（需要能看出图标增删）。
+icons-subset.js linguist-generated=true

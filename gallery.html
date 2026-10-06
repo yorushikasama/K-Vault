@@ -7,13 +7,13 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/logo.png">
   <link rel="shortcut icon" href="/favicon.ico">
-  <link rel="stylesheet" href="/theme.css">
-  <script src="/theme.js?v=20260305"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/lucide@1.49.0/dist/umd/lucide.min.js"></script>
-  <link rel="stylesheet" href="/gallery.css">
-  <link rel="stylesheet" href="/mobile-refactor.css">
+  <!-- Vue 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="/theme.css?v=82252c7b11">
+  <script src="/theme-core.js?v=4cb852886e"></script>
+  <script defer src="/theme-effects.js?v=7a5139b2de"></script>
+  <link rel="stylesheet" href="/gallery.css?v=a32bc7e93b">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=ff67121974">
 </head>
 <body>
   <div id="app" v-cloak>
@@ -185,8 +185,11 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/index.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js" integrity="sha384-ULpZhk1pvhc/UK5ktA9kwb2guy9ovNSTyxPNHANnA35YjBQgdwI+AhLkixDvdlw4" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- 必须在下面 new Vue 之前：icons.js 用 Vue.mixin 注册渲染钩子，而 Vue.mixin
+       只作用于之后创建的实例。放在后面的话 v-if 里的图标永远不会被替换。 -->
+  <script src="/icons-subset.js?v=be1dad3cb5"></script>
+  <script src="/icons.js?v=fc3fc216e0"></script>
   <script>
     const LOCAL_PREVIEW_PAGE = '/preview.html';
 
@@ -566,15 +569,23 @@
 
         this.loadImages();
 
-        // 键盘快捷键
-        document.addEventListener('keydown', (e) => {
+        // 键盘快捷键。处理函数挂在实例上，否则是个拿不到引用的匿名箭头函数，
+        // beforeDestroy 里无从解绑。
+        this.handleGlobalKeydown = (e) => {
           if (e.key === 'Escape' && this.previewData) {
             this.closePreview();
           }
-        });
+        };
+        document.addEventListener('keydown', this.handleGlobalKeydown);
+      },
+      beforeDestroy() {
+        if (this.handleGlobalKeydown) {
+          document.removeEventListener('keydown', this.handleGlobalKeydown);
+          this.handleGlobalKeydown = null;
+        }
+        clearTimeout(this.searchTimer);
       }
     });
   </script>
-  <script src="/icons.js"></script>
 </body>
 </html>

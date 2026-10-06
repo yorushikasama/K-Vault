@@ -724,71 +724,6 @@ body {
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* 状态面板 - 带标签的状态指示器 */
-.status-panel {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 14px;
-  background: rgba(255, 255, 255, 1);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.2s ease-out;
-  box-shadow: var(--shadow-1);
-  margin: 0 8px;
-}
-
-.status-panel:hover {
-  background: rgba(255, 255, 255, 1);
-  box-shadow: none;
-}
-
-.status-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: #666;
-  font-weight: 500;
-}
-
-.status-item i,
-.status-item svg.lucide {
-  font-size: 8px !important;
-  margin: 0 !important;
-}
-
-.status-item span {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* 返回首页按钮 */
-.home-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: #8a4bff;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.2s ease-out;
-  margin-right: 12px;
-  box-shadow: none;
-}
-
-.home-btn:hover {
-  box-shadow: var(--shadow-2);
-}
-
-.home-btn i,
-.home-btn svg.lucide {
-  color: white;
-  font-size: 16px;
-}
-
 /* 批量操作工具栏 */
 
 .batch-toolbar {
@@ -892,13 +827,6 @@ body {
 @media (max-width: 768px) {
   .audio-card { max-height: none; }
   .custom-audio-player { height: 32px; }
-  .status-panel {
-    padding: 4px 10px;
-    gap: 8px;
-  }
-  .status-item span {
-    display: none;
-  }
   .batch-toolbar {
     bottom: 18px;
     padding: 8px 14px;
@@ -910,11 +838,6 @@ body {
   .batch-shortcuts {
     width: 100%;
     text-align: center;
-  }
-  .home-btn {
-    width: 32px;
-    height: 32px;
-    margin-right: 8px;
   }
   .title {
     font-size: 1em;
@@ -940,11 +863,6 @@ body {
   .title {
     font-size: 0.9em;
     order: 1;
-  }
-  .home-btn {
-    order: 0;
-    width: 28px;
-    height: 28px;
   }
   .stats {
     order: 2;
@@ -1145,15 +1063,6 @@ body {
   border-color: rgba(15, 118, 110, 0.35);
 }
 
-.home-btn {
-  background: #0f766e;
-}
-
-.status-panel {
-  border: 1px solid var(--admin-line);
-  box-shadow: none;
-}
-
 .content {
   gap: 18px;
 }
@@ -1250,12 +1159,5 @@ body {
     flex-wrap: wrap !important;
     align-items: flex-start !important;
     row-gap: 8px !important;
-  }
-
-  .header-content .actions > .status-panel {
-    order: 120 !important;
-    flex: 0 0 100% !important;
-    width: 100% !important;
-    margin: 6px 0 0 !important;
   }
 }

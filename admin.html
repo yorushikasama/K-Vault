@@ -3,182 +3,132 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>K-Vault | 管理后台</title>
+  <title>K-Vault | 文件工作台</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/logo.png">
   <link rel="shortcut icon" href="/favicon.ico">
-  <link rel="stylesheet" href="/theme.css">
-  <script src="/theme.js?v=20260305"></script>
+  <!-- Vue / Element / Sentry 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://js.sentry-cdn.com" crossorigin>
+  <link rel="stylesheet" href="/theme.css?v=82252c7b11">
+  <script src="/theme-core.js?v=4cb852886e"></script>
+  <script defer src="/theme-effects.js?v=7a5139b2de"></script>
   <!-- Import CSS -->
-  <link rel="stylesheet" href="./admin-imgtc.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/lucide@1.49.0/dist/umd/lucide.min.js"></script>
+  <link rel="stylesheet" href="./admin-imgtc.css?v=e7c7776929">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css" integrity="sha384-ZUOUQ+hNJ+DV4HfNwHNFq4PcclqayiUDpCMsWD1lOpUQZ/go0ofwD/GLaYdzOcdx" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <!-- Sentry loader 故意不加 SRI：这个脚本内容随项目配置变化（采样率、集成项），钉死哈希会在后台改配置时把它整个拦掉。 -->
   <script src="https://js.sentry-cdn.com/219f636ac7bde5edab2c3e16885cb535.min.js" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="/admin.css">
-  <link rel="stylesheet" href="/mobile-refactor.css">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=ff67121974">
+  <link rel="stylesheet" href="/admin.css?v=58bc0c7d2a">
+  <style>
+    /* 仅补齐本页交互所需布局，不修改共享样式文件。 */
+    .kv-files .files-feedback { margin: 12px 0; padding: 12px; border: 1px solid var(--border-color, #dcdfe6); border-radius: 8px; overflow-wrap: anywhere; }
+    .kv-files .files-feedback p { margin: 0 0 8px; }
+    .kv-files .folder-drawer-backdrop { position: fixed; inset: 0; z-index: 1998; background: rgba(0, 0, 0, .5); }
+    .kv-files .preview-modal[role="dialog"] { position: fixed; inset: 0; z-index: 2100; overflow: auto; overscroll-behavior: contain; }
+    .kv-files .preview-modal .preview-feedback { position: absolute; top: 64px; left: 16px; right: 16px; z-index: 2; padding: 12px; background: var(--bg-color, #fff); color: var(--text-color, #303133); border-radius: 8px; }
+    .kv-files .preview-modal .preview-close { min-width: 44px; min-height: 44px; }
+    .kv-files .el-image-viewer__btn[role="button"]:focus-visible,
+    .kv-files .folder-sidebar button:focus-visible,
+    .kv-files .preview-modal button:focus-visible { outline: 2px solid var(--primary-color, #409eff); outline-offset: 3px; }
+    @media (max-width: 900px) {
+      .kv-files #files-folders.is-drawer-open { display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; width: min(88vw, 360px); max-width: 100%; max-height: 100dvh; margin: 0; z-index: 1999; overflow: auto; overscroll-behavior: contain; box-sizing: border-box; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); background: var(--bg-color, #fff); }
+      .kv-files #files-folders .folder-tree { flex: 1; min-height: 0; overflow: auto; }
+      .kv-files #files-folders .folder-node,
+      .kv-files #files-folders .folder-drawer-close { min-height: 44px; }
+      .kv-files .preview-modal .preview-toolbar { max-width: 100%; box-sizing: border-box; flex-wrap: wrap; }
+      .kv-files .preview-modal .preview-filename { overflow-wrap: anywhere; min-width: 0; }
+    }
+  </style>
+  <link rel="stylesheet" href="/workbench.css?v=4c80318264">
 </head>
-<body>
+<body class="kv-workbench kv-files">
   <div id="app" v-cloak>
-    <el-container>
-      <el-header>
-        <div class="header-content">
-          <span class="home-btn" @click="goHome"><i data-lucide="house"></i></span>
-          <span class="title" @click="refreshDashboard">管理后台</span>
-          <div class="search-card"><el-input v-model="search" size="mini" placeholder="输入关键字搜索"></el-input></div>
-          <span class="stats" role="status" aria-live="polite">
-            <i data-lucide="chart-line" data-icon-class="stats-icon"></i>
-            <span class="stats-text">总记录: {{ totalCount || Number }}</span>
-            <small class="stats-loaded">已加载 {{ Number }}</small>
-          </span>
-          <div class="actions">
-            <el-dropdown @command="switchFileType" :hide-on-click="false">
-              <span class="el-dropdown-link"><i :class="fileTypeIcon"></i></span>
-              <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="all" :class="{ 'el-dropdown-menu__item--selected': fileType === 'all' }"><i data-lucide="layout-grid"></i> 全部</el-dropdown-item>
-                <el-dropdown-item command="image" :class="{ 'el-dropdown-menu__item--selected': fileType === 'image' }"><i :class="fileConfig.image.icon"></i> 图片</el-dropdown-item>
-                <el-dropdown-item command="video" :class="{ 'el-dropdown-menu__item--selected': fileType === 'video' }"><i :class="fileConfig.video.icon"></i> 视频</el-dropdown-item>
-                <el-dropdown-item command="audio" :class="{ 'el-dropdown-menu__item--selected': fileType === 'audio' }"><i :class="fileConfig.audio.icon"></i> 音频</el-dropdown-item>
-                <el-dropdown-item command="document" :class="{ 'el-dropdown-menu__item--selected': fileType === 'document' }"><i :class="fileConfig.document.icon"></i> 文件</el-dropdown-item>
-              </el-dropdown-menu>
-            </el-dropdown>
-            <el-dropdown @command="switchStorageFilter" :hide-on-click="false">
-              <span class="el-dropdown-link"><i :class="storageFilterIcon"></i></span>
-              <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="all" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'all' }"><i data-lucide="database"></i> 全部存储</el-dropdown-item>
-                <el-dropdown-item command="telegram" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'telegram' }"><i class="fab fa-telegram"></i> Telegram</el-dropdown-item>
-                <el-dropdown-item command="r2" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'r2' }"><i data-lucide="cloud"></i> R2 存储</el-dropdown-item>
-                <el-dropdown-item command="s3" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 's3' }"><i data-lucide="database"></i> S3 存储</el-dropdown-item>
-                <el-dropdown-item command="discord" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'discord' }"><i class="fab fa-discord"></i> Discord</el-dropdown-item>
-                <el-dropdown-item command="huggingface" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'huggingface' }"><i data-lucide="bot"></i> HuggingFace</el-dropdown-item>
-                <el-dropdown-item command="webdav" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'webdav' }"><i data-lucide="hard-drive"></i> WebDAV</el-dropdown-item>
-                <el-dropdown-item command="github" :class="{ 'el-dropdown-menu__item--selected': storageFilter === 'github' }"><i class="fab fa-github"></i> GitHub</el-dropdown-item>
-              </el-dropdown-menu>
-            </el-dropdown>
-            <el-dropdown @command="sort" :hide-on-click="false">
-              <span class="el-dropdown-link"><i :class="sortIcon"></i></span>
-              <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="dateDesc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'dateDesc' }"><i data-lucide="arrow-down-wide-narrow"></i> 按时间倒序</el-dropdown-item>
-                <el-dropdown-item command="nameAsc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'nameAsc' }"><i data-lucide="arrow-down-a-z"></i> 按名称升序</el-dropdown-item>
-                <el-dropdown-item command="sizeDesc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'sizeDesc' }"><i data-lucide="arrow-down-wide-narrow"></i> 按大小倒序</el-dropdown-item>
-              </el-dropdown-menu>
-            </el-dropdown>
-            <el-dropdown @command="filter" :hide-on-click="false">
-              <span class="el-dropdown-link"><i :class="filterIcon"></i></span>
-              <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="all" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'all' }"><i data-lucide="funnel"></i> 全部</el-dropdown-item>
-                <el-dropdown-item command="favorites" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'favorites' }"><i data-lucide="bookmark"></i> 收藏</el-dropdown-item>
-                <el-dropdown-item command="blocked" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'blocked' }"><i data-lucide="lock"></i> 黑名单</el-dropdown-item>
-                <el-dropdown-item command="unblocked" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'unblocked' }"><i data-lucide="lock-open"></i> 白名单</el-dropdown-item>
-                <el-dropdown-item command="adult" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'adult' }"><i data-lucide="user-round"></i> NSFW</el-dropdown-item>
-              </el-dropdown-menu>
-            </el-dropdown>
-            <el-dropdown @command="switchViewMode" :hide-on-click="false">
-              <span class="el-dropdown-link"><i :class="viewModeIcon"></i></span>
-              <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="grid" :class="{ 'el-dropdown-menu__item--selected': viewMode === 'grid' }"><i data-lucide="layout-grid"></i> 平铺视图</el-dropdown-item>
-                <el-dropdown-item command="list" :class="{ 'el-dropdown-menu__item--selected': viewMode === 'list' }"><i data-lucide="list"></i> 详细视图</el-dropdown-item>
-              </el-dropdown-menu>
-            </el-dropdown>
-            <el-dropdown @command="handleBatchOperation" :hide-on-click="false">
-              <span class="el-dropdown-link"><i data-lucide="list-todo"></i></span>
-              <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="selectAll"><i data-lucide="check-check"></i> {{ isAllSelected ? '取消全选' : '全选当前页' }}</el-dropdown-item>
-                <el-dropdown-item command="selectAllLoaded"><i data-lucide="square-check"></i> 全选已加载 ({{ tableData.length }})</el-dropdown-item>
-                <el-dropdown-item divided command="copy" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="link"></i> 批量复制</el-dropdown-item>
-                <el-dropdown-item command="copyMarkdown" :class="{ disabled: selectedFiles.length === 0 }"><i class="fab fa-markdown"></i> 复制Markdown</el-dropdown-item>
-                <el-dropdown-item command="copyHtml" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="code"></i> 复制HTML</el-dropdown-item>
-                <el-dropdown-item command="delete" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="trash"></i> 批量删除</el-dropdown-item>
-                <el-dropdown-item command="download" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="download"></i> 批量下载</el-dropdown-item>
-                <el-dropdown-item command="moveFolder" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="folder-tree"></i> 移动到目录</el-dropdown-item>
-                <el-dropdown-item command="block" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="lock"></i> 加入黑名单</el-dropdown-item>
-                <el-dropdown-item command="unblock" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="lock-open"></i> 加入白名单</el-dropdown-item>
-              </el-dropdown-menu>
-            </el-dropdown>
-            <el-dropdown @command="handleWebsite">
-              <span class="el-dropdown-link"><i data-lucide="external-link"></i></span>
-              <el-dropdown-menu slot="dropdown">
-                <template v-for="site in quickWebsites">
-                  <el-dropdown-item :command="site.url">
-                    <i :class="site.icon"></i> {{ site.name }}
-                  </el-dropdown-item>
-                </template>
-              </el-dropdown-menu>
-            </el-dropdown>
-            <el-dropdown @command="handleToolkit" :hide-on-click="false">
-              <span class="el-dropdown-link"><i data-lucide="wrench"></i></span>
-              <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="selectAllInPage"><i data-lucide="square-check"></i> 全选当前页</el-dropdown-item>
-                <el-dropdown-item command="checkBrokenFiles"><i data-lucide="wrench"></i> 检测失效文件</el-dropdown-item>
-                <el-dropdown-item command="editWebsites"><i data-lucide="pencil"></i> 编辑快捷方式</el-dropdown-item>
-                <el-dropdown-item command="openUploader"><i data-lucide="cloud-upload"></i> 打开上传中心</el-dropdown-item>
-                <el-dropdown-item command="exportLinks"><i data-lucide="file-output"></i> 导出全部链接</el-dropdown-item>
-                <el-dropdown-item command="manageApiTokens"><i data-lucide="key"></i> API Token 管理</el-dropdown-item>
-                <el-dropdown-item command="checkStatus" divided><i data-lucide="activity"></i> 检查连接状态</el-dropdown-item>
-              </el-dropdown-menu>
-            </el-dropdown>
-            <div class="status-panel" @click="checkConnectionStatus">
-              <div class="status-item">
-                <i data-lucide="circle" :style="{ color: systemStatus.telegram.connected ? '#67c23a' : '#f56c6c' }"></i>
-                <span>TG</span>
-              </div>
-              <div class="status-item">
-                <i data-lucide="circle" :style="{ color: systemStatus.kv.connected ? '#67c23a' : '#f56c6c' }"></i>
-                <span>KV</span>
-              </div>
-              <div class="status-item">
-                <i data-lucide="circle" :style="{ color: systemStatus.r2.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.r2) ? '#909399' : '#f56c6c') }"></i>
-                <span>R2</span>
-              </div>
-              <div class="status-item">
-                <i data-lucide="circle" :style="{ color: systemStatus.s3.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.s3) ? '#909399' : '#f56c6c') }"></i>
-                <span>S3</span>
-              </div>
-              <div class="status-item">
-                <i data-lucide="circle" :style="{ color: systemStatus.discord.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.discord) ? '#909399' : '#f56c6c') }"></i>
-                <span>DC</span>
-              </div>
-              <div class="status-item">
-                <i data-lucide="circle" :style="{ color: systemStatus.huggingface.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.huggingface) ? '#909399' : '#f56c6c') }"></i>
-                <span>HF</span>
-              </div>
-              <div class="status-item">
-                <i data-lucide="circle" :style="{ color: systemStatus.github.connected ? '#67c23a' : (isUnconfiguredStatus(systemStatus.github) ? '#909399' : '#f56c6c') }"></i>
-                <span>GH</span>
-              </div>
-            </div>
-            <el-dropdown @command="handleLoadSettings" :hide-on-click="false">
-              <span class="el-dropdown-link"><i data-lucide="settings"></i></span>
-              <el-dropdown-menu slot="dropdown">
-                <el-dropdown-item command="normal" :class="{ 'el-dropdown-menu__item--selected': loadMode === 'normal' }"><i data-lucide="eye"></i> 正常模式</el-dropdown-item>
-                <el-dropdown-item command="dataSaver" :class="{ 'el-dropdown-menu__item--selected': loadMode === 'dataSaver' }"><i data-lucide="zap"></i> 省流模式</el-dropdown-item>
-                <el-dropdown-item command="noImage" :class="{ 'el-dropdown-menu__item--selected': loadMode === 'noImage' }"><i data-lucide="eye-off"></i> 无图模式</el-dropdown-item>
-                <el-dropdown-item command="safeMode" divided :class="{ 'el-dropdown-menu__item--selected': safeMode }"><i data-lucide="shield"></i> {{ safeMode ? '✓' : '' }} 安全模式(NSFW)</el-dropdown-item>
-                <el-dropdown-item command="uiDesign" divided><i data-lucide="sliders-horizontal"></i> 前端 UI 设计</el-dropdown-item>
-              </el-dropdown-menu>
-            </el-dropdown>
-            <el-tooltip content="前端 UI 设计" placement="bottom"><i data-lucide="sliders-horizontal" @click="showUiDesignSettingsPanel"></i></el-tooltip>
-            <i data-lucide="log-out" @click="handleLogout"></i>
-          </div>
+    <el-container direction="vertical" class="files-shell">
+      <header class="workspace-header header-content" :inert="folderDrawerOpen && isMobileViewport ? '' : null">
+        <a class="workspace-brand" href="./" @click.prevent="goHome" aria-label="K-Vault 上传首页">
+          <img src="/logo.png" alt="" width="32" height="32">
+          <span>K-Vault</span>
+        </a>
+        <nav class="workspace-nav" aria-label="全局导航">
+          <a href="./">上传</a>
+          <a href="./admin.html" aria-current="page">文件</a>
+          <a href="./gallery.html">图库</a>
+          <a href="./webdav.html">WebDAV</a>
+        </nav>
+        <div class="workspace-tools actions">
+          <el-dropdown @command="handleWebsite" trigger="click">
+            <button type="button" class="workspace-tool"><kv-icon name="external-link"></kv-icon><span>快捷入口</span><kv-icon name="chevron-down"></kv-icon></button>
+            <el-dropdown-menu slot="dropdown" class="files-menu">
+              <el-dropdown-item v-for="(site, index) in quickWebsites" :key="'site-' + index" :command="site.url"><kv-icon :name="site.icon"></kv-icon> {{ site.name }}</el-dropdown-item>
+              <el-dropdown-item command="./admin-imgtc.html" divided>旧版图床管理</el-dropdown-item>
+              <el-dropdown-item command="./admin-waterfall.html">旧版瀑布流管理</el-dropdown-item>
+            </el-dropdown-menu>
+          </el-dropdown>
+          <el-dropdown @command="handleToolkit" trigger="click">
+            <button type="button" class="workspace-tool"><kv-icon name="wrench"></kv-icon><span>工具</span><kv-icon name="chevron-down"></kv-icon></button>
+            <el-dropdown-menu slot="dropdown" class="files-menu">
+              <el-dropdown-item command="openUploader">上传文件</el-dropdown-item>
+              <el-dropdown-item command="manageApiTokens">API Token 管理</el-dropdown-item>
+              <el-dropdown-item command="exportLinks">导出已加载文件链接</el-dropdown-item>
+              <el-dropdown-item command="checkBrokenFiles">检测已加载文件是否失效</el-dropdown-item>
+              <el-dropdown-item command="selectAllInPage" divided>选择当前页文件</el-dropdown-item>
+              <el-dropdown-item command="editWebsites">编辑快捷入口</el-dropdown-item>
+              <el-dropdown-item command="checkStatus">检查系统连接</el-dropdown-item>
+            </el-dropdown-menu>
+          </el-dropdown>
+          <el-popover placement="bottom-end" width="280" trigger="click" popper-class="files-connection-panel">
+            <h2 class="connection-title">系统连接</h2>
+            <ul class="connection-list">
+              <li v-for="(status, key) in systemStatus" :key="key">
+                <span>{{ connectionLabel(key) }}</span>
+                <span :class="{ 'is-connected': status.connected || (key === 'auth' && status.enabled) }">{{ status.message }}</span>
+              </li>
+            </ul>
+            <el-button size="small" @click="checkConnectionStatus">重新检查连接</el-button>
+            <button slot="reference" type="button" class="workspace-tool workspace-tool-icon" title="系统连接状态" aria-label="系统连接状态"><kv-icon name="activity"></kv-icon></button>
+          </el-popover>
+          <el-dropdown @command="handleLoadSettings" trigger="click">
+            <button type="button" class="workspace-tool"><kv-icon name="settings-2"></kv-icon><span>设置</span><kv-icon name="chevron-down"></kv-icon></button>
+            <el-dropdown-menu slot="dropdown" class="files-menu">
+              <el-dropdown-item command="normal" :class="{ 'is-current': loadMode === 'normal' }">正常加载{{ loadMode === 'normal' ? ' · 当前' : '' }}</el-dropdown-item>
+              <el-dropdown-item command="dataSaver" :class="{ 'is-current': loadMode === 'dataSaver' }">省流模式{{ loadMode === 'dataSaver' ? ' · 当前' : '' }}</el-dropdown-item>
+              <el-dropdown-item command="noImage" :class="{ 'is-current': loadMode === 'noImage' }">不自动加载预览{{ loadMode === 'noImage' ? ' · 当前' : '' }}</el-dropdown-item>
+              <el-dropdown-item command="safeMode" divided>安全模式：{{ safeMode ? '已开启' : '已关闭' }}</el-dropdown-item>
+              <el-dropdown-item command="uiDesign">UI 设计设置</el-dropdown-item>
+              <el-dropdown-item command="loginBackground">登录背景设置（旧入口）</el-dropdown-item>
+            </el-dropdown-menu>
+          </el-dropdown>
+          <button type="button" class="workspace-tool workspace-tool-icon" title="UI 设计设置" aria-label="UI 设计设置" @click="showUiDesignSettingsPanel"><kv-icon name="palette"></kv-icon></button>
+          <button type="button" class="workspace-tool workspace-tool-icon" title="退出登录" aria-label="退出登录" @click="handleLogout"><kv-icon name="log-out"></kv-icon></button>
         </div>
-      </el-header>
-      <el-main class="main-container">
-        <div class="disk-layout">
+      </header>
+      <el-main class="main-container files-main">
+        <div class="disk-layout files-layout">
+          <div v-if="isMobileViewport && folderDrawerOpen" class="folder-drawer-backdrop" aria-hidden="true" @click="closeFolderDrawer"></div>
           <aside
+            id="files-folders"
+            ref="folderDrawer"
+            v-show="!isMobileViewport || folderDrawerOpen"
             class="folder-sidebar"
-            :class="{ 'is-drag-active': dragState.active }"
+            :class="{ 'is-drag-active': dragState.active, 'is-drawer-open': folderDrawerOpen }"
+            :role="isMobileViewport ? 'dialog' : 'complementary'"
+            :aria-modal="isMobileViewport && folderDrawerOpen ? 'true' : null"
+            aria-labelledby="files-folder-title"
+            tabindex="-1"
             @dragover.prevent="handleFolderSidebarDragOver"
           >
             <div class="folder-head">
-              <span class="folder-head-title"><i data-lucide="folder-tree"></i><span>目录管理</span></span>
-              <span class="folder-head-actions">
-                <el-button size="mini" circle icon="el-icon-refresh" title="刷新目录与文件" :disabled="folderMutating" :loading="folderLoading" @click="refreshFolderResources"></el-button>
-                <el-button size="mini" circle icon="el-icon-plus" title="新建目录" :disabled="folderMutating" :loading="folderMutatingAction === 'create'" @click="createFolder"></el-button>
-                <el-button size="mini" circle icon="el-icon-edit" title="重命名目录" :disabled="folderMutating || !folderPath" :loading="folderMutatingAction === 'rename'" @click="renameCurrentFolder"></el-button>
-                <el-button size="mini" circle icon="el-icon-delete" title="删除目录" :disabled="folderMutating || !folderPath" :loading="folderMutatingAction === 'delete'" @click="deleteCurrentFolder"></el-button>
-              </span>
+              <h2 id="files-folder-title" class="folder-head-title"><kv-icon name="folder-tree"></kv-icon><span>目录</span></h2>
+              <button v-if="isMobileViewport" type="button" class="workspace-tool workspace-tool-icon folder-drawer-close" aria-label="关闭目录" @click="closeFolderDrawer"><kv-icon name="x"></kv-icon></button>
             </div>
-            <div class="folder-current">当前位置：/{{ folderPath || '' }}</div>
+            <div class="folder-head-actions" aria-label="目录管理">
+              <el-button size="mini" icon="el-icon-plus" title="新建目录" :disabled="folderMutating" :loading="folderMutatingAction === 'create'" @click="createFolder">新建</el-button>
+              <el-button size="mini" icon="el-icon-refresh" title="刷新目录与文件" aria-label="刷新目录与文件" :disabled="folderMutating" :loading="folderLoading" @click="refreshFolderResources"></el-button>
+              <el-button size="mini" icon="el-icon-edit" title="重命名当前目录" aria-label="重命名当前目录" :disabled="folderMutating || !folderPath" :loading="folderMutatingAction === 'rename'" @click="renameCurrentFolder"></el-button>
+              <el-button size="mini" icon="el-icon-delete" title="删除当前目录" aria-label="删除当前目录" :disabled="folderMutating || !folderPath" :loading="folderMutatingAction === 'delete'" @click="deleteCurrentFolder"></el-button>
+            </div>
+            <div class="folder-current">{{ scopeLabel }}</div>
             <div class="folder-drop-hint" v-if="dragState.active">
               <strong>{{ dragState.fileIds.length || selectedFiles.length || 1 }} 个文件待移动</strong>
               <span>拖到下方任意目录后松开，即可移动到：{{ dragTargetLabel }}</span>
@@ -187,7 +137,10 @@
               <button
                 v-for="folder in folderTreeNodes"
                 :key="'folder-' + folder.path"
+                type="button"
                 class="folder-node"
+                :aria-current="folder.path === folderPath ? 'location' : null"
+                :title="folder.path ? '/' + folder.path : (emptyPathMode === 'all' ? '浏览全部目录；拖入此处将文件移到根目录' : '浏览根目录；拖入此处将文件移到根目录')"
                 :class="{ 'is-active': folder.path === folderPath, 'is-drop-target': dragState.active && dragState.targetPath === folder.path }"
                 @click="selectFolder(folder.path)"
                 @dragover.prevent="handleFolderDragOver(folder.path, $event)"
@@ -196,255 +149,194 @@
                 @drop.prevent="handleFolderDrop(folder.path, $event)"
               >
                 <span class="folder-node-main" :style="{ paddingLeft: (folder.depth * 14 + 6) + 'px' }">
-                  <i :data-lucide="folder.path === folderPath ? 'folder-open' : 'folder'" :key="folderPath"></i>
-                  <span>{{ folder.name }}</span>
+                  <kv-icon :name="folder.path === folderPath ? 'folder-open' : 'folder'"></kv-icon>
+                  <span>{{ folder.path ? folder.name : rootCrumbLabel }}</span>
                 </span>
-                <span class="folder-node-count">{{ folder.fileCount }}</span>
+                <span class="folder-node-count" :title="folder.path ? '该目录直属文件数' : '当前已加载文件数'">{{ folder.fileCount }}</span>
               </button>
             </div>
+            <p class="folder-help">可拖动文件到目录；拖到根目录节点会把文件移回根目录。手机端请用批量操作移动。</p>
           </aside>
-          <section class="disk-content">
-            <div class="folder-breadcrumb">
-              <i data-lucide="navigation"></i>
-              <span class="folder-crumb" @click="selectFolder('')">根目录</span>
-              <template v-for="item in folderBreadcrumbs">
-                <i :key="'sep-' + item.path" class="el-icon-arrow-right"></i>
-                <span :key="'crumb-' + item.path" class="folder-crumb" @click="selectFolder(item.path)">{{ item.name }}</span>
-              </template>
+          <section class="disk-content" aria-labelledby="files-title" :inert="folderDrawerOpen && isMobileViewport ? '' : null">
+            <div class="files-heading">
+              <div>
+                <h1 id="files-title"><button type="button" class="files-title-refresh" @click="refreshDashboard" title="刷新文件工作台">文件工作台</button></h1>
+                <p class="files-scope">{{ scopeLabel }} · {{ storageFilterLabel }} · {{ loadedSummary }}</p>
+                <p class="files-scope-note">{{ scopeNote }}</p>
+              </div>
+              <div class="files-heading-actions">
+                <button ref="folderToggle" type="button" class="workspace-tool folder-drawer-toggle" aria-controls="files-folders" :aria-expanded="String(folderDrawerOpen)" @click="toggleFolderDrawer"><kv-icon name="folder-tree"></kv-icon>目录</button>
+                <el-button size="small" icon="el-icon-refresh" :disabled="folderMutating" :loading="folderLoading" @click="refreshFolderResources">刷新</el-button>
+                <el-button size="small" type="primary" icon="el-icon-upload2" @click="openUploader">上传文件</el-button>
+              </div>
             </div>
-            <template v-if="viewMode === 'grid'">
-              <div class="content">
-                <template v-for="(item, index) in paginatedTableData" :key="index">
-            <!-- 图片 - 根据实际文件类型渲染 -->
-            <template v-if="getActualFileType(item.name) === 'image'">
-              <el-card class="image-card" :draggable="true" @dragstart="handleFileDragStart(item, $event)" @dragend="handleFileDragEnd">
-                <span class="collect-icon" @click.stop="toggleLike(index, item.name)">
-                <i :class="item.metadata.liked ? 'bookmark liked' : 'bookmark not-liked'"></i>
-                </span>
-                <el-checkbox v-model="item.selected" :ref="'checkbox-' + index"></el-checkbox>
-                <div
-                  class="preview-stage image-preview-stage"
-                  :class="{ 'is-gated': isPreviewGated(item, 'image') }"
-                  @click.stop="revealPreview(item)">
-                  <el-image
-                    v-if="!isPreviewGated(item, 'image')"
-                    :src="'/file/' + item.name"
-                    :preview-src-list="['/file/' + item.name]"
-                    fit="cover"
-                    lazy>
-                  </el-image>
-                  <div v-else class="preview-skeleton image-skeleton">
-                    <i :class="getFileIcon(item.name)"></i>
-                  </div>
-                  <button
-                    v-if="isPreviewGated(item, 'image')"
-                    class="preview-gate"
-                    type="button"
-                    @click.stop="revealPreview(item)">
-                    <span class="preview-gate-icon"><i data-lucide="eye"></i></span>
-                    <span class="preview-gate-title">{{ getPreviewGateTitle(item, 'image') }}</span>
-                    <span class="preview-gate-subtitle">{{ getPreviewGateSubtitle(item, 'image') }}</span>
-                  </button>
+            <div v-if="authError" class="files-error-banner" role="alert">
+              <kv-icon name="triangle-alert"></kv-icon>
+              <p>{{ authError }}</p>
+              <button type="button" class="upload-btn" @click="refreshDashboard">重新加载页面</button>
+            </div>
+            <nav class="folder-breadcrumb" aria-label="文件目录路径">
+              <kv-icon name="folder"></kv-icon>
+              <button type="button" class="folder-crumb" :aria-current="!folderPath ? 'location' : null" @click="selectFolder('')">{{ rootCrumbLabel }}</button>
+              <template v-for="item in folderBreadcrumbs">
+                <kv-icon :key="'sep-' + item.path" name="chevron-right"></kv-icon>
+                <button :key="'crumb-' + item.path" type="button" class="folder-crumb" :aria-current="item.path === folderPath ? 'location' : null" @click="selectFolder(item.path)">{{ item.name }}</button>
+              </template>
+            </nav>
+            <div class="files-query" role="search" aria-label="搜索与筛选已加载文件">
+              <div class="files-query-main">
+                <label class="files-search-label" for="files-search">搜索文件</label>
+                <el-input id="files-search" v-model="search" class="files-search" placeholder="在已加载文件中搜索名称" prefix-icon="el-icon-search" clearable aria-describedby="files-query-scope"></el-input>
+                <el-dropdown @command="switchStorageFilter" trigger="click">
+                  <button type="button" class="files-filter-button"><kv-icon :name="storageFilterIcon"></kv-icon><span>存储：{{ storageFilterLabel }}</span><kv-icon name="chevron-down"></kv-icon></button>
+                  <el-dropdown-menu slot="dropdown" class="files-menu">
+                    <el-dropdown-item command="all">全部存储</el-dropdown-item>
+                    <el-dropdown-item v-for="storage in storageOptions" :key="storage" :command="storage">{{ storageLabels[storage] || storage }}</el-dropdown-item>
+                  </el-dropdown-menu>
+                </el-dropdown>
+              </div>
+              <div class="files-query-filters">
+                <el-dropdown @command="switchFileType" trigger="click">
+                  <button type="button" class="files-filter-button"><kv-icon :name="fileTypeIcon"></kv-icon><span>类型：{{ fileConfig[fileType].name }}</span><kv-icon name="chevron-down"></kv-icon></button>
+                  <el-dropdown-menu slot="dropdown" class="files-menu">
+                    <el-dropdown-item command="all">全部类型</el-dropdown-item>
+                    <el-dropdown-item command="image">图片</el-dropdown-item>
+                    <el-dropdown-item command="video">视频</el-dropdown-item>
+                    <el-dropdown-item command="audio">音频</el-dropdown-item>
+                    <el-dropdown-item command="document">文档及其他文件</el-dropdown-item>
+                  </el-dropdown-menu>
+                </el-dropdown>
+                <el-dropdown @command="filter" trigger="click">
+                  <button type="button" class="files-filter-button"><kv-icon :name="filterIcon"></kv-icon><span>状态：{{ filterLabel }}</span><kv-icon name="chevron-down"></kv-icon></button>
+                  <el-dropdown-menu slot="dropdown" class="files-menu">
+                    <el-dropdown-item command="all">全部状态</el-dropdown-item>
+                    <el-dropdown-item command="favorites">收藏</el-dropdown-item>
+                    <el-dropdown-item command="blocked">黑名单</el-dropdown-item>
+                    <el-dropdown-item command="unblocked">白名单</el-dropdown-item>
+                    <el-dropdown-item command="adult">NSFW</el-dropdown-item>
+                  </el-dropdown-menu>
+                </el-dropdown>
+                <el-dropdown @command="sort" trigger="click">
+                  <button type="button" class="files-filter-button"><kv-icon :name="sortIcon"></kv-icon><span>排序：{{ sortLabel }}</span><kv-icon name="chevron-down"></kv-icon></button>
+                  <el-dropdown-menu slot="dropdown" class="files-menu">
+                    <el-dropdown-item command="dateDesc">时间从新到旧（已加载）</el-dropdown-item>
+                    <el-dropdown-item command="nameAsc">文件标识 A–Z（已加载）</el-dropdown-item>
+                    <el-dropdown-item command="sizeDesc">大小从大到小（已加载）</el-dropdown-item>
+                  </el-dropdown-menu>
+                </el-dropdown>
+                <button v-if="search || fileType !== 'all' || filterOption !== 'all'" type="button" class="files-reset" @click="clearLocalFilters">清除本地筛选</button>
+                <div class="files-view-switch" role="group" aria-label="文件视图">
+                  <button type="button" :aria-pressed="String(viewMode === 'grid')" :class="{ 'is-active': viewMode === 'grid' }" title="卡片视图" aria-label="卡片视图" @click="switchViewMode('grid')"><kv-icon name="layout-grid"></kv-icon></button>
+                  <button type="button" :aria-pressed="String(viewMode === 'list')" :class="{ 'is-active': viewMode === 'list' }" title="列表视图" aria-label="列表视图" @click="switchViewMode('list')"><kv-icon name="list"></kv-icon></button>
                 </div>
-                <div class="image-overlay">
-                  <div class="overlay-buttons">
-                    <el-dropdown @command="(cmd) => handleQuickCopy(cmd, item.name)" trigger="click" size="mini">
-                      <el-button size="mini" type="primary" @click.stop>复制 <i class="el-icon-arrow-down"></i></el-button>
-                      <el-dropdown-menu slot="dropdown">
-                        <el-dropdown-item command="url">直链 URL</el-dropdown-item>
-                        <el-dropdown-item command="markdown">Markdown</el-dropdown-item>
-                        <el-dropdown-item command="html">HTML</el-dropdown-item>
-                        <el-dropdown-item command="bbcode">BBCode</el-dropdown-item>
-                      </el-dropdown-menu>
-                    </el-dropdown>
-                    <el-button size="mini" type="info" @click.stop="handleEditName(item)">编辑</el-button>
-                    <el-button size="mini" type="danger" @click.stop="handleDelete(index, item.name)">删除</el-button>
-                  </div>
               </div>
-              <div class="card-footer">
-                <el-popover
-                  trigger="click"
-                  placement="top"
-                  popper-class="custom-popover">
-                  <template #default>
-                    <p v-html="formattedFileDetails(item)"></p>
-                  </template>
-                  <template #reference>
-                    <span :style="{ color: item.metadata.ListType !== 'Block' ? '#fff' : '#aaa' }">
-                      {{ item.metadata.fileName || item.name }}
-                    </span>
-                  </template>
-                </el-popover>
-              </div>
-              </el-card>
-            </template>
-            <!-- 视频 - 根据实际文件类型渲染 -->
-            <template v-else-if="getActualFileType(item.name) === 'video'">
-              <el-card class="video-card" :class="{ 'selected': item.selected }" :draggable="true" @dragstart="handleFileDragStart(item, $event)" @dragend="handleFileDragEnd">
-                <div class="video-content">
-                  <div
-                    class="preview-stage video-preview-stage"
-                    :class="{ 'is-gated': isPreviewGated(item, 'video') }"
-                    @click.stop="revealPreview(item)">
-                    <video
-                      v-if="!isPreviewGated(item, 'video')"
-                      :src="'/file/' + item.name"
-                      controls
-                      playsinline
-                      preload="metadata"
-                      style="width: 100%; height: 100%; object-fit: cover;">
-                    </video>
-                    <div v-else class="preview-skeleton video-skeleton">
-                      <i data-lucide="film"></i>
-                    </div>
-                    <button
-                      v-if="isPreviewGated(item, 'video')"
-                      class="preview-gate"
-                      type="button"
-                      @click.stop="revealPreview(item)">
-                      <span class="preview-gate-icon"><i data-lucide="play"></i></span>
-                      <span class="preview-gate-title">{{ getPreviewGateTitle(item, 'video') }}</span>
-                      <span class="preview-gate-subtitle">{{ getPreviewGateSubtitle(item, 'video') }}</span>
+              <p id="files-query-scope" class="files-query-note">搜索、类型、状态筛选与排序仅作用于已加载的 {{ Number }} 项；切换目录或存储会重新获取文件。<span v-if="nextCursor"> 尚有文件未加载，请使用底部“加载更多”。</span></p>
+            </div>
+            <div class="files-selection" aria-label="文件选择范围">
+              <el-checkbox :value="isAllSelected" :indeterminate="isPagePartiallySelected" :disabled="paginatedTableData.length === 0" @change="selectAllInPage">当前页 {{ paginatedTableData.length }} 项</el-checkbox>
+              <el-dropdown @command="handleBatchOperation" trigger="click">
+                <button type="button" class="files-filter-button"><kv-icon name="square-check"></kv-icon><span>选择与批量操作</span><kv-icon name="chevron-down"></kv-icon></button>
+                <el-dropdown-menu slot="dropdown" class="files-menu">
+                  <el-dropdown-item command="selectAll" :disabled="paginatedTableData.length === 0">{{ isAllSelected ? '取消选择' : '选择' }}当前页（{{ paginatedTableData.length }} 项）</el-dropdown-item>
+                  <el-dropdown-item command="selectAllLoaded" :disabled="tableData.length === 0">{{ isAllLoadedSelected ? '取消选择' : '选择' }}已加载（{{ Number }} 项，含筛选隐藏项）</el-dropdown-item>
+                  <el-dropdown-item command="copy" divided :disabled="selectedFiles.length === 0">复制所选直链</el-dropdown-item>
+                  <el-dropdown-item command="copyMarkdown" :disabled="selectedFiles.length === 0">复制所选 Markdown</el-dropdown-item>
+                  <el-dropdown-item command="copyHtml" :disabled="selectedFiles.length === 0">复制所选 HTML</el-dropdown-item>
+                  <el-dropdown-item command="moveFolder" :disabled="selectedFiles.length === 0">移动所选文件</el-dropdown-item>
+                  <el-dropdown-item command="download" :disabled="selectedFiles.length === 0">下载所选文件</el-dropdown-item>
+                  <el-dropdown-item command="block" divided :disabled="selectedFiles.length === 0">所选加入黑名单</el-dropdown-item>
+                  <el-dropdown-item command="unblock" :disabled="selectedFiles.length === 0">所选加入白名单</el-dropdown-item>
+                  <el-dropdown-item command="delete" :disabled="selectedFiles.length === 0">删除所选文件</el-dropdown-item>
+                </el-dropdown-menu>
+              </el-dropdown>
+              <span class="files-result-count" role="status" aria-live="polite">匹配 {{ paginationTotal }} 项 · 已选 {{ selectedFiles.length }} 项<span v-if="selectedOutsidePageCount">（{{ selectedOutsidePageCount }} 项不在当前页）</span><span v-if="selectedHiddenCount">（{{ selectedHiddenCount }} 项被本地筛选隐藏）</span></span>
+              <button v-if="selectedFiles.length" type="button" class="files-reset" @click="clearSelection">取消全部选择</button>
+            </div>
+              <div v-if="viewMounted.grid" v-show="viewMode === 'grid'" class="content files-grid">
+                <article v-for="(item, index) in paginatedTableData" :key="item.name" class="file-tile" :class="{ 'is-selected': item.selected, 'is-blocked': item.metadata.ListType === 'Block' }" draggable="true" @dragstart="handleFileDragStart(item, $event)" @dragend="handleFileDragEnd">
+                  <div class="file-tile-media" :data-file-type="getActualFileType(item.name)">
+                    <template v-if="getActualFileType(item.name) === 'image'">
+                      <el-image v-if="!isPreviewGated(item, 'image')" :src="'/file/' + item.name" :preview-src-list="['/file/' + item.name]" :alt="item.metadata.fileName || item.name" fit="cover" lazy>
+                        <div slot="error" class="file-media-error"><kv-icon name="image-off"></kv-icon><span>缩略图加载失败</span><button type="button" @click.stop="openPreview(item)">打开预览</button></div>
+                      </el-image>
+                      <button v-else type="button" class="preview-gate" @click.stop="revealPreview(item)">
+                        <kv-icon :name="getFileIcon(item.name)"></kv-icon>
+                        <span class="preview-gate-title">{{ getPreviewGateTitle(item, 'image') }}</span>
+                        <span class="preview-gate-subtitle">{{ getPreviewGateSubtitle(item, 'image') }}</span>
+                      </button>
+                    </template>
+                    <template v-else-if="getActualFileType(item.name) === 'video'">
+                      <video v-if="!isPreviewGated(item, 'video')" :src="'/file/' + item.name" controls playsinline preload="metadata" :aria-label="item.metadata.fileName || item.name"></video>
+                      <button v-else type="button" class="preview-gate" @click.stop="revealPreview(item)">
+                        <kv-icon name="play"></kv-icon>
+                        <span class="preview-gate-title">{{ getPreviewGateTitle(item, 'video') }}</span>
+                        <span class="preview-gate-subtitle">{{ getPreviewGateSubtitle(item, 'video') }}</span>
+                      </button>
+                    </template>
+                    <template v-else-if="getActualFileType(item.name) === 'audio'">
+                      <div v-if="!isPreviewGated(item, 'audio')" class="file-audio-preview">
+                        <img src="./music.svg" alt="" width="56" height="56">
+                        <audio :src="'/file/' + item.name" controls preload="metadata" :aria-label="item.metadata.fileName || item.name">当前浏览器不支持音频播放</audio>
+                      </div>
+                      <button v-else type="button" class="preview-gate" @click.stop="revealPreview(item)">
+                        <kv-icon name="audio-lines"></kv-icon>
+                        <span class="preview-gate-title">{{ getPreviewGateTitle(item, 'audio') }}</span>
+                        <span class="preview-gate-subtitle">{{ getPreviewGateSubtitle(item, 'audio') }}</span>
+                      </button>
+                    </template>
+                    <button v-else type="button" class="file-document-preview" :aria-label="'预览 ' + (item.metadata.fileName || item.name)" @click.stop="openPreview(item)">
+                      <kv-icon :name="getFileIcon(item.name)"></kv-icon><span>{{ getFileType(item.name) }}</span><span class="file-document-hint">打开预览</span>
                     </button>
                   </div>
-                  <div class="video-title">
-                    <el-popover
-                      trigger="click"
-                      placement="top"
-                      popper-class="custom-popover">
-                      <template #default>
-                        <p v-html="formattedFileDetails(item)"></p>
-                      </template>
-                      <template #reference>
-                        <span :style="{ color: item.metadata.ListType !== 'Block' ? '#fff' : '#aaa' }">{{ item.metadata.fileName || item.name }}</span>
-                      </template>
+                  <div class="file-tile-info">
+                    <div class="file-tile-select">
+                      <el-checkbox v-model="item.selected" :ref="'checkbox-' + index" :aria-label="'选择 ' + (item.metadata.fileName || item.name)">选择</el-checkbox>
+                      <span v-if="item.metadata.ListType === 'Block'" class="file-state-label">黑名单</span>
+                      <span v-if="item.metadata.Label && item.metadata.Label.toLowerCase() === 'adult'" class="file-state-label">NSFW</span>
+                      <button type="button" class="file-icon-action file-favorite" :class="{ 'is-liked': item.metadata.liked }" :aria-pressed="String(Boolean(item.metadata.liked))" :aria-label="item.metadata.liked ? '取消收藏' : '收藏文件'" :title="item.metadata.liked ? '取消收藏' : '收藏文件'" @click.stop="toggleLike(index, item.name)"><kv-icon :name="item.metadata.liked ? 'bookmark-check' : 'bookmark'"></kv-icon></button>
+                    </div>
+                    <el-popover trigger="click" placement="top" popper-class="custom-popover files-detail-popover">
+                      <div v-if="openedDetailNames[item.name]" v-html="formattedFileDetails(item)"></div>
+                      <button slot="reference" type="button" class="file-tile-name" :title="'查看详情：' + (item.metadata.fileName || item.name)" @click="openDetailPopover(item.name)">{{ item.metadata.fileName || item.name }}</button>
                     </el-popover>
+                    <div class="file-tile-meta"><span>{{ getFileType(item.name) }}</span><span>{{ formatFileSize(item.metadata.fileSize || 0) }}</span><span>{{ getStorageLabel(item.name) }}</span></div>
+                    <div class="file-tile-folder" :title="'/' + (item.metadata.folderPath || '')"><kv-icon name="folder"></kv-icon><span>{{ item.metadata.folderPath || '根目录' }}</span></div>
+                    <div class="file-tile-actions">
+                      <button type="button" class="file-text-action" @click.stop="openPreview(item)"><kv-icon name="eye"></kv-icon>预览</button>
+                      <el-dropdown @command="(cmd) => handleQuickCopy(cmd, item.name)" trigger="click" size="small">
+                        <button type="button" class="file-text-action" @click.stop><kv-icon name="copy"></kv-icon>复制<kv-icon name="chevron-down"></kv-icon></button>
+                        <el-dropdown-menu slot="dropdown" class="files-menu">
+                          <el-dropdown-item command="url">直链 URL</el-dropdown-item>
+                          <el-dropdown-item command="markdown">Markdown</el-dropdown-item>
+                          <el-dropdown-item command="html">HTML</el-dropdown-item>
+                          <el-dropdown-item command="bbcode">BBCode</el-dropdown-item>
+                        </el-dropdown-menu>
+                      </el-dropdown>
+                      <button type="button" class="file-icon-action" aria-label="重命名文件" title="重命名文件" @click.stop="handleEditName(item)"><kv-icon name="pencil"></kv-icon></button>
+                      <button type="button" class="file-icon-action file-delete" aria-label="删除文件" title="删除文件" @click.stop="handleDelete(index, item.name)"><kv-icon name="trash-2"></kv-icon></button>
+                    </div>
                   </div>
-                    <!-- 控制按钮区域 -->
-                  <div class="video-controls">
-                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'heart liked' : 'heart'"></i></button>
-                    <button class="control-btn edit-btn" @click.stop="handleEditName(item)"><i data-lucide="pencil"></i></button>
-                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'square-check selected' : 'square'"></i></button>
-                    <button class="control-btn" @click.stop="openPreview(item)" title="预览"><i data-lucide="eye"></i></button>
-                    <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i data-lucide="link"></i></button>
-                    <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i data-lucide="trash"></i></button>
-                  </div>
+                </article>
+                <div v-if="listLoading && !listLoaded" class="empty-tip files-empty" aria-busy="true">
+                  <kv-icon name="loader-circle"></kv-icon>
+                  <h2>{{ emptyTitle }}</h2>
+                  <p>正在读取当前范围的服务器文件。</p>
                 </div>
-              </el-card>
-            </template>
-            <!-- 音频 - 根据实际文件类型渲染 -->
-            <template v-else-if="getActualFileType(item.name) === 'audio'">
-              <el-card class="audio-card" :class="{ 'selected': item.selected }" :draggable="true" @dragstart="handleFileDragStart(item, $event)" @dragend="handleFileDragEnd">
-                <div class="audio-content">
-                  <!-- 音频标题区域 -->
-                  <div class="audio-header">
-                    <div class="audio-avatar">
-                      <img src="./music.svg" alt="Music">
-                    </div>
-                    <div class="audio-info">
-                      <div class="audio-title">
-                        <el-popover
-                          trigger="click"
-                          placement="top"
-                          popper-class="custom-popover">
-                          <template #default>
-                            <p v-html="formattedFileDetails(item)"></p>
-                          </template>
-                          <template #reference>
-                            <span :style="{ color: item.metadata.ListType !== 'Block' ? '#fff' : '#aaa' }">{{ item.metadata.fileName || item.name }}</span>
-                          </template>
-                        </el-popover>
-                      </div>
-                      <div class="audio-subtitle">{{ getFileType(item.name) }}</div>
-                    </div>
-                  </div>
-                  <div
-                    class="preview-stage audio-preview-stage"
-                    :class="{ 'is-gated': isPreviewGated(item, 'audio') }"
-                    @click.stop="revealPreview(item)">
-                    <audio
-                      v-if="!isPreviewGated(item, 'audio')"
-                      class="custom-audio-player"
-                      :src="'/file/' + item.name"
-                      controls
-                      preload="metadata">
-                      当前浏览器不支持音频播放
-                    </audio>
-                    <div v-else class="preview-skeleton audio-skeleton">
-                      <i data-lucide="audio-waveform"></i>
-                    </div>
-                    <button
-                      v-if="isPreviewGated(item, 'audio')"
-                      class="preview-gate compact"
-                      type="button"
-                      @click.stop="revealPreview(item)">
-                      <span class="preview-gate-icon"><i data-lucide="play"></i></span>
-                      <span class="preview-gate-title">{{ getPreviewGateTitle(item, 'audio') }}</span>
-                      <span class="preview-gate-subtitle">{{ getPreviewGateSubtitle(item, 'audio') }}</span>
-                    </button>
-                  </div>
-                  <!-- 控制按钮区域 -->
-                  <div class="audio-controls">
-                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'heart liked' : 'heart'"></i></button>
-                    <button class="control-btn edit-btn" @click.stop="handleEditName(item)"><i data-lucide="pencil"></i></button>
-                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'square-check selected' : 'square'"></i></button>
-                    <button class="control-btn" @click.stop="openPreview(item)" title="预览"><i data-lucide="eye"></i></button>
-                    <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i data-lucide="copy"></i></button>
-                    <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i data-lucide="trash"></i></button>
-                  </div>
+                <div v-else-if="listError && !listLoaded" class="empty-tip files-empty" role="alert">
+                  <kv-icon name="triangle-alert"></kv-icon>
+                  <h2>{{ emptyTitle }}</h2>
+                  <p class="files-error">{{ listError }}</p>
+                  <div><el-button size="small" type="primary" @click="refreshFileList({ force: true, syncFolders: true })">重试加载</el-button></div>
                 </div>
-              </el-card>
-            </template>
-            <!-- 其他文件（文档等） - 默认渲染 -->
-            <template v-else>
-              <el-card class="file-card" :class="{ 'selected': item.selected }" :draggable="true" @dragstart="handleFileDragStart(item, $event)" @dragend="handleFileDragEnd">
-                <div class="file-content">
-                  <!-- 文件标题区域 -->
-                  <div class="file-header">
-                    <div class="file-avatar">
-                      <i :class="getFileIcon(item.name)" style="font-size: 32px;"></i>
-                    </div>
-                    <div class="file-info">
-                      <div class="file-title">
-                        <el-popover
-                          trigger="click"
-                          placement="top"
-                          popper-class="custom-popover">
-                          <template #default>
-                            <p v-html="formattedFileDetails(item)"></p>
-                          </template>
-                          <template #reference>
-                            <span :style="{ color: item.metadata.ListType !== 'Block' ? '#fff' : '#aaa' }">{{ item.metadata.fileName || item.name }}</span>
-                          </template>
-                        </el-popover>
-                      </div>
-                      <div class="file-subtitle">{{ getFileType(item.name) }}</div>
-                    </div>
-                  </div>
-                  <!-- 控制按钮区域 -->
-                  <div class="file-controls">
-                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'heart liked' : 'heart'"></i></button>
-                    <button class="control-btn edit-btn" @click.stop="handleEditName(item)"><i data-lucide="pencil"></i></button>
-                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'square-check selected' : 'square'"></i></button>
-                    <button class="control-btn" @click.stop="openPreview(item)" title="预览"><i data-lucide="eye"></i></button>
-                    <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i data-lucide="copy"></i></button>
-                    <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i data-lucide="trash"></i></button>
-                  </div>
-                </div>
-              </el-card>
-            </template>
-                </template>
-                <div v-if="paginatedTableData.length === 0" class="empty-tip">
-                  当前目录下没有符合条件的文件。
-                  <div>
-                    <el-button size="mini" type="primary" @click="resetViewConditions">清空筛选并返回根目录</el-button>
-                  </div>
+                <div v-else-if="paginatedTableData.length === 0" class="empty-tip files-empty">
+                  <kv-icon name="search-x"></kv-icon>
+                  <h2>{{ emptyTitle }}</h2>
+                  <p>{{ nextCursor ? '还有文件未加载，可调整筛选或继续加载。' : '可调整搜索、筛选，或上传新文件。' }}</p>
+                  <div><el-button size="small" @click="resetViewConditions">清空筛选并查看根目录</el-button></div>
                 </div>
               </div>
-            </template>
-            <template v-else>
-              <div class="list-view-card">
-                <el-table :data="paginatedTableData" border stripe row-key="name" style="width: 100%">
+              <div v-if="viewMounted.list" v-show="viewMode === 'list'" class="list-view-card">
+                <el-table ref="fileTable" :data="paginatedTableData" border stripe row-key="name" style="width: 100%">
                   <el-table-column label="选择" width="76" align="center">
                     <template slot-scope="scope">
                       <el-checkbox :value="scope.row.selected" @change="toggleSelectByName(scope.row.name)"></el-checkbox>
@@ -453,7 +345,7 @@
                   <el-table-column label="文件名" min-width="280" show-overflow-tooltip>
                     <template slot-scope="scope">
                       <span class="row-drag-handle" draggable="true" @dragstart="handleFileDragStart(scope.row, $event)" @dragend="handleFileDragEnd">
-                        <i data-lucide="grip-horizontal"></i>
+                        <kv-icon name="grip-horizontal"></kv-icon>
                       </span>
                       <span :style="{ color: scope.row.metadata.ListType === 'Block' ? '#999' : '' }">
                         {{ scope.row.metadata.fileName || scope.row.name }}
@@ -495,25 +387,31 @@
                   </el-table-column>
                 </el-table>
                 <div v-if="paginatedTableData.length === 0" class="empty-tip">
-                  当前目录下没有符合条件的文件。
+                  {{ emptyTitle }}
+                  <p v-if="listError && !listLoaded" class="files-error">{{ listError }}</p>
                   <div>
-                    <el-button size="mini" type="primary" @click="resetViewConditions">清空筛选并返回根目录</el-button>
+                    <el-button v-if="listError && !listLoaded" size="mini" type="primary" @click="refreshFileList({ force: true, syncFolders: true })">重试加载</el-button>
+                    <el-button size="mini" @click="resetViewConditions">清空筛选并查看根目录</el-button>
                   </div>
                 </div>
               </div>
-            </template>
             <div class="pagination-container">
               <el-pagination
                 background layout="total, prev, pager, next"
                 :total="paginationTotal" :page-size="pageSize"
                 @current-change="handlePageChange" :current-page.sync="currentPage" />
             </div>
-            <div style="text-align:center;margin-top:16px;">
+            <div class="files-load-more">
               <el-button v-if="nextCursor" :loading="isLoadingMore" :disabled="isLoadingMore" @click="loadMore">
-                {{ isLoadingMore ? '加载中...' : ('加载更多 (' + Number + '/' + (totalCount || Number) + ')') }}
+                {{ isLoadingMore
+                  ? '加载中...'
+                  : (totalCount === null
+                    ? ('加载更多（已加载 ' + Number + ' 项）')
+                    : ('加载更多（' + Number + '/' + totalCount + '）'))
+                }}
               </el-button>
-              <div v-else-if="(totalCount || Number) > 0 && Number >= (totalCount || Number)" class="load-more-end">
-                全部加载完成，共 {{ totalCount || Number }} 条
+              <div v-else-if="listLoaded && Number > 0" class="load-more-end">
+                已加载全部 {{ Number }} 条{{ listComplete ? '' : '（服务端未返回更多游标）' }}
               </div>
             </div>
           </section>
@@ -521,7 +419,7 @@
   <el-footer class="footer">
           <div>Powered By K-Vault</div>
           <a href="https://github.com/katelya77/K-Vault" target="_blank" rel="noopener noreferrer">
-            <div><i class="fa-brands fa-github"></i> K-Vault</div>
+            <div><kv-icon name="fab fa-github"></kv-icon> K-Vault</div>
           </a>
         </el-footer>
       </el-main>
@@ -840,16 +738,152 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       </div>
     </transition>
   </div>
-</body>
-<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script> <!-- Vue -->
-<script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/index.js"></script> <!-- ElementUI -->
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js" integrity="sha384-ULpZhk1pvhc/UK5ktA9kwb2guy9ovNSTyxPNHANnA35YjBQgdwI+AhLkixDvdlw4" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/index.js" integrity="sha384-+gBC+PMSL+TRFl/FIZXz0BFZ9goHb5wqIwBbAscP86Bd6JJJ1TS5MwaN1SAIjzGj" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- Vue 与 Lucide 就绪后注册共享指令，再创建应用。 -->
+<script src="/icons-subset.js?v=be1dad3cb5"></script>
+<script src="/icons.js?v=fc3fc216e0"></script>
 <script>
+  // 页面兜底：共享运行时若已提供组件则直接复用；图标由 Vue 管理，name 变化不会留下旧 SVG。
+  if (!Vue.options.components['kv-icon'] && !Vue.options.components.KvIcon) {
+    Vue.component('kv-icon', {
+      props: { name: { type: String, default: 'file' } },
+      render(h) {
+        const name = String(this.name || '').trim();
+        if (/^(?:fab|fas|far|fa-brands|fa-solid|fa-regular)\s+fa-[a-z0-9-]+$/.test(name)) {
+          return h('i', { class: ['kv-icon', name], attrs: { 'aria-hidden': 'true' } });
+        }
+        const iconName = name.replace(/(^|-)([a-z0-9])/g, (_, dash, letter) => letter.toUpperCase());
+        const library = window.lucide || {};
+        const definition = (library.icons || {})[iconName] || library[iconName];
+        const nodes = Array.isArray(definition)
+          ? (definition[0] === 'svg' ? definition[2] : definition)
+          : [['rect', { x: 4, y: 4, width: 16, height: 16, rx: 2 }], ['path', { d: 'M8 12h8M12 8v8' }]];
+        const draw = (node, index) => h(node[0], { key: index, attrs: node[1] || {} }, (node[2] || []).map(draw));
+        return h('svg', {
+          class: ['kv-icon', 'lucide', 'lucide-' + name],
+          attrs: { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24', width: 20, height: 20,
+            fill: 'none', stroke: 'currentColor', 'stroke-width': 2, 'stroke-linecap': 'round',
+            'stroke-linejoin': 'round', 'aria-hidden': 'true', focusable: 'false' }
+        }, (nodes || []).map(draw));
+      }
+    });
+  }
+
+  // ===== 列表渲染性能：模块级缓存 =====
+  // 文件类型/图标按文件名记忆，避免每次模板重渲染都重复拆扩展名、扫映射表；重命名后键值不同，天然失效。
+  const FILE_TYPE_CACHE = new Map();
+  const FILE_ICON_CACHE = new Map();
+  const STORAGE_LABELS = {
+    telegram: 'Telegram',
+    r2: 'R2',
+    s3: 'S3',
+    discord: 'Discord',
+    huggingface: 'HuggingFace',
+    webdav: 'WebDAV',
+    github: 'GitHub',
+  };
+  const FILE_ICON_ENTRIES = Object.entries({
+    'pdf': 'file-text',
+    'ofd,typ,typst': 'file-text',
+    'doc,dot,docx,docm,dotx,dotm,rtf,odt': 'file-text',
+    'xls,xlsb,xlsx,xlsm,xlt,xltx,xltm,ods,fods,numbers,csv,tsv': 'file-spreadsheet',
+    'ppt,pptx,pptm,ppsx,ppsm,potx,potm,odp': 'presentation',
+    'txt,md,markdown,log,patch,diff,bundle,bdl': 'file-text',
+    'zip,zipx,jar,war,ear,rar,7z,tar,tgz,gz,gzip,bz2,bzip2,tbz,tbz2,xz,txz,lzma,zst,cab,iso': 'file-archive',
+    'html,htm,css,js,ts,jsx,tsx,vue,php,py,java,c,cpp,h,hpp,cs,go,rs,rb,pl,sh,sql,bash,cc': 'file-code',
+    'json,jsonc,json5,xml,yaml,yml,toml,proto,hcl,graphql,gv': 'file-code',
+    'eml,msg,mbox': 'mail',
+    'mp4,avi,mov,wmv,flv,mkv,webm,m4v,m3u8,3gp,ts,mts,m2ts': 'file-video-camera',
+    'mp3,mpeg,wav,ogg,oga,flac,aac,m4a,wma,ape,opus,weba,midi,mid,aif,aiff': 'audio-lines',
+    'jpg,jpeg,jfif,png,apng,gif,bmp,webp,svg,ico,tif,tiff,heic,heif,avif,jxl': 'file-image',
+    'psd,ai,eps,cdr': 'file-image',
+    'ttf,otf,woff,woff2': 'type',
+    'sqlite,sqlite3,db,parquet,avro,wasm,webarchive': 'database',
+    'dwg,dxf,dwf,dwfx,xps': 'compass',
+    'glb,gltf,obj,stl,ply,fbx,dae,3ds,3mf,usd,usdz,kmz,step,stp,iges,igs,ifc': 'box',
+    'xmind,drawio,dio,excalidraw,mermaid,mmd,plantuml,puml,epub,umd,geojson,kml,gpx,shp,olb,dra,gds,oas,oasis': 'network',
+    'exe,msi,app,dmg,deb,rpm': 'file-down'
+  }).map(([exts, icon]) => [exts.split(','), icon]);
+  // 详情时间戳只构造一次格式化器；toLocaleString + timeZone 每次都会新建 Intl 实例，是详情气泡的主要开销
+  let detailTimeFormatter = null;
+  try {
+    detailTimeFormatter = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai' });
+  } catch (e) {
+    detailTimeFormatter = null;
+  }
+  function memoFileValue(cache, key, compute) {
+    if (key === undefined || key === null || key === '') return compute();
+    if (cache.has(key)) return cache.get(key);
+    if (cache.size >= 4000) cache.clear();
+    const value = compute();
+    cache.set(key, value);
+    return value;
+  }
+  function escapeDetailHtml(value) {
+    return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
   new Vue({
     el: '#app',
     data: {
       baseURL: document.location.origin,
       Number: 0,
-      totalCount: 0,
+      reportedTotal: null,
+      reportedTotalScopeKey: '',
+      emptyPathMode: 'unknown', // 当前契约：Pages=all，Node/Docker=root；目录接口成功后确认。
+      listLoaded: false,
+      listComplete: false,
+      listLoading: false,
+      listError: '',
+      listFromCache: false,
+      loadedScopeKey: '',
+      listAbortController: null,
+      folderAbortController: null,
+      folderScopeKey: '',
+      activeScopeKey: '',
+      scopeVersion: 0,
+      cacheEpoch: 0,
+      cacheOwner: '',
+      resourceMutationId: 0,
+      requestTimers: [],
+      managedControllers: [],
+      folderRequestSeq: 0,
+      folderError: '',
+      batchMutating: false,
+      checkingFiles: false,
+      favoritePending: {},
+      folderDrawerOpen: false,
+      folderReturnFocus: null,
+      previewReturnFocus: null,
+      windowWidth: window.innerWidth,
+      showLogoutButton: false,
+      downloadTimers: [],
+      authReady: false,
+      authLoading: false,
+      authError: '',
+      pageDisposed: false,
+      listErrorPhase: '',
+      listNeedsRefresh: false,
+      connectionLoading: false,
+      checkRequestSeq: 0,
+      checkControllers: [],
+      brokenCheckSeq: 0,
+      brokenCheckMessage: null,
+      brokenCheckController: null,
+      mediaErrors: {},
+      mediaVersions: {},
+      previewSequence: 0,
+      previewTimer: null,
+      previewFrameDocument: null,
+      imageViewer: null,
+      modalObserver: null,
+      modalSyncPending: false,
+      isolatedNodes: [],
+      scrollLockState: null,
+      tokenError: '',
+      moveDialogScopeKey: '',
+      storageLabels: { all: '全部存储', telegram: 'Telegram', r2: 'R2', s3: 'S3', discord: 'Discord', huggingface: 'HuggingFace', webdav: 'WebDAV', github: 'GitHub' },
       fileConfig: {
         all: {
           name: '全部',
@@ -886,18 +920,19 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         maxSize: 20 * 1024 * 1024,  // 最大上传20MB
         maxConcurrent: 3
       },
-        tableData: [],
-        nextCursor: null,
+      tableData: [],
+      nextCursor: null,
       isLoadingMore: false,
       search: '',
       currentPage: 1,
       pageSize: 24,
-      selectedFiles: [],
       sortOption: 'dateDesc',
       filterOption: 'all',
       fileType: 'all',
       storageFilter: 'all', // all | telegram | r2
       viewMode: 'grid', // grid | list
+      viewMounted: { grid: true, list: false }, // 视图首次激活后常驻挂载，后续切换仅切显示，避免整棵列表树销毁重建
+      openedDetailNames: {}, // 文件详情气泡内容懒渲染：首次点开的文件才生成 HTML
       folders: [],
       folderPath: '',
       folderLoading: false,
@@ -976,14 +1011,62 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       moveDialogNewFolderPath: '',
     },
     computed: {
+      selectedFiles() { return this.tableData.filter(file => file.selected); },
+      isPagePartiallySelected() {
+        const count = this.paginatedTableData.filter(file => file.selected).length;
+        return count > 0 && count < this.paginatedTableData.length;
+      },
+      isAllLoadedSelected() {
+        return this.tableData.length > 0 && this.selectedFiles.length === this.tableData.length;
+      },
+      selectedOutsidePageCount() {
+        const names = new Set(this.paginatedTableData.map(file => file.name));
+        return this.selectedFiles.filter(file => !names.has(file.name)).length;
+      },
+      selectedHiddenCount() {
+        const names = new Set(this.filteredTableData.map(file => file.name));
+        return this.selectedFiles.filter(file => !names.has(file.name)).length;
+      },
+      storageFilterLabel() { return this.storageLabels[this.storageFilter] || '全部存储'; },
+      sortLabel() { return { dateDesc: '时间从新到旧', nameAsc: '文件标识 A–Z', sizeDesc: '大小从大到小' }[this.sortOption] || '时间从新到旧'; },
+      filterLabel() { return { all: '全部状态', favorites: '收藏', blocked: '黑名单', unblocked: '白名单', adult: 'NSFW' }[this.filterOption] || '全部状态'; },
+      emptyPathLabel() {
+        return { all: '全部目录文件', root: '根目录文件', unknown: '默认文件范围' }[this.emptyPathMode];
+      },
+      rootCrumbLabel() { return this.folderPath ? '根目录' : this.emptyPathLabel; },
+      scopeLabel() { return this.folderPath ? `目录 /${this.folderPath}（仅直属文件）` : this.emptyPathLabel; },
+      scopeNote() {
+        if (this.folderPath) return '仅列出当前目录直属文件，不包含子目录。';
+        if (this.emptyPathMode === 'all') return '当前服务在空路径下返回所有目录的文件；移动到空路径仍表示移回根目录。';
+        if (this.emptyPathMode === 'root') return '当前服务在空路径下仅返回根目录直属文件；其他目录请从左侧目录列表或手机端目录抽屉进入。';
+        return '默认范围尚未确认：尚未收到可判断的文件列表响应。';
+      },
+      totalCount() {
+        if (!this.listLoaded) return null;
+        if (this.listComplete) return this.Number;
+        // stats 由服务端按范围计算：Node 会剔除目录条件，故仅采用与当前范围一致的目录树计数。
+        if (this.reportedTotalScopeKey === this.getFolderCacheKey() && Number.isFinite(this.reportedTotal)) {
+          return Math.max(this.Number, this.reportedTotal);
+        }
+        return null;
+      },
+      loadedSummary() {
+        if (!this.listLoaded) return this.listLoading ? '正在加载文件' : '尚未加载文件';
+        const total = this.totalCount === null ? '总数待加载确认' : `范围内 ${this.totalCount} 项`;
+        return `${total}，已加载 ${this.Number} 项${this.listFromCache ? '（3 分钟内缓存，可刷新）' : ''}`;
+      },
+      localModalOpen() { return Boolean(this.previewData || (this.isMobileViewport && this.folderDrawerOpen)); },
+      emptyTitle() {
+        if (this.listLoading) return '正在加载当前范围';
+        if (this.listError && !this.listLoaded) return '文件列表加载失败';
+        return this.Number ? '已加载文件中没有匹配项' : (this.listLoaded ? '当前范围暂无文件' : '尚未加载文件');
+      },
       filteredTableData() {
         return this.tableData.filter(data => {
           // 搜索匹配
-          const searchLower = this.search.toLowerCase();
-          const matchesSearch = !searchLower || [
-            (data.metadata.fileName || '').toLowerCase(),
-            data.name?.toLowerCase(),
-          ].some(field => field?.includes(searchLower));
+          const searchLower = String(this.search || '').trim().toLowerCase();
+          const matchesSearch = !searchLower || [data.metadata.fileName, data.name]
+            .some(field => String(field || '').toLowerCase().includes(searchLower));
 
           // 筛选匹配
           const matchesFilter = {
@@ -1074,26 +1157,23 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         return result;
       },
       folderTreeNodes() {
-        const list = [{
-          path: '',
-          name: '根目录',
-          depth: 0,
-          fileCount: this.folderPath ? '-' : this.Number,
-        }];
-        const nodes = (this.folders || []).map((folder) => {
-          const path = this.normalizeFolderPath(folder.path || folder.folderPath || '');
-          const depth = Number.isFinite(folder.depth) ? folder.depth : (path ? path.split('/').length : 0);
-          return {
+        const nodes = new Map();
+        (this.folders || []).forEach((folder) => {
+          const path = this.normalizeFolderPath(folder.path ?? folder.folderPath ?? '');
+          if (!path) return; // Node 已含根节点；浏览入口只保留一个。
+          nodes.set(path, {
             path,
-            name: folder.name || (path.split('/').pop() || path || '未命名目录'),
-            depth,
-            fileCount: Number(folder.fileCount || 0),
-          };
-        }).sort((a, b) => {
-          if (a.depth !== b.depth) return a.depth - b.depth;
-          return a.path.localeCompare(b.path, 'zh-CN');
+            name: folder.name || path.split('/').pop(),
+            depth: path.split('/').length,
+            fileCount: Number.isFinite(folder.fileCount) ? folder.fileCount : '—',
+          });
         });
-        return list.concat(nodes);
+        return [{ path: '', name: this.emptyPathLabel, depth: 0,
+          fileCount: !this.folderPath && this.listLoaded
+            ? (this.totalCount === null ? this.Number : this.totalCount)
+            : '—' }]
+          .concat(Array.from(nodes.values()).sort((a, b) =>
+            a.depth - b.depth || a.path.localeCompare(b.path, 'zh-CN')));
       },
       dragTargetLabel() {
         if (!this.dragState.active) return '未选择目录';
@@ -1154,13 +1234,8 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         };
       }
     },
-    watch: {  // 监听数据变化
-      tableData: {
-        handler(newData) {
-          this.selectedFiles = newData.filter(file => file.selected);
-        },
-        deep: true
-      },
+    watch: {  // 监听数据变化；selectedFiles / totalCount 始终由 computed 派生。
+      localModalOpen() { this.$nextTick(this.syncModalEnvironment); },
       search() {
         this.currentPage = 1;
         this.normalizeCurrentPage();
@@ -1493,7 +1568,11 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         this.headerResizeObserver = null;
       },
       updateViewportFlags() {
+        const wasMobile = this.isMobileViewport;
         this.isMobileViewport = window.matchMedia('(max-width: 900px)').matches;
+        if (wasMobile && !this.isMobileViewport) {
+          this.closeFolderDrawer({ restoreFocus: false });
+        }
         if (this.isMobileViewport) {
           this.batchToolbarPosition.left = null;
           this.batchToolbarPosition.top = null;
@@ -1501,81 +1580,210 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         }
         this.queueMobileNavMetricsUpdate();
       },
+      validCursor(cursor) {
+        return (typeof cursor === 'string' && cursor.trim().length > 0)
+          || (typeof cursor === 'number' && Number.isFinite(cursor) && cursor >= 0);
+      },
+      validListRows(rows) {
+        return Array.isArray(rows) && rows.every(row => row && typeof row.name === 'string' && row.name.length > 0
+          && (row.metadata == null || (typeof row.metadata === 'object' && !Array.isArray(row.metadata))));
+      },
       restoreFolderCache() {
         try {
-          const raw = localStorage.getItem('adminFolderListCache');
-          const parsed = raw ? JSON.parse(raw) : {};
-          this.folderListCache = parsed && typeof parsed === 'object' ? parsed : {};
+          const parsed = JSON.parse(localStorage.getItem('adminFolderListCache') || '{}');
+          this.folderListCache = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
           this.pruneFolderCache();
+          this.persistFolderCache();
         } catch {
           this.folderListCache = {};
         }
       },
       persistFolderCache() {
-        try {
-          localStorage.setItem('adminFolderListCache', JSON.stringify(this.folderListCache));
-        } catch {
-          // ignore storage quota errors
-        }
+        try { localStorage.setItem('adminFolderListCache', JSON.stringify(this.folderListCache)); }
+        catch { /* 隐私模式或配额不足时使用内存缓存。 */ }
+      },
+      validFolderCache(cacheKey, entry) {
+        if (!entry || entry.version !== 2 || !this.cacheOwner || entry.owner !== this.cacheOwner
+          || entry.scopeKey !== cacheKey || !Number.isFinite(entry.time)
+          || entry.time > Date.now() || Date.now() - entry.time > this.folderCacheTTL
+          || !this.validListRows(entry.rows) || typeof entry.listComplete !== 'boolean'
+          || !['unknown', 'all', 'root'].includes(entry.emptyPathMode)
+          || !(entry.reportedTotal === null || (Number.isInteger(entry.reportedTotal) && entry.reportedTotal >= 0))) return false;
+        return entry.listComplete ? entry.nextCursor === null : this.validCursor(entry.nextCursor);
       },
       pruneFolderCache() {
-        const now = Date.now();
-        const entries = Object.entries(this.folderListCache || {})
-          .filter(([, value]) => value && Number.isFinite(Number(value.time)) && (now - Number(value.time) <= this.folderCacheTTL))
-          .sort((a, b) => Number(b[1].time || 0) - Number(a[1].time || 0))
-          .slice(0, this.folderCacheMaxEntries);
-        this.folderListCache = Object.fromEntries(entries);
+        this.folderListCache = Object.fromEntries(Object.entries(this.folderListCache || {})
+          .filter(([key, entry]) => this.validFolderCache(key, entry))
+          .sort((a, b) => b[1].time - a[1].time).slice(0, this.folderCacheMaxEntries));
       },
       getFolderCacheKey() {
-        const folder = this.normalizeFolderPath(this.folderPath || '');
-        const storage = String(this.storageFilter || 'all').toLowerCase();
-        return `${storage}::${folder}`;
+        return `${String(this.storageFilter || 'all').toLowerCase()}::${this.normalizeFolderPath(this.folderPath)}`;
       },
       cloneRowsForCache(rows = []) {
-        return rows.map((item) => ({
-          ...item,
-          selected: false,
-          metadata: { ...(item.metadata || {}) },
-        }));
+        return rows.map(item => ({ ...item, selected: false, metadata: { ...(item.metadata || {}) } }));
       },
       readFolderCache(cacheKey) {
-        const entry = this.folderListCache?.[cacheKey];
-        if (!entry) return null;
-        if (!Number.isFinite(Number(entry.time)) || (Date.now() - Number(entry.time) > this.folderCacheTTL)) {
-          delete this.folderListCache[cacheKey];
-          this.persistFolderCache();
-          return null;
-        }
-        return entry;
+        const entry = this.folderListCache[cacheKey];
+        if (this.validFolderCache(cacheKey, entry)) return entry;
+        if (entry) { this.$delete(this.folderListCache, cacheKey); this.persistFolderCache(); }
+        return null;
       },
       applyFolderCacheEntry(entry) {
-        if (!entry) return;
-        this.tableData = this.cloneRowsForCache(entry.rows || []);
-        this.nextCursor = entry.nextCursor || null;
-        this.totalCount = Number.isFinite(entry.totalCount) ? Number(entry.totalCount) : this.tableData.length;
+        const key = this.getFolderCacheKey();
+        if (!this.authReady || this.pageDisposed || !this.validFolderCache(key, entry)) return false;
+        this.tableData = this.cloneRowsForCache(entry.rows);
+        this.nextCursor = entry.nextCursor;
+        this.reportedTotal = entry.reportedTotal;
+        this.reportedTotalScopeKey = Number.isFinite(entry.reportedTotal) ? key : '';
+        if (this.emptyPathMode === 'unknown') this.emptyPathMode = entry.emptyPathMode;
+        this.listComplete = entry.listComplete;
+        this.listLoaded = true;
+        this.listFromCache = true;
+        this.loadedScopeKey = key;
+        this.listNeedsRefresh = false;
+        this.listError = '';
+        this.listErrorPhase = '';
         this.updateStats();
         this.calculatePageSize();
-        this.sortData(this.tableData);
         this.normalizeCurrentPage();
+        return true;
       },
       writeFolderCache(cacheKey) {
-        if (!cacheKey) return;
-        this.folderListCache[cacheKey] = {
-          time: Date.now(),
-          rows: this.cloneRowsForCache(this.tableData),
-          nextCursor: this.nextCursor,
-          totalCount: this.totalCount,
-        };
+        if (!this.authReady || this.pageDisposed || this.batchMutating || !this.listLoaded || this.listNeedsRefresh
+          || cacheKey !== this.loadedScopeKey || cacheKey !== this.getFolderCacheKey()) return;
+        this.$set(this.folderListCache, cacheKey, {
+          version: 2, owner: this.cacheOwner, scopeKey: cacheKey, time: Date.now(),
+          rows: this.cloneRowsForCache(this.tableData), nextCursor: this.nextCursor,
+          listComplete: this.listComplete, reportedTotal: this.reportedTotal, emptyPathMode: this.emptyPathMode,
+        });
         this.pruneFolderCache();
         this.persistFolderCache();
       },
+      invalidateListRequest() {
+        this.listRequestSeq += 1;
+        if (this.listAbortController) this.listAbortController.abort();
+        this.listAbortController = null;
+        this.listLoading = false;
+        this.isLoadingMore = false;
+      },
+      invalidateFolderRequest() {
+        this.folderRequestSeq += 1;
+        if (this.folderAbortController) this.folderAbortController.abort();
+        this.folderAbortController = null;
+        this.folderLoading = false;
+      },
       clearFolderCache() {
+        this.cacheEpoch += 1; // 清缓存同时使旧请求失效，禁止晚到响应回填。
+        this.invalidateListRequest();
+        this.invalidateFolderRequest();
         this.folderListCache = {};
-        try {
-          localStorage.removeItem('adminFolderListCache');
-        } catch {
-          // ignore
+        this.listNeedsRefresh = true;
+        this.listComplete = false;
+        this.reportedTotal = null;
+        this.reportedTotalScopeKey = '';
+        this.nextCursor = null;
+        try { localStorage.removeItem('adminFolderListCache'); } catch { /* 内存缓存仍已清理。 */ }
+      },
+      syncResourceScope() {
+        const key = this.getFolderCacheKey();
+        if (key !== this.activeScopeKey) {
+          this.scopeVersion += 1;
+          this.activeScopeKey = key;
+          this.invalidateListRequest();
+          this.cancelBrokenCheck();
+          this.closePreview(false);
+          this.closeImageViewer(false);
+          this.handleFileDragEnd();
+          this.tableData = [];
+          this.Number = 0;
+          this.nextCursor = null;
+          this.reportedTotal = null;
+          this.reportedTotalScopeKey = '';
+          this.loadedScopeKey = '';
+          this.listLoaded = false;
+          this.listComplete = false;
+          this.listFromCache = false;
+          this.listError = '';
+          this.listErrorPhase = '';
+          this.listNeedsRefresh = true;
+          this.mediaErrors = {};
+          this.mediaVersions = {};
+          this.revealedPreviewKeys = {};
+          this.currentPage = 1;
+          this.updateStats();
+          if (this.folderScopeKey !== this.storageFilter) {
+            this.invalidateFolderRequest();
+            this.folderScopeKey = this.storageFilter;
+            this.folders = [];
+            this.folderError = '';
+          }
         }
+        return { key, version: this.scopeVersion, folder: this.folderPath, storage: this.storageFilter, epoch: this.cacheEpoch };
+      },
+      isCurrentScope(scope) {
+        return !this.pageDisposed && this.authReady && scope.key === this.getFolderCacheKey() && scope.version === this.scopeVersion;
+      },
+      isCurrentListRequest(scope, seq) {
+        return this.isCurrentScope(scope) && seq === this.listRequestSeq && scope.epoch === this.cacheEpoch;
+      },
+      beginResourceMutation(scope) {
+        if (!this.isCurrentScope(scope) || this.batchMutating) throw new Error('范围已切换或有操作进行中，请重新选择后重试');
+        this.batchMutating = true;
+        this.resourceMutationId += 1;
+        this.cancelBrokenCheck();
+        this.clearFolderCache();
+        return { ...scope, id: this.resourceMutationId };
+      },
+      async finishResourceMutation(token) {
+        if (!token || token.id !== this.resourceMutationId || this.pageDisposed) return;
+        this.clearFolderCache();
+        this.batchMutating = false;
+        this.folderMutating = false;
+        this.folderMutatingAction = '';
+        // 即使用户已切换范围，也仅刷新当前范围；不回滚旧快照。
+        if (this.authReady) await this.refreshFileList({ force: true, syncFolders: true });
+      },
+      async requestJson(url, options = {}) {
+        const { controller = typeof AbortController === 'function' ? new AbortController() : null, ...init } = options;
+        let timedOut = false;
+        if (controller) this.managedControllers.push(controller);
+        const timer = setTimeout(() => { timedOut = true; if (controller) controller.abort(); }, 30000);
+        this.requestTimers.push(timer);
+        try {
+          const response = await fetch(url, { credentials: 'include', cache: 'no-store', ...init, signal: controller?.signal });
+          const payload = await response.json().catch(() => null);
+          if (!response.ok || !payload || typeof payload !== 'object' || payload.success === false || payload.error) {
+            const error = new Error(payload?.error?.message || (typeof payload?.error === 'string' ? payload.error : '')
+              || payload?.message || (response.ok ? '服务返回的数据格式无效' : `请求失败（HTTP ${response.status}）`));
+            error.status = response.status;
+            throw error;
+          }
+          return payload;
+        } catch (error) {
+          if (timedOut) throw new Error('请求超时，请检查网络后重试');
+          throw error;
+        } finally {
+          clearTimeout(timer);
+          this.requestTimers = this.requestTimers.filter(value => value !== timer);
+          this.managedControllers = this.managedControllers.filter(value => value !== controller);
+        }
+      },
+      handleResourceError(error) {
+        if (error?.status !== 401 && error?.status !== 403) return;
+        this.authReady = false;
+        this.authError = '登录已失效或权限不足，请重新验证登录后重试。';
+        this.clearFolderCache();
+        this.cacheOwner = '';
+        this.tableData = [];
+        this.folders = [];
+        this.listLoaded = false;
+        this.updateStats();
+        this.closePreview();
+        this.closeImageViewer();
+      },
+      connectionLabel(key) {
+        return { telegram: 'Telegram', kv: 'KV 存储', r2: 'R2 存储', s3: 'S3 存储', discord: 'Discord',
+          huggingface: 'HuggingFace', github: 'GitHub', webdav: 'WebDAV', auth: '身份验证' }[key] || key;
       },
       getStorageType(name = '') {
         if (String(name).startsWith('r2:')) return 'r2';
@@ -1587,17 +1795,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         return 'telegram';
       },
       getStorageLabel(name = '') {
-        const type = this.getStorageType(name);
-        const map = {
-          telegram: 'Telegram',
-          r2: 'R2',
-          s3: 'S3',
-          discord: 'Discord',
-          huggingface: 'HuggingFace',
-          webdav: 'WebDAV',
-          github: 'GitHub',
-        };
-        return map[type] || 'Telegram';
+        return STORAGE_LABELS[this.getStorageType(name)] || 'Telegram';
       },
       toggleSelectByName(name) {
         const target = this.tableData.find((item) => item.name === name);
@@ -1638,8 +1836,23 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         );
       },
       switchViewMode(mode) {
-        if (!['grid', 'list'].includes(mode)) return;
+        if (!['grid', 'list'].includes(mode) || this.viewMode === mode) return;
         this.viewMode = mode;
+        this.viewMounted[mode] = true;
+        this.closeImageViewer();
+        this.$nextTick(() => {
+          if (mode === 'list') {
+            // el-table 若曾在隐藏状态下经历过尺寸变化，重新显示时需要重算列宽
+            const table = this.$refs.fileTable;
+            if (table && typeof table.doLayout === 'function') table.doLayout();
+          } else {
+            // el-image 懒加载依赖滚动事件；网格重新显示后补发一次检查，未加载的缩略图立即开始加载
+            window.dispatchEvent(new Event('scroll'));
+          }
+        });
+      },
+      openDetailPopover(name) {
+        if (name && !this.openedDetailNames[name]) this.$set(this.openedDetailNames, name, true);
       },
       cloneFoldersSnapshot() {
         return Array.isArray(this.folders) ? this.folders.map((item) => ({ ...item })) : [];
@@ -1710,37 +1923,152 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       },
       async selectFolder(path = '') {
         const normalized = this.normalizeFolderPath(path);
-        if (normalized === this.folderPath && this.tableData.length > 0) return;
+        if (normalized === this.folderPath && this.tableData.length > 0) {
+          if (this.isMobileViewport) this.closeFolderDrawer();
+          return;
+        }
         this.folderPath = normalized;
         this.currentPage = 1;
+        if (this.isMobileViewport) this.closeFolderDrawer();
         await this.refreshFileList({ preferCache: true });
       },
-      async fetchFolders() {
+      openFolderDrawer() {
+        if (!this.isMobileViewport || this.folderDrawerOpen) return;
+        this.folderReturnFocus = document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : (this.$refs.folderToggle || null);
+        this.folderDrawerOpen = true;
+        this.$nextTick(() => {
+          const drawer = this.$refs.folderDrawer;
+          if (drawer && typeof drawer.focus === 'function') drawer.focus();
+        });
+      },
+      closeFolderDrawer(options = {}) {
+        const { restoreFocus = true } = options;
+        if (!this.folderDrawerOpen) return;
+        this.folderDrawerOpen = false;
+        const target = this.folderReturnFocus || this.$refs.folderToggle || null;
+        this.folderReturnFocus = null;
+        if (!restoreFocus) return;
+        this.$nextTick(() => {
+          if (target && typeof target.focus === 'function' && document.contains(target)) target.focus();
+        });
+      },
+      toggleFolderDrawer() {
+        if (this.folderDrawerOpen) this.closeFolderDrawer();
+        else this.openFolderDrawer();
+      },
+      trapFolderDrawerFocus(event) {
+        const drawer = this.$refs.folderDrawer;
+        if (!drawer) return;
+        const focusable = Array.from(
+          drawer.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+        ).filter((node) => !node.disabled && node.offsetParent !== null);
+        if (focusable.length === 0) {
+          event.preventDefault();
+          drawer.focus();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = document.activeElement;
+        const inside = drawer.contains(active);
+        if (event.shiftKey && (!inside || active === first)) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && (!inside || active === last)) {
+          event.preventDefault();
+          first.focus();
+        }
+      },
+      clearLocalFilters() {
+        this.search = '';
+        this.fileType = 'all';
+        this.filterOption = 'all';
+        this.sortOption = 'dateDesc';
+        this.currentPage = 1;
+        this.normalizeCurrentPage();
+      },
+      applyEmptyPathMode(rows = []) {
+        if (this.folderPath) return;
+        // 以实际响应判断空路径的范围：返回了子目录文件即为“全部目录”，否则为“仅根目录”。
+        if (rows.some((file) => this.normalizeFolderPath(file?.metadata?.folderPath || ''))) {
+          this.emptyPathMode = 'all';
+        } else if (this.emptyPathMode !== 'all') {
+          this.emptyPathMode = 'root';
+        }
+      },
+      applyFolderScopeTotal(list = []) {
+        // Node 的目录树含根节点，Pages 仅返回具名目录；只有范围一致时才采用该计数。
+        const normalized = (Array.isArray(list) ? list : []).map((folder) => ({
+          path: this.normalizeFolderPath(folder?.path ?? folder?.folderPath ?? ''),
+          fileCount: Number.isFinite(Number(folder?.fileCount)) ? Number(folder.fileCount) : null,
+        }));
+        const rootNode = normalized.find((folder) => folder.path === '');
+        const current = this.folderPath
+          ? normalized.find((folder) => folder.path === this.folderPath)
+          : rootNode;
+        const total = current && current.fileCount !== null ? current.fileCount : null;
+        this.reportedTotal = total;
+        this.reportedTotalScopeKey = total === null ? '' : this.getFolderCacheKey();
+      },
+      async fetchFolders(options = {}) {
+        const { silent = false } = options;
+        if (!this.authReady || this.pageDisposed) return false;
+        const scope = {
+          key: this.getFolderCacheKey(),
+          version: this.scopeVersion,
+          epoch: this.cacheEpoch,
+        };
+        const seq = ++this.folderRequestSeq;
+        if (this.folderAbortController) this.folderAbortController.abort();
+        const controller = typeof AbortController === 'function' ? new AbortController() : null;
+        this.folderAbortController = controller;
         this.folderLoading = true;
+        this.folderError = '';
         try {
           const params = new URLSearchParams();
           if (this.storageFilter && this.storageFilter !== 'all') {
             params.set('storage', this.storageFilter);
           }
           const query = params.toString();
-          const response = await fetch(`./api/manage/folders${query ? `?${query}` : ''}`, { method: 'GET', credentials: 'include' });
-          const data = await response.json();
-          this.folders = Array.isArray(data?.folders) ? data.folders : [];
+          const payload = await this.requestJson(`./api/manage/folders${query ? `?${query}` : ''}`, {
+            method: 'GET',
+            controller,
+          });
+          if (this.pageDisposed || seq !== this.folderRequestSeq || !this.isCurrentScope(scope)) return false;
+          const list = Array.isArray(payload?.folders) ? payload.folders : [];
+          this.folders = list;
+          this.sortFoldersLocal();
+          this.applyFolderScopeTotal(list);
           return true;
         } catch (error) {
+          if (this.pageDisposed || seq !== this.folderRequestSeq) return false;
+          if (error?.name === 'AbortError') return false;
           this.folders = [];
-          this.$message.error('目录列表加载失败');
+          this.folderError = error?.message || '目录列表加载失败';
+          this.handleResourceError(error);
+          if (!silent) this.$message.error(this.folderError);
           return false;
         } finally {
-          this.folderLoading = false;
+          if (seq === this.folderRequestSeq) {
+            this.folderLoading = false;
+            if (this.folderAbortController === controller) this.folderAbortController = null;
+          }
         }
       },
       async refreshFolderResources(showMessage = true) {
         try {
           this.clearFolderCache();
-          await Promise.all([this.fetchFolders(), this.refreshFileList({ force: true })]);
-          if (showMessage) {
+          const [foldersOk] = await Promise.all([
+            this.fetchFolders({ silent: true }),
+            this.refreshFileList({ force: true, silent: true }),
+          ]);
+          if (!showMessage) return;
+          if (foldersOk && !this.listError) {
             this.$message.success('目录与文件已刷新');
+          } else {
+            this.$message.error(this.folderError || this.listError || '刷新失败，请稍后重试');
           }
         } catch (error) {
           if (showMessage) {
@@ -2346,6 +2674,17 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         this.batchToolbarPosition.top = window.innerHeight - height - bottomOffset;
       },
       handleGlobalKeydown(event) {
+        if (this.isMobileViewport && this.folderDrawerOpen) {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            this.closeFolderDrawer();
+            return;
+          }
+          if (event.key === 'Tab') {
+            this.trapFolderDrawerFocus(event);
+            return;
+          }
+        }
         if (this.selectedFiles.length === 0) return;
         const target = event.target;
         const isInput = target && (
@@ -2387,11 +2726,13 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       
       // 获取文件的实际类型（用于模板条件渲染）
       getActualFileType(fileName) {
-        const ext = fileName.split('.').pop().toLowerCase();
-        if (this.fileConfig.image.exts.includes(ext)) return 'image';
-        if (this.fileConfig.video.exts.includes(ext)) return 'video';
-        if (this.fileConfig.audio.exts.includes(ext)) return 'audio';
-        return 'document';  // 默认归类为文档
+        return memoFileValue(FILE_TYPE_CACHE, fileName, () => {
+          const ext = String(fileName || '').split('.').pop().toLowerCase();
+          if (this.fileConfig.image.exts.includes(ext)) return 'image';
+          if (this.fileConfig.video.exts.includes(ext)) return 'video';
+          if (this.fileConfig.audio.exts.includes(ext)) return 'audio';
+          return 'document';  // 默认归类为文档
+        });
       },
       
       // 打开预览 - 使用模态框（与首页保持一致，不跳转新标签页）
@@ -2438,6 +2779,15 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         }
         this.previewData = null;
       },
+      // 关闭 el-image 大图查看器：范围切换时避免残留浮层遮挡新内容
+      closeImageViewer() {
+        this.imageViewer = null;
+        const viewer = document.querySelector('.el-image-viewer__wrapper');
+        if (!viewer) return;
+        const closeBtn = viewer.querySelector('.el-image-viewer__close');
+        if (closeBtn) closeBtn.click();
+        else viewer.remove();
+      },
       // 复制预览文件的直链
       copyPreviewLink() {
         if (!this.previewData) return;
@@ -2469,6 +2819,9 @@ curl -X POST "{SITE_URL}/api/v1/import" \
           // 清除本地存储的认证信息
           sessionStorage.clear();
           localStorage.removeItem('storageMode');
+          // 退出后不再保留属于该会话的列表缓存。
+          this.clearFolderCache();
+          this.cacheOwner = '';
           
           // 尝试清除浏览器缓存的 Basic Auth 凭证
           // 通过发送一个带有错误凭证的请求来清除缓存
@@ -2544,7 +2897,13 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       },  // 切换存储类型筛选
       async loadMore(options = {}) {
         const { silent = false, auto = false } = options;
-        if (this.isLoadingMore || !this.nextCursor) return;
+        if (this.isLoadingMore || !this.nextCursor || !this.authReady || this.pageDisposed) return false;
+        const scope = this.syncResourceScope();
+        if (scope.key !== this.loadedScopeKey) return false;
+        const seq = ++this.listRequestSeq;
+        if (this.listAbortController) this.listAbortController.abort();
+        const controller = typeof AbortController === 'function' ? new AbortController() : null;
+        this.listAbortController = controller;
         this.isLoadingMore = true;
         const startCount = this.tableData.length;
         try {
@@ -2553,16 +2912,16 @@ curl -X POST "{SITE_URL}/api/v1/import" \
             limit: this.getListRequestLimit(true),
             includeStats: true,
           });
-          const result = await fetch(`./api/manage/list?${params.toString()}`, {
+          const result = await this.requestJson(`./api/manage/list?${params.toString()}`, {
             method: 'GET',
-            credentials: 'include',
-          }).then((r) => r.json());
+            controller,
+          });
+          if (!this.isCurrentListRequest(scope, seq)) return false;
           const mapped = (result.keys || []).map((file) => this.normalizeListItem(file));
           this.mergeListData(mapped);
           this.nextCursor = result.list_complete ? null : result.cursor;
-          if (Number.isFinite(result?.stats?.total)) {
-            this.totalCount = result.stats.total;
-          }
+          this.listComplete = Boolean(result.list_complete);
+          this.applyEmptyPathMode(this.tableData);
           this.updateStats();
           this.writeFolderCache(this.getFolderCacheKey());
           this.normalizeCurrentPage();
@@ -2574,22 +2933,33 @@ curl -X POST "{SITE_URL}/api/v1/import" \
               this.$message.success(`已加载剩余 ${loaded} 条`);
             }
           }
-        } catch {
-          if (!silent) {
-            this.$message.error('加载更多失败，请稍后重试');
-          }
+          return true;
+        } catch (error) {
+          if (this.pageDisposed || !this.isCurrentListRequest(scope, seq)) return false;
+          if (error?.name === 'AbortError') return false;
+          this.listError = error?.message || '加载更多失败，请稍后重试';
+          this.listErrorPhase = 'more';
+          this.handleResourceError(error);
+          if (!silent) this.$message.error(this.listError);
+          return false;
         } finally {
-          this.isLoadingMore = false;
+          if (seq === this.listRequestSeq) {
+            this.isLoadingMore = false;
+            if (this.listAbortController === controller) this.listAbortController = null;
+          }
         }
       },
-        sortData(data) {
-          return this.sortOption === 'nameAsc' ? data.sort((a, b) => a.name.localeCompare(b.name)) :
-            this.sortOption === 'sizeDesc' ? data.sort((a, b) => b.metadata.fileSize - a.metadata.fileSize) :
-            data.sort((a, b) => b.metadata.TimeStamp - a.metadata.TimeStamp);
+      sortData(data) {
+        return this.sortOption === 'nameAsc' ? data.sort((a, b) => a.name.localeCompare(b.name)) :
+          this.sortOption === 'sizeDesc' ? data.sort((a, b) => b.metadata.fileSize - a.metadata.fileSize) :
+          data.sort((a, b) => b.metadata.TimeStamp - a.metadata.TimeStamp);
       },
       formattedFileDetails(item) {
         const metadata = item.metadata;
-        const timestamp = new Date(metadata.TimeStamp).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+        const rawDate = new Date(metadata.TimeStamp);
+        const timestamp = detailTimeFormatter
+          ? detailTimeFormatter.format(rawDate)
+          : rawDate.toLocaleString('zh-CN');
         const storageType = this.getStorageType(item.name);
         const storageLabel = this.getStorageLabel(item.name);
         const storageColor = storageType === 'r2' ? '#409eff'
@@ -2601,15 +2971,16 @@ curl -X POST "{SITE_URL}/api/v1/import" \
           : '#67c23a';
         const fileSize = metadata.fileSize ? this.formatFileSize(metadata.fileSize) : '未知';
         const folderPath = this.normalizeFolderPath(metadata.folderPath || '');
+        const esc = escapeDetailHtml;
         return `
           <div style="text-align: left; padding: 5px;">
-            <div><strong>ID：</strong>${item.name}</div>
-            <div><strong>文件名：</strong>${metadata.fileName || item.name}</div>
-            <div><strong>文件大小：</strong>${fileSize}</div>
-            <div><strong>存储位置：</strong><span style="color: ${storageColor}; font-weight: bold;">${storageLabel}</span></div>
-            <div><strong>所在目录：</strong>${folderPath || '根目录'}</div>
-            <div><strong>上传时间：</strong>${timestamp}</div>
-            <div><strong>状态：</strong>${metadata.ListType || 'None'}</div>
+            <div><strong>ID：</strong>${esc(item.name)}</div>
+            <div><strong>文件名：</strong>${esc(metadata.fileName || item.name)}</div>
+            <div><strong>文件大小：</strong>${esc(fileSize)}</div>
+            <div><strong>存储位置：</strong><span style="color: ${storageColor}; font-weight: bold;">${esc(storageLabel)}</span></div>
+            <div><strong>所在目录：</strong>${esc(folderPath || '根目录')}</div>
+            <div><strong>上传时间：</strong>${esc(timestamp)}</div>
+            <div><strong>状态：</strong>${esc(metadata.ListType || 'None')}</div>
           </div>
         `;
       },
@@ -2633,7 +3004,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
           defaultHeaderHeight: 60 // 默认Dashboard高度
         };
         // 获取容器尺寸
-        const content = document.querySelector('.content');
+        const content = document.querySelector('.disk-content') || document.querySelector('.content');
         const header = document.querySelector('.header-content');
         const width = content?.clientWidth || config.defaultWidth;
         const height = window.innerHeight - (header?.offsetHeight || config.defaultHeaderHeight);
@@ -2667,9 +3038,6 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       },
       updateStats() {
         this.Number = this.tableData.length;
-        if (!Number.isFinite(this.totalCount) || this.totalCount < this.Number) {
-          this.totalCount = this.Number;
-        }
         let fileCount = {image: 0, video: 0, audio: 0, document: 0};
         this.tableData.forEach(file => {
           const ext = file.name.split('.').pop().toLowerCase();
@@ -2783,41 +3151,65 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       },
       async refreshFileList(options = {}) {  // 不刷新页面，仅更新数据
         const { syncFolders = false, preferCache = false, force = false, silent = false } = options;
-        const cacheKey = this.getFolderCacheKey();
+        if (!this.authReady || this.pageDisposed) return false;
+        const scope = this.syncResourceScope();
+        const cacheKey = scope.key;
+
         if (preferCache && !force) {
           const cached = this.readFolderCache(cacheKey);
           if (cached) {
             this.applyFolderCacheEntry(cached);
             this.currentPage = 1;
             this.refreshFileList({ syncFolders, force: true, silent: true }).catch(() => {});
-            return;
+            return true;
           }
         }
-        const requestSeq = ++this.listRequestSeq;
+
+        const seq = ++this.listRequestSeq;
+        if (this.listAbortController) this.listAbortController.abort();
+        const controller = typeof AbortController === 'function' ? new AbortController() : null;
+        this.listAbortController = controller;
+        this.listLoading = true;
+        this.listError = '';
+        this.listErrorPhase = '';
+        this.listNeedsRefresh = false;
         try {
           const params = this.buildListQueryParams({
             limit: this.getListRequestLimit(false),
             includeStats: true,
           });
-          const result = await fetch(`./api/manage/list?${params.toString()}`, { method: 'GET', credentials: 'include' })
-            .then(response => response.json());
-          if (requestSeq !== this.listRequestSeq) return;
+          const result = await this.requestJson(`./api/manage/list?${params.toString()}`, {
+            method: 'GET',
+            controller,
+          });
+          if (!this.isCurrentListRequest(scope, seq)) return false;
           const mapped = (result.keys || []).map((file) => this.normalizeListItem(file));
           this.tableData = mapped;
           this.nextCursor = result.list_complete ? null : result.cursor;
-          this.totalCount = Number.isFinite(result?.stats?.total) ? result.stats.total : mapped.length;
+          this.listComplete = Boolean(result.list_complete);
+          this.listLoaded = true;
+          this.listFromCache = false;
+          this.loadedScopeKey = cacheKey;
+          this.applyEmptyPathMode(mapped);
           this.updateStats();
           this.calculatePageSize();
           this.sortData(this.tableData);
           this.normalizeCurrentPage();
           this.writeFolderCache(cacheKey);
-          if (syncFolders) {
-            await this.fetchFolders();
-          }
-        } catch {
-          if (requestSeq !== this.listRequestSeq) return;
-          if (!silent) {
-            this.$message.error('刷新文件列表失败，请检查网络连接');
+          if (syncFolders) await this.fetchFolders({ silent });
+          return true;
+        } catch (error) {
+          if (this.pageDisposed || !this.isCurrentListRequest(scope, seq)) return false;
+          if (error?.name === 'AbortError') return false;
+          this.listError = error?.message || '刷新文件列表失败，请检查网络连接';
+          this.listErrorPhase = 'list';
+          this.handleResourceError(error);
+          if (!silent) this.$message.error(this.listError);
+          return false;
+        } finally {
+          if (seq === this.listRequestSeq) {
+            this.listLoading = false;
+            if (this.listAbortController === controller) this.listAbortController = null;
           }
         }
       },
@@ -2920,10 +3312,6 @@ curl -X POST "{SITE_URL}/api/v1/import" \
           .catch(() => this.$message.error('复制失败'));
       },
       // 批处理相关
-      selectAllInPage() {  // 全选当前页
-        const selected = !this.paginatedTableData.every(file => file.selected);
-        this.paginatedTableData.forEach(file => file.selected = selected);
-      },
       handleBatchDelete() {  // 批量删除
         const r2Count = this.selectedFiles.filter(f => f.name.startsWith('r2:')).length;
         const tgCount = this.selectedFiles.length - r2Count;
@@ -2963,7 +3351,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
                   failedCount++;
                 }
               });
-              this.selectedFiles = [];
+              this.clearSelection();
               this.updateStats();
               if (successCount > 0 && failedCount === 0) {
                 this.$message.success(`成功删除 ${successCount} 个文件!`);
@@ -3009,7 +3397,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
             link.click();
           }, index * 800);
         });
-        this.selectedFiles = [];
+        this.clearSelection();
       },
       handleBatchBlockOrUnblock(type) {  // 批量加入黑/白名单
         if (type !== 'Block' && type !== 'White') { this.$message.error('无效的操作类型'); return; }
@@ -3032,7 +3420,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
                 }
               });
               this.$message.success(`批量加入${typeToName[type]}成功`);
-              this.selectedFiles = [];
+              this.clearSelection();
             })
             .catch(() => this.$message.error(`操作失败，请检查网络连接`));
         });
@@ -3184,35 +3572,46 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         }
       },
       checkBrokenFiles() {  // 检测失效文件
-        const loadingMessage = this.$message({ message: '正在检测失效文件...', duration: 0});
+        const targets = this.tableData.slice();
+        if (targets.length === 0) {
+          this.$message.info('当前没有可检测的已加载文件');
+          return;
+        }
+        this.cancelBrokenCheck();
+        const seq = ++this.brokenCheckSeq;
+        const controller = typeof AbortController === 'function' ? new AbortController() : null;
+        this.brokenCheckController = controller;
+        this.brokenCheckMessage = this.$message({ message: '正在检测失效文件...', duration: 0 });
 
         let brokenCount = 0;
-        const promises = this.tableData.map((item, index) => {
-          const fileIndex = this.tableData.findIndex(item => item.name === this.selectedFiles[index].name);
-          return new Promise((resolve) => {
-            fetch(`${this.baseURL}/file/${item.name}`, {
-              method: 'HEAD',
-              cache: 'no-cache'  // 避免缓存影响检测结果
-            })
-              .then(response => {
-                if (!response.ok) {
-                  brokenCount++;
-                  this.tableData[fileIndex].selected = true;
-                  resolve({ index, status: 'error' });
-                } else {
-                  resolve({ index, status: 'success' });
-                }
-              })
-              .catch(() => {
+        const promises = targets.map((item) => new Promise((resolve) => {
+          fetch(`${this.baseURL}/file/${item.name}`, {
+            method: 'HEAD',
+            cache: 'no-cache',  // 避免缓存影响检测结果
+            signal: controller ? controller.signal : undefined
+          })
+            .then(response => {
+              if (!response.ok) {
                 brokenCount++;
-                this.tableData[fileIndex].selected = true;
-                resolve({ index, status: 'error' });
-              });
-          });
-        });
+                item.selected = true;
+              }
+              resolve();
+            })
+            .catch(() => {
+              if (controller && controller.signal.aborted) { resolve(); return; }
+              brokenCount++;
+              item.selected = true;
+              resolve();
+            });
+        }));
 
         Promise.all(promises).then(() => {
-          loadingMessage.close();
+          if (seq !== this.brokenCheckSeq || this.pageDisposed) return;
+          this.brokenCheckController = null;
+          if (this.brokenCheckMessage) {
+            this.brokenCheckMessage.close();
+            this.brokenCheckMessage = null;
+          }
           if (brokenCount > 0) {
             this.$message({
               dangerouslyUseHTMLString: true,
@@ -3227,6 +3626,18 @@ curl -X POST "{SITE_URL}/api/v1/import" \
             });
           }
         });
+      },
+      // 取消进行中的失效检测：范围切换或重新检测时调用，避免旧结果回填
+      cancelBrokenCheck() {
+        this.brokenCheckSeq += 1;
+        if (this.brokenCheckController) {
+          try { this.brokenCheckController.abort(); } catch { /* 请求已结束。 */ }
+          this.brokenCheckController = null;
+        }
+        if (this.brokenCheckMessage) {
+          this.brokenCheckMessage.close();
+          this.brokenCheckMessage = null;
+        }
       },
       // 处理网站点击
       handleWebsite(url) { window.open(url, '_blank'); },
@@ -3276,35 +3687,13 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         }).catch(() => {});
       },
       getFileIcon(filename) {
-        const ext = filename.split('.').pop().toLowerCase();
-        const iconMap = {
-          'pdf': 'file-text',
-          'ofd,typ,typst': 'file-text',
-          'doc,dot,docx,docm,dotx,dotm,rtf,odt': 'file-text',
-          'xls,xlsb,xlsx,xlsm,xlt,xltx,xltm,ods,fods,numbers,csv,tsv': 'file-spreadsheet',
-          'ppt,pptx,pptm,ppsx,ppsm,potx,potm,odp': 'presentation',
-          'txt,md,markdown,log,patch,diff,bundle,bdl': 'file-text',
-          'zip,zipx,jar,war,ear,rar,7z,tar,tgz,gz,gzip,bz2,bzip2,tbz,tbz2,xz,txz,lzma,zst,cab,iso': 'file-archive',
-          'html,htm,css,js,ts,jsx,tsx,vue,php,py,java,c,cpp,h,hpp,cs,go,rs,rb,pl,sh,sql,bash,cc': 'file-code',
-          'json,jsonc,json5,xml,yaml,yml,toml,proto,hcl,graphql,gv': 'file-code',
-          'eml,msg,mbox': 'mail',
-          'mp4,avi,mov,wmv,flv,mkv,webm,m4v,m3u8,3gp,ts,mts,m2ts': 'file-video-camera',
-          'mp3,mpeg,wav,ogg,oga,flac,aac,m4a,wma,ape,opus,weba,midi,mid,aif,aiff': 'audio-lines',
-          'jpg,jpeg,jfif,png,apng,gif,bmp,webp,svg,ico,tif,tiff,heic,heif,avif,jxl': 'file-image',
-          'psd,ai,eps,cdr': 'file-image',
-          'ttf,otf,woff,woff2': 'type',
-          'sqlite,sqlite3,db,parquet,avro,wasm,webarchive': 'database',
-          'dwg,dxf,dwf,dwfx,xps': 'compass',
-          'glb,gltf,obj,stl,ply,fbx,dae,3ds,3mf,usd,usdz,kmz,step,stp,iges,igs,ifc': 'box',
-          'xmind,drawio,dio,excalidraw,mermaid,mmd,plantuml,puml,epub,umd,geojson,kml,gpx,shp,olb,dra,gds,oas,oasis': 'network',
-          'exe,msi,app,dmg,deb,rpm': 'file-down'
-        };
-        for(const [exts, icon] of Object.entries(iconMap)) {
-          if(exts.split(',').includes(ext)) {
-            return icon;
+        return memoFileValue(FILE_ICON_CACHE, filename, () => {
+          const ext = String(filename || '').split('.').pop().toLowerCase();
+          for (const [exts, icon] of FILE_ICON_ENTRIES) {
+            if (exts.includes(ext)) return icon;
           }
-        }
-        return 'file';
+          return 'file';
+        });
       },
       getFileType(filename) {
         const ext = filename.split('.').pop();
@@ -3938,7 +4327,14 @@ curl -X POST "{SITE_URL}/api/v1/import" \
           return;
         }
         this.showLogoutButton = authData.authRequired && authData.authenticated;
+        this.authReady = true;
+        const identity = String(authData.username || authData.user || '').trim();
+        // 缓存归属随身份变化，避免不同会话复用同一份列表缓存。
+        this.cacheOwner = `${authData.authRequired ? 'auth' : 'open'}:${
+          authData.authenticated ? (identity || 'session') : 'anonymous'
+        }`;
       } catch (e) {
+        this.authReady = false;
         this.$message.error('认证检查失败，请刷新页面');
         return;
       }
@@ -3963,7 +4359,10 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       this.fileType = localStorage.getItem('fileType') || this.fileType;
       this.loadMode = localStorage.getItem('loadMode') || this.loadMode;
       this.safeMode = localStorage.getItem('safeMode') !== 'false';
-      this.viewMode = localStorage.getItem('adminViewMode') || this.viewMode;
+      const savedViewMode = localStorage.getItem('adminViewMode');
+      if (savedViewMode === 'grid' || savedViewMode === 'list') this.viewMode = savedViewMode;
+      this.viewMounted[this.viewMode] = true;
+      if (this.viewMode === 'list') this.viewMounted.grid = false; // 恢复列表视图时跳过网格首挂载，避免双份初始渲染
       this.folderPath = this.normalizeFolderPath(localStorage.getItem('adminFolderPath') || '');
 
       // 获取文件列表数据
@@ -4004,6 +4403,21 @@ curl -X POST "{SITE_URL}/api/v1/import" \
     }
     ,
     beforeDestroy() {
+      this.pageDisposed = true;
+      this.invalidateListRequest();
+      this.invalidateFolderRequest();
+      this.requestTimers.forEach((timer) => clearTimeout(timer));
+      this.requestTimers = [];
+      this.managedControllers.forEach((controller) => {
+        try { controller.abort(); } catch { /* 已结束的请求无需处理。 */ }
+      });
+      this.managedControllers = [];
+      this.downloadTimers.forEach((timer) => clearTimeout(timer));
+      this.downloadTimers = [];
+      if (this.previewTimer) {
+        clearTimeout(this.previewTimer);
+        this.previewTimer = null;
+      }
       document.body.classList.remove('is-dragging-files');
       if (this.dragState.leaveTimer) {
         clearTimeout(this.dragState.leaveTimer);
@@ -4032,5 +4446,4 @@ curl -X POST "{SITE_URL}/api/v1/import" \
   });
 </script>
 </body>
-<script src="/icons.js"></script>
 </html>

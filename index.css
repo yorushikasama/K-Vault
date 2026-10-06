@@ -273,19 +273,6 @@
         overflow: hidden;
       }
 
-      /* 必须带 html 前缀：theme.css 里有 `html[data-theme="dark"] .el-dialog__body`
-         这类 (0,2,1) 的选择器并带 !important，普通两类的选择器压不住它 ——
-         压不住时暗色下内部分区仍会各铺一层底色，叠起来颜色就不对了。
-         带上 html 提到 (0,3,1) 才稳。 */
-      html .quality-picker-dialog .el-dialog__header,
-      html .quality-picker-dialog .el-dialog__body,
-      html .quality-picker-dialog .el-dialog__footer {
-        background: transparent !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-        box-shadow: none !important;
-      }
-
       .qp-loading {
         display: flex;
         align-items: center;
@@ -2024,11 +2011,6 @@
           gap: 8px;
         }
 
-        /* 结果弹窗优化 */
-        .result-dialog .el-dialog {
-          width: 90% !important;
-          margin: 5vh auto !important;
-        }
       }
 
       @media (max-width: 480px) {
@@ -2166,11 +2148,6 @@
           font-size: 0.75em;
         }
 
-        .file-actions .el-button {
-          padding: 6px 10px;
-          font-size: 0.78em;
-        }
-
         /* 进度条优化 */
         .progress-bar {
           height: 4px;
@@ -2178,12 +2155,6 @@
 
         .progress-info {
           font-size: 0.78em;
-        }
-
-        /* Element UI 弹窗优化 */
-        .el-message-box {
-          width: 90% !important;
-          max-width: 300px !important;
         }
 
         .paste-upload-notice {
@@ -2198,53 +2169,6 @@
           width: 38px;
           height: 38px;
           border-radius: 10px;
-        }
-
-        .el-dialog {
-          width: 92% !important;
-          margin: 8vh auto !important;
-        }
-
-        .el-dialog__header {
-          padding: 15px 15px 10px;
-        }
-
-        .el-dialog__body {
-          padding: 15px;
-        }
-
-        .el-dialog__footer {
-          padding: 10px 15px 15px;
-        }
-
-        /* 按钮组优化 */
-        .el-button-group {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-        }
-
-        .el-button-group .el-button {
-          margin-left: 0 !important;
-          flex: 1;
-          min-width: 80px;
-        }
-
-        /* 输入框优化 */
-        .el-input__inner {
-          height: 38px;
-          font-size: 14px;
-        }
-
-        /* 提示信息优化 */
-        .el-message {
-          min-width: auto !important;
-          max-width: 90% !important;
-          padding: 10px 15px !important;
-        }
-
-        .el-message__content {
-          font-size: 13px !important;
         }
 
         /* 移动端禁用高消耗效果（弹窗与卡片同处理） */

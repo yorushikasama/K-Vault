@@ -54,8 +54,7 @@ html[data-theme="dark"] {
   .preview-card,
   .login-card,
   .header-content,
-  .batch-toolbar,
-  .status-panel {
+  .batch-toolbar {
     border-radius: var(--m-radius-lg) !important;
     border: 1px solid var(--m-border) !important;
     box-shadow: var(--m-shadow-soft) !important;
@@ -468,40 +467,6 @@ html[data-theme="dark"] {
     flex: 0 0 auto;
   }
 
-  .header-content .actions > .status-panel {
-    order: 120 !important;
-    flex: 0 0 100% !important;
-    width: 100% !important;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px 4px;
-    margin: 4px 0 0 !important;
-    padding: 8px 10px !important;
-    border-radius: 12px !important;
-    background: rgba(138, 75, 255, 0.08);
-  }
-
-  .header-content .actions > .status-panel .status-item {
-    justify-content: center;
-    gap: 5px;
-    min-width: 0;
-  }
-
-    .header-content .actions > .status-panel .status-item i,
-  .header-content .actions > .status-panel .status-item svg.lucide {
-    width: auto;
-    height: auto;
-    background: transparent !important;
-    border-radius: 0;
-    font-size: 8px !important;
-  }
-
-  .header-content .actions > .status-panel .status-item span {
-    display: inline !important;
-    font-size: 0.68rem;
-    letter-spacing: 0.02em;
-  }
-
   .header-content .actions > i,
   .header-content .actions > .el-dropdown > .el-dropdown-link,
   .header-content .actions > .theme-admin-toggle {
@@ -523,10 +488,6 @@ html[data-theme="dark"] {
   html[data-theme="dark"] .header-content .actions > .el-dropdown > .el-dropdown-link,
   html[data-theme="dark"] .header-content .actions > .theme-admin-toggle {
     background: rgba(154, 169, 255, 0.18);
-  }
-
-  html[data-theme="dark"] .header-content .actions > .status-panel {
-    background: rgba(154, 169, 255, 0.16);
   }
 
   .el-main.main-container {
@@ -652,10 +613,6 @@ html[data-theme="dark"] {
     height: 52px !important;
   }
 
-  .header-content .actions > .status-panel {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .el-main.main-container {
     margin-top: 214px !important;
   }
@@ -726,10 +683,6 @@ html[data-theme="dark"] {
     grid-template-columns: 1fr !important;
   }
 
-  .header-content .actions > .status-panel {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .header-actions {
     grid-template-columns: 1fr !important;
   }
@@ -750,15 +703,6 @@ html[data-theme="dark"] {
   .header-content .actions {
     align-items: flex-start !important;
     flex-wrap: wrap !important;
-  }
-
-  .header-content .actions > .status-panel {
-    order: 120 !important;
-    flex: 0 0 100% !important;
-    width: 100% !important;
-    margin-top: 6px !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
   }
 
   /* 管理后台移动端：顶部胶囊随页面滚动，不吸顶 */
@@ -861,8 +805,6 @@ html[data-theme="dark"] {
   min-width: 0;
   gap: 10px;
 }
-
-.home-btn,
 .title,
 .stats {
   flex: 0 0 auto;
@@ -926,17 +868,6 @@ html[data-theme="dark"] {
   opacity: 1 !important;
 }
 
-.status-panel {
-  flex: 0 0 auto;
-  box-sizing: border-box;
-  min-width: max-content;
-}
-
-.status-item span {
-  color: var(--admin-muted, #627083);
-  opacity: 1;
-}
-
 .el-image__error,
 .el-image__placeholder {
   background: rgba(248, 250, 252, 0.86) !important;
@@ -959,15 +890,6 @@ html[data-theme="dark"] .header-content .actions > .theme-admin-toggle:hover {
   background: rgba(55, 70, 112, 0.98) !important;
   border-color: rgba(190, 205, 255, 0.64) !important;
   color: #ffffff !important;
-}
-
-html[data-theme="dark"] .status-panel {
-  background: rgba(21, 31, 52, 0.96) !important;
-  border-color: rgba(153, 177, 230, 0.38) !important;
-}
-
-html[data-theme="dark"] .status-item span {
-  color: #d7e2f7 !important;
 }
 
 html[data-theme="dark"] .el-dropdown-menu,
@@ -1019,10 +941,6 @@ html[data-theme="dark"] .el-image__placeholder {
     align-items: center !important;
   }
 
-  .home-btn {
-    margin-right: 4px !important;
-  }
-
   .title {
     font-size: clamp(1.18rem, 2.1vw, 1.55rem) !important;
   }
@@ -1051,19 +969,6 @@ html[data-theme="dark"] .el-image__placeholder {
     align-items: center !important;
     justify-content: flex-start !important;
     gap: 8px !important;
-  }
-
-  .header-content .actions > .status-panel {
-    order: 90 !important;
-    flex: 1 1 360px !important;
-    min-width: 320px;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    gap: 10px 12px;
-    margin: 0 0 0 4px !important;
-    padding: 9px 12px !important;
-    border-radius: 14px !important;
   }
 
   .el-main.main-container,
@@ -1111,49 +1016,11 @@ html[data-theme="dark"] .el-image__placeholder {
     height: 40px !important;
     border-radius: 12px !important;
   }
-
-  .header-content .actions > .status-panel {
-    grid-column: 1 / -1;
-    width: 100% !important;
-    min-width: 0;
-    display: grid !important;
-    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
-    gap: 6px !important;
-    margin: 2px 0 0 !important;
-    padding: 7px 8px !important;
-    border-radius: 12px !important;
-    background: rgba(15, 118, 110, 0.08) !important;
-  }
-
-  .header-content .actions > .status-panel .status-item {
-    justify-content: center;
-    gap: 4px;
-    min-width: 0;
-  }
-
-  .header-content .actions > .status-panel .status-item span {
-    display: inline !important;
-    font-size: 0.68rem;
-    letter-spacing: 0.02em;
-    line-height: 1;
-  }
-
-  html[data-theme="dark"] .header-content .actions > .status-panel {
-    background: rgba(31, 44, 72, 0.86) !important;
-  }
 }
 
 @media (max-width: 560px) {
   .header-content .actions {
     grid-template-columns: repeat(6, 40px);
-  }
-
-  .header-content .actions > .status-panel {
-    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
-  }
-
-  .header-content .actions > .status-panel .status-item span {
-    font-size: 0.64rem;
   }
 
   .folder-head {
@@ -1186,10 +1053,5 @@ html[data-theme="dark"] .el-image__placeholder {
 @media (max-width: 380px) {
   .header-content .actions {
     grid-template-columns: repeat(5, 40px);
-  }
-
-  .header-content .actions > .status-panel {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    row-gap: 8px !important;
   }
 }

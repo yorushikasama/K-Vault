@@ -16,7 +16,13 @@
     "docker:down": "docker compose down",
     "docker:doctor": "node scripts/docker-storage-doctor.js",
     "docker:smoke:ci": "node scripts/docker-ci-smoke.js",
-    "regression:storage": "node scripts/storage-regression.js"
+    "regression:storage": "node scripts/storage-regression.js",
+    "icons:build": "node scripts/build-icon-subset.cjs",
+    "icons:check": "node scripts/build-icon-subset.cjs --check",
+    "assets:stamp": "node scripts/stamp-asset-versions.cjs",
+    "assets:check": "node scripts/stamp-asset-versions.cjs --check",
+    "css:prune": "node scripts/prune-dead-selectors.cjs",
+    "css:check": "node scripts/prune-dead-selectors.cjs --check"
   },
   "dependencies": {
     "@cloudflare/pages-plugin-sentry": "^1.1.4",

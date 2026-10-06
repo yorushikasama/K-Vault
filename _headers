@@ -1,0 +1,44 @@
+# Cloudflare Pages 响应头。
+#
+# 静态资源的 URL 由 scripts/stamp-asset-versions.cjs 打上内容哈希（/index.css?v=8f85...），
+# 内容一变 URL 就变，所以可以安全地设一年 immutable。
+# HTML 不带版本串，必须每次回源校验，否则用户会一直拿着指向旧哈希的旧页面。
+#
+# 注意：`wrangler pages dev` 不处理这个文件，本地所有响应都是它自己的
+# max-age=0, must-revalidate。要验证这里的配置只能看已部署的站点：
+#   curl -sI https://<站点>/index.css?v=<哈希> | grep -i cache-control
+
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.svg
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.woff2
+  Cache-Control: public, max-age=31536000, immutable
+
+# 图标与 logo 没有版本串（被 <link rel="icon"> 和 manifest 按固定路径引用），
+# 给一天缓存加回源校验：换图后最迟一天生效，而不是一年。
+/favicon.ico
+  Cache-Control: public, max-age=86400, must-revalidate
+
+/logo.png
+  Cache-Control: public, max-age=86400, must-revalidate
+
+/logo.webp
+  Cache-Control: public, max-age=86400, must-revalidate
+
+# HTML 入口：始终回源校验。no-cache 不是「不缓存」，而是「用缓存前必须验证」，
+# 命中 304 时依然省流量。
+/
+  Cache-Control: public, no-cache
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/*.html
+  Cache-Control: public, no-cache
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin

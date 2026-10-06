@@ -7,12 +7,11 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/logo.png">
   <link rel="shortcut icon" href="/favicon.ico">
-  <link rel="stylesheet" href="/theme.css">
-  <script src="/theme.js?v=20260305"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/lucide@1.49.0/dist/umd/lucide.min.js"></script>
-  <link rel="stylesheet" href="/login.css">
-  <link rel="stylesheet" href="/mobile-refactor.css">
+  <link rel="stylesheet" href="/theme.css?v=82252c7b11">
+  <script src="/theme-core.js?v=4cb852886e"></script>
+  <script defer src="/theme-effects.js?v=7a5139b2de"></script>
+  <link rel="stylesheet" href="/login.css?v=bdb713b9db">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=ff67121974">
 </head>
 <body class="login-page">
   <!-- 背景图层 (通过JS动态控制) -->
@@ -72,42 +71,53 @@
   </div>
 
   <script>
-    // 加载自定义背景
+    // 加载自定义背景。
+    // theme-effects.js 用 defer 加载，所以这段内联脚本同步执行时 UIDesignManager
+    // 还不存在。必须等 defer 脚本执行完（在 DOMContentLoaded 之前）再判断，否则会
+    // 直接掉进下面那条只认 localStorage 的兼容分支。
     (function() {
-      if (
-        window.UIDesignManager &&
-        typeof window.UIDesignManager.syncFromServer === 'function'
-      ) {
-        window.UIDesignManager.syncFromServer({
-          silent: true,
-          applyLocalOnFailure: true
-        });
-        return;
-      }
-      const bgMode = localStorage.getItem('loginBackgroundMode') || 'gradient';
-      const bgUrl = localStorage.getItem('loginBackgroundUrl') || '';
-      const bgLayer = document.getElementById('bgImageLayer');
-      const overlay = document.getElementById('bgOverlay');
+      function loadBackground() {
+        if (
+          window.UIDesignManager &&
+          typeof window.UIDesignManager.syncFromServer === 'function'
+        ) {
+          window.UIDesignManager.syncFromServer({
+            silent: true,
+            applyLocalOnFailure: true
+          });
+          return;
+        }
+        const bgMode = localStorage.getItem('loginBackgroundMode') || 'gradient';
+        const bgUrl = localStorage.getItem('loginBackgroundUrl') || '';
+        const bgLayer = document.getElementById('bgImageLayer');
+        const overlay = document.getElementById('bgOverlay');
 
-      if (bgMode === 'image' && bgUrl) {
-        bgLayer.style.backgroundImage = `url(${bgUrl})`;
-        bgLayer.style.display = 'block';
-        overlay.style.display = 'block';
-        document.body.classList.add('has-bg-image');
-      } else if (bgMode === 'bing') {
-        // 使用 Bing 每日壁纸 API
-        fetch('/api/bing/wallpaper/')
-          .then(res => res.json())
-          .then(data => {
-            if (data.status && data.data && data.data.length > 0) {
-              const bingUrl = 'https://cn.bing.com' + data.data[0].url;
-              bgLayer.style.backgroundImage = `url(${bingUrl})`;
-              bgLayer.style.display = 'block';
-              overlay.style.display = 'block';
-              document.body.classList.add('has-bg-image');
-            }
-          })
-          .catch(err => console.log('Bing wallpaper fetch failed:', err));
+        if (bgMode === 'image' && bgUrl) {
+          bgLayer.style.backgroundImage = `url(${bgUrl})`;
+          bgLayer.style.display = 'block';
+          overlay.style.display = 'block';
+          document.body.classList.add('has-bg-image');
+        } else if (bgMode === 'bing') {
+          // 使用 Bing 每日壁纸 API
+          fetch('/api/bing/wallpaper/')
+            .then(res => res.json())
+            .then(data => {
+              if (data.status && data.data && data.data.length > 0) {
+                const bingUrl = 'https://cn.bing.com' + data.data[0].url;
+                bgLayer.style.backgroundImage = `url(${bingUrl})`;
+                bgLayer.style.display = 'block';
+                overlay.style.display = 'block';
+                document.body.classList.add('has-bg-image');
+              }
+            })
+            .catch(err => console.log('Bing wallpaper fetch failed:', err));
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadBackground, { once: true });
+      } else {
+        loadBackground();
       }
     })();
 
@@ -227,6 +237,7 @@
       }
     });
   </script>
-  <script src="/icons.js"></script>
+  <script src="/icons-subset.js?v=be1dad3cb5"></script>
+  <script src="/icons.js?v=fc3fc216e0"></script>
 </body>
 </html>

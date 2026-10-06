@@ -7,14 +7,17 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/logo.png">
   <link rel="shortcut icon" href="/favicon.ico">
-  <link rel="stylesheet" href="/theme.css">
-  <script src="/theme.js?v=20260305"></script>
+  <!-- Vue / Element / Sentry 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://js.sentry-cdn.com" crossorigin>
+  <link rel="stylesheet" href="/theme.css?v=82252c7b11">
+  <script src="/theme-core.js?v=4cb852886e"></script>
+  <script defer src="/theme-effects.js?v=7a5139b2de"></script>
   <!-- Import CSS -->
-  <link rel="stylesheet" href="./admin-imgtc.css">
-  <link rel="stylesheet" href="/mobile-refactor.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/lucide@1.49.0/dist/umd/lucide.min.js"></script>
+  <link rel="stylesheet" href="./admin-imgtc.css?v=e7c7776929">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=ff67121974">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css" integrity="sha384-ZUOUQ+hNJ+DV4HfNwHNFq4PcclqayiUDpCMsWD1lOpUQZ/go0ofwD/GLaYdzOcdx" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <!-- Sentry loader 故意不加 SRI：这个脚本内容随项目配置变化（采样率、集成项），钉死哈希会在后台改配置时把它整个拦掉。 -->
   <script src="https://js.sentry-cdn.com/219f636ac7bde5edab2c3e16885cb535.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -68,7 +71,7 @@
                 <span class="el-dropdown-link"><i data-lucide="list-todo"></i></span>
                 <el-dropdown-menu slot="dropdown">
                   <el-dropdown-item command="copy" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="link"></i> 批量复制</el-dropdown-item>
-                  <el-dropdown-item command="copyMarkdown" :class="{ disabled: selectedFiles.length === 0 }"><i class="fab fa-markdown"></i> 复制Markdown</el-dropdown-item>
+                  <el-dropdown-item command="copyMarkdown" :class="{ disabled: selectedFiles.length === 0 }"><kv-icon name="fab fa-markdown"></kv-icon> 复制Markdown</el-dropdown-item>
                   <el-dropdown-item command="copyHtml" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="code"></i> 复制HTML</el-dropdown-item>
                   <el-dropdown-item command="delete" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="trash"></i> 批量删除</el-dropdown-item>
                   <el-dropdown-item command="download" :class="{ disabled: selectedFiles.length === 0 }"><i data-lucide="download"></i> 批量下载</el-dropdown-item>
@@ -277,15 +280,19 @@
   <el-footer class="footer">
           <div>Powered By K-Vault</div>
           <a href="https://github.com/katelya77/K-Vault" target="_blank" rel="noopener noreferrer">
-            <div><i class="fa-brands fa-github"></i> K-Vault</div>
+            <div><kv-icon name="fab fa-github"></kv-icon> K-Vault</div>
           </a>
         </el-footer>
       </el-main>
     </el-container>
   </div>
 </body>
-<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script> <!-- Vue -->
-<script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/index.js"></script> <!-- ElementUI -->
+<script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js" integrity="sha384-ULpZhk1pvhc/UK5ktA9kwb2guy9ovNSTyxPNHANnA35YjBQgdwI+AhLkixDvdlw4" crossorigin="anonymous" referrerpolicy="no-referrer"></script> <!-- Vue -->
+<script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/index.js" integrity="sha384-+gBC+PMSL+TRFl/FIZXz0BFZ9goHb5wqIwBbAscP86Bd6JJJ1TS5MwaN1SAIjzGj" crossorigin="anonymous" referrerpolicy="no-referrer"></script> <!-- ElementUI -->
+<!-- 必须在下面 new Vue 之前：icons.js 用 Vue.mixin 注册渲染钩子，而 Vue.mixin
+     只作用于之后创建的实例。放在后面的话 v-if 里的图标永远不会被替换。 -->
+<script src="/icons-subset.js?v=be1dad3cb5"></script>
+<script src="/icons.js?v=fc3fc216e0"></script>
 <script>
   new Vue({
     el: '#app',
@@ -1021,5 +1028,4 @@
     }
   });
 </script>
-<script src="/icons.js"></script>
 </html>

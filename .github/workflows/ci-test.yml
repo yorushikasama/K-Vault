@@ -16,5 +16,13 @@ jobs:
         node-version: '22'
     - name: Install dependencies
       run: npm install
+    # 这三个生成物的校验必须单独跑。它们不是「测试」而是「生成物是否最新」：
+    # 手写 ?v=... 靠人记得改，图标子集靠人记得重建，一旦忘了，
+    # 用户会拿着旧 CSS 或漏图标跑一年，而运行时不会报任何错。
+    - name: Verify generated assets are up to date
+      run: |
+        npm run icons:check
+        npm run assets:check
+        npm run css:check
     - name: Run tests
       run: npm run ci-test

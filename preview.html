@@ -7,9 +7,11 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/logo.png">
   <link rel="shortcut icon" href="/favicon.ico">
-  <link rel="stylesheet" href="/theme.css">
-  <link rel="stylesheet" href="/preview.css">
-  <link rel="stylesheet" href="/mobile-refactor.css">
+  <!-- 增强预览引擎按需从 unpkg 加载：提前建连，省掉 DNS + TLS 往返。 -->
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="stylesheet" href="/theme.css?v=82252c7b11">
+  <link rel="stylesheet" href="/preview.css?v=a961c7f7ce">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=ff67121974">
 </head>
 <body>
   <div class="shell">
@@ -93,7 +95,45 @@
         ...CAD_EXTS, ...MODEL_EXTS, ...GEO_EXTS, ...MINDMAP_EXTS, ...DRAWING_EXTS, ...EBOOK_EXTS,
         ...DATA_ASSET_EXTS, ...EDA_EXTS, "m3u8", "midi", "mid", "heic", "heif", "jxl"
       ]);
-      const FILE_VIEWER_CDN = "https://cdn.jsdelivr.net/npm/@file-viewer/web-full@latest/dist/flyfish-file-viewer-web-full.iife.js";
+      // 增强预览引擎（Office / PDF / CAD / 电子书等）。
+      //
+      // 这里不能用 jsDelivr：该包解包后超过 150 MB，jsDelivr 会拒绝提供，返回的是
+      // 200 + "Package size exceeded the configured limit of 150 MB." 这段纯文本。
+      // 脚本"加载成功"但什么都没注册，于是 customElements.whenDefined 永不兑现，
+      // 12 秒后抛超时 —— 整个增强预览其实一直是坏的。unpkg 没有这个限制。
+      //
+      // 版本写死而不用 @latest：上游一发新版，SRI 就会不匹配并静默拦掉脚本，
+      // 而且 @latest 本身意味着第三方可以随时改变本站执行的代码。
+      const FILE_VIEWER_VERSION = "3.1.2";
+      const FILE_VIEWER_CDN =
+        `https://unpkg.com/@file-viewer/web-full@${FILE_VIEWER_VERSION}/dist/flyfish-file-viewer-web-full.iife.js`;
+      const FILE_VIEWER_INTEGRITY = "sha384-ANrh8antsH0y+uRQkzXrBVkj1N5vkei9URB5G/PYWjHlhknTCaHS6cAEz2jaGxON";
+      // 升级引擎时同时改版本号和这行哈希：
+      //   curl -sL <新 URL> | openssl dgst -sha384 -binary | openssl base64 -A
+
+      // ?engineCdn= 原本直接进 script.src，等于任何人都能用一条链接在本站源上
+      // 执行任意脚本。保留自托管这个用途，但限制到可信源，并且只有默认 URL 才带 SRI
+      // （自托管构建的哈希必然不同）。
+      const ENGINE_HOST_ALLOWLIST = ["unpkg.com", "cdn.jsdelivr.net"];
+
+      function resolveEngineUrl() {
+        const override = params.get("engineCdn");
+        if (!override) return { url: FILE_VIEWER_CDN, integrity: FILE_VIEWER_INTEGRITY };
+        let parsed;
+        try {
+          parsed = new URL(override, window.location.origin);
+        } catch {
+          return { url: FILE_VIEWER_CDN, integrity: FILE_VIEWER_INTEGRITY };
+        }
+        const sameOrigin = parsed.origin === window.location.origin;
+        const trusted = parsed.protocol === "https:" && ENGINE_HOST_ALLOWLIST.includes(parsed.hostname);
+        if (!sameOrigin && !trusted) {
+          console.warn("[preview] 忽略不可信的 engineCdn：", override);
+          return { url: FILE_VIEWER_CDN, integrity: FILE_VIEWER_INTEGRITY };
+        }
+        return { url: parsed.href, integrity: parsed.href === FILE_VIEWER_CDN ? FILE_VIEWER_INTEGRITY : "" };
+      }
+
       let enhancedViewerPromise = null;
 
       const params = new URLSearchParams(window.location.search);
@@ -471,8 +511,14 @@
               return;
             }
 
+            const engine = resolveEngineUrl();
             const script = document.createElement("script");
-            script.src = params.get("engineCdn") || FILE_VIEWER_CDN;
+            script.src = engine.url;
+            if (engine.integrity) {
+              script.integrity = engine.integrity;
+              // SRI 对跨源脚本必须配 CORS，否则浏览器拿不到字节去校验，直接拦掉。
+              script.crossOrigin = "anonymous";
+            }
             script.async = true;
             script.dataset.fileViewerEngine = "1";
             script.onload = resolve;

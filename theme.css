@@ -1,8 +1,10 @@
 /* ===== Icons (Lucide) =====
-   Lucide replaces FontAwesome except for brand icons (github/telegram/
-   discord/android/markdown), which Lucide does not ship. Icons carry
-   data-lucide="name"; data-icon-class preserves the original element's extra
-   classes because createIcons() replaces the node wholesale. */
+   Lucide covers everything except brand icons (github/telegram/discord/
+   android/markdown), which it does not ship; those are inlined as SVG by
+   icons.js. Icons carry data-lucide="name"; data-icon-class preserves the
+   original element's extra classes because createIcons() replaces the node
+   wholesale. Lucide itself ships as the generated icons-subset.js, not the
+   full CDN bundle — see scripts/build-icon-subset.cjs. */
 .lucide {
   width: 1em;
   height: 1em;
@@ -22,10 +24,15 @@
   animation: spin 1s linear infinite;
 }
 
-/* Brand icons stay on FontAwesome. */
-.fa-brands,
-.fab {
-  font-family: "Font Awesome 6 Brands", "Font Awesome 5 Brands", sans-serif;
+/* Brand icons are inlined as filled SVG by icons.js — those five brands were
+   the only thing FontAwesome was still being loaded for. They are fill-based
+   rather than stroked, and as glyphs they used to size off font-size, so keep
+   the em sizing to avoid shifting existing layouts. */
+.kv-brand {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  flex-shrink: 0;
 }
 
 /* ===== Light :root — shared purple-brand token set =====

@@ -7,854 +7,449 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link rel="apple-touch-icon" href="/logo.png">
     <link rel="shortcut icon" href="/favicon.ico">
-  <link rel="stylesheet" href="/theme.css">
-  <script src="/theme.js?v=20260305"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"
-    />
-  <script src="https://cdn.jsdelivr.net/npm/lucide@1.49.0/dist/umd/lucide.min.js"></script>
-<link rel="stylesheet" href="/index.css">
-    <link rel="stylesheet" href="/mobile-refactor.css">
+  <!-- Vue 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="/theme.css?v=82252c7b11">
+  <script src="/theme-core.js?v=4cb852886e"></script>
+  <script defer src="/theme-effects.js?v=7a5139b2de"></script>
+    <link rel="stylesheet" href="/index.css?v=8f854967ee">
+    <link rel="stylesheet" href="/workbench.css?v=4c80318264">
   </head>
-  <body>
+  <body class="kv-workbench kv-upload" data-disable-theme-toggle="true">
     <div id="app" v-cloak>
-      <!-- 头部导航 -->
-      <div class="header">
-        <div class="header-title">
-          <img
-            src="/logo.png"
-            alt="K-Vault Logo"
-            class="brand-logo"
-            loading="eager"
-            onerror="this.onerror=null;this.src='/favicon.ico';"
-          />
+      <div ref="uploadSurface" class="upload-surface">
+      <a class="upload-skip-link" href="#upload-main">跳到上传工作区</a>
+      <header class="workspace-header">
+        <a class="workspace-brand" href="./" aria-label="K-Vault 上传首页">
+          <img src="/logo.png" alt="" width="32" height="32">
           <span>K-Vault</span>
+        </a>
+        <nav class="workspace-nav" aria-label="全局导航">
+          <a href="./" aria-current="page">上传</a>
+          <a href="./admin.html" v-if="!isGuest">文件</a>
+          <a href="./gallery.html" v-if="!isGuest">图库</a>
+          <a href="./webdav.html" v-if="!isGuest">WebDAV</a>
+        </nav>
+        <div class="workspace-tools">
+          <button type="button" class="workspace-tool" @click="toggleTheme"
+            :aria-label="theme === 'dark' ? '切换到亮色模式' : '切换到夜间模式'">
+            <kv-icon :name="theme === 'dark' ? 'sun' : 'moon'"></kv-icon>
+            <span>{{ theme === 'dark' ? '亮色' : '夜间' }}</span>
+          </button>
+          <button type="button" class="workspace-tool" @click="handleLogout" v-if="isAuthenticated">
+            <kv-icon name="log-out"></kv-icon><span>退出</span>
+          </button>
         </div>
-        <button type="button" class="theme-toggle-btn header-theme-toggle" data-theme-toggle aria-label="切换主题">
-          <i data-lucide="moon" data-theme-icon></i>
-          <span data-theme-label>夜间</span>
-        </button>
-        <div class="nav-links">
-          <a href="./"><i data-lucide="house"></i> 首页</a>
-          <a href="./gallery.html" v-if="!isGuest"
-            ><i data-lucide="images"></i> 图片浏览</a
-          >
-          <a href="./admin.html" v-if="!isGuest"
-            ><i data-lucide="settings"></i> 管理后台</a
-          >
-          <a href="./webdav.html" v-if="!isGuest"
-            ><i data-lucide="hard-drive"></i> WebDAV</a
-          >
-          <a
-            href="javascript:void(0)"
-            @click="handleLogout"
-            v-if="isAuthenticated"
-            class="logout-link"
-          >
-            <i data-lucide="log-out"></i> 退出
-          </a>
+      </header>
+
+      <main id="upload-main" ref="uploadMain" class="upload-workspace" tabindex="-1">
+        <div class="upload-page-heading">
+          <h1>上传文件</h1>
+          <p>确认存储位置，添加文件，上传成功后复制链接。</p>
         </div>
-      </div>
+        <div class="upload-notice" v-if="!authChecking && isGuest && guestUploadConfig" role="status">
+          <kv-icon name="user" aria-hidden="true"></kv-icon>
+          <p>访客模式 · {{ guestDailyLimitVerified ? '每日上限 ' + guestUploadConfig.maxDailyUploads + ' 次（非剩余次数）' : '每日次数上限暂未确认，以上传响应为准' }}。单文件有效上限见下方，不支持分片上传。</p>
+        </div>
+        <div class="upload-notice upload-notice-error" v-if="authError" role="alert">
+          <p>{{ authError }}</p>
+          <button class="upload-btn" type="button" :disabled="authChecking" @click="refreshUploadLimits">重新检查身份</button>
+        </div>
+        <p class="upload-notice" v-if="!authChecking && !storageStatusLoading && storageStatusError" role="status">{{ storageStatusError }}</p>
 
-      <!-- 访客模式提示条 -->
-      <div class="guest-notice" v-if="!authChecking && isGuest && guestUploadConfig">
-        <i data-lucide="user"></i>
-        <span
-          >访客模式 - 单文件最大 {{ formatSize(guestUploadConfig.maxFileSize)
-          }}，每日上限 {{ guestUploadConfig.maxDailyUploads }} 次</span
-        >
-      </div>
-
-      <!-- 主内容区 -->
-      <div class="main-container">
-        <!-- 左侧上传区 -->
-        <div class="card upload-section">
-          <div class="card-header">
-            <div class="card-title">
-              <i data-lucide="upload"></i>
-              <span>上传文件</span>
-            </div>
-            <span
-              v-if="!authChecking && isGuest && guestUploadConfig"
-              style="color: var(--warning-text-color); font-size: 0.85em"
-              >访客模式 - 单文件最大 {{
-              formatSize(guestUploadConfig.maxFileSize) }}</span
-            >
-            <span v-else style="color: var(--text-muted); font-size: 0.85em">
-              当前存储单文件上限：{{ currentUploadLimitLabel }}
-            </span>
+        <section class="upload-destination" aria-labelledby="destination-heading">
+          <div class="upload-section-heading">
+            <h2 id="destination-heading">目标与目录</h2>
+            <span class="upload-muted">仅影响接下来添加的文件</span>
           </div>
 
-          <!-- 上传区域 -->
-          <div
-            class="upload-zone"
-            @click="triggerUpload"
-            @dragover.prevent="onDragOver"
-            @dragleave="onDragLeave"
-            @drop.prevent="onDrop"
-            :class="{ dragover: isDragging }"
-          >
-            <i data-lucide="cloud-upload" data-icon-class="upload-icon"></i>
-            <div class="upload-text">点击或拖拽文件到此区域上传</div>
-            <div class="upload-hint" v-if="!authChecking && isGuest && guestUploadConfig">
-              访客模式：单文件最大 {{ formatSize(guestUploadConfig.maxFileSize)
-              }}，不支持分片上传
-            </div>
-            <div class="upload-hint" v-else>
-              支持图片、视频、音频和文档。当前上限：{{ currentUploadLimitLabel }}。
-            </div>
-            <input
-              type="file"
-              class="upload-input"
-              ref="fileInput"
-              multiple
-              @change="handleFileSelect"
-            />
+          <div class="upload-storage-options" role="group" aria-label="存储目标">
+            <button class="upload-storage-option" type="button"
+              v-for="option in storageOptions" :key="option.mode"
+              :class="{ 'is-selected': storageMode === option.mode }"
+              :aria-pressed="storageMode === option.mode"
+              :disabled="authChecking || storageStatusLoading || !option.available"
+              :title="option.available ? option.target : '此目标未配置或未启用'"
+              @click="setStorageMode(option.mode)">
+              <kv-icon :name="option.brand || option.icon"></kv-icon>
+              <span>{{ option.label }}</span>
+              <small v-if="!option.available && !storageStatusLoading">未启用</small>
+            </button>
           </div>
 
-          <!-- 存储位置切换 -->
-          <div class="storage-switcher">
-            <span class="storage-label">存储位置：</span>
-            <div class="storage-options">
-              <button
-                class="storage-btn"
-                :class="{ active: storageMode === 'telegram' }"
-                @click="setStorageMode('telegram')"
-              >
-                <i class="fab fa-telegram"></i>
-                <span>Telegram</span>
-              </button>
-              <button
-                class="storage-btn"
-                v-if="!isGuest"
-                :class="{ active: storageMode === 'r2', disabled: !r2Available }"
-                @click="setStorageMode('r2')"
-                :disabled="!r2Available"
-                :title="!r2Available ? '未配置 - 请在环境变量中配置 R2 存储桶' : 'Cloudflare R2 存储'"
-              >
-                <i data-lucide="cloud"></i>
-                <span>R2 存储</span>
-              </button>
-              <button
-                class="storage-btn"
-                v-if="!isGuest"
-                :class="{ active: storageMode === 's3', disabled: !s3Available }"
-                @click="setStorageMode('s3')"
-                :disabled="!s3Available"
-                :title="!s3Available ? '未配置 - 请在环境变量中配置 S3 相关参数' : 'S3 兼容存储'"
-              >
-                <i data-lucide="database"></i>
-                <span>S3 API</span>
-              </button>
-              <button
-                class="storage-btn"
-                v-if="!isGuest"
-                :class="{ active: storageMode === 'discord', disabled: !discordAvailable }"
-                @click="setStorageMode('discord')"
-                :disabled="!discordAvailable"
-                :title="!discordAvailable ? '未配置 - 请在环境变量中配置 Discord 相关参数' : 'Discord 存储'"
-              >
-                <i class="fab fa-discord"></i>
-                <span>Discord</span>
-              </button>
-              <button
-                class="storage-btn"
-                v-if="!isGuest"
-                :class="{ active: storageMode === 'huggingface', disabled: !huggingfaceAvailable }"
-                @click="setStorageMode('huggingface')"
-                :disabled="!huggingfaceAvailable"
-                :title="!huggingfaceAvailable ? '未配置 - 请在环境变量中配置 HuggingFace 相关参数' : 'HuggingFace 存储'"
-              >
-                <i data-lucide="bot"></i>
-                <span>HuggingFace</span>
-              </button>
-              <button
-                class="storage-btn"
-                v-if="!isGuest"
-                :class="{ active: storageMode === 'github', disabled: !githubAvailable }"
-                @click="setStorageMode('github')"
-                :disabled="!githubAvailable"
-                :title="!githubAvailable ? '未配置 - 请在环境变量中配置 GitHub 相关参数' : 'GitHub 存储'"
-              >
-                <i class="fab fa-github"></i>
-                <span>GitHub</span>
+          <div class="upload-folder-field">
+            <label for="upload-folder">上传目录</label>
+            <div class="upload-field-row">
+              <input id="upload-folder" type="text" v-model="folderPath"
+                placeholder="留空为根目录，例如：项目A/一月"
+                aria-describedby="upload-folder-help" @change="handleFolderPathInput"
+                @blur="persistFolderPath">
+              <button class="upload-btn" type="button" @click="clearFolderPath">根目录</button>
+              <button class="upload-btn" type="button" v-if="!isGuest"
+                :disabled="authChecking" @click="openUploadFolderCreator">
+                <kv-icon name="folder-plus"></kv-icon>新建目录
               </button>
             </div>
+            <p id="upload-folder-help" class="upload-muted">
+              {{ isGuest ? '访客可填写上传路径，但不能读取或新建后台目录。' : '可直接填写路径，或展开下方列表选择已有目录。' }}
+            </p>
           </div>
-
-          <!-- 上传方式按钮 -->
-          <div class="folder-target-panel">
-            <div class="folder-target-head">
-              <span class="folder-target-title">
-                <i data-lucide="folder-tree"></i>
-                <span>上传目录</span>
-              </span>
-              <div class="folder-action-row">
-                <span class="folder-target-badge">
-                  <i data-lucide="map-pin"></i>
-                  {{ folderPath || '根目录' }}
-                </span>
-                <button
-                  class="folder-action-btn"
-                  type="button"
-                  :disabled="uploadFoldersLoading || isGuest"
-                  @click="fetchUploadFolders(true)"
-                  :title="isGuest ? '访客模式不可读取后台目录' : '刷新已有上传目录'"
-                >
-                  <i data-lucide="rotate-cw" :class="{ 'spin': uploadFoldersLoading }"></i>
-                  <span>刷新目录</span>
-                </button>
-                <button
-                  class="folder-action-btn is-primary"
-                  type="button"
-                  :disabled="isGuest"
-                  @click="openUploadFolderCreator"
-                  :title="isGuest ? '访客模式不可新建目录' : '新建上传目录'"
-                >
-                  <i data-lucide="folder-plus"></i>
-                  <span>新建</span>
-                </button>
-              </div>
-            </div>
-            <div class="folder-target-row">
-              <input
-                type="text"
-                v-model="folderPath"
-                placeholder="留空则上传到根目录，例如：项目A/一月"
-                @input="handleFolderPathInput"
-                @blur="folderPath = normalizeFolderPath(folderPath)"
-              />
-              <button class="folder-reset-btn" type="button" @click="clearFolderPath">
-                根目录
+          <details class="upload-folder-browser" v-if="!isGuest">
+            <summary>选择已有目录</summary>
+            <div class="upload-folder-list" :aria-busy="uploadFoldersLoading">
+              <button class="upload-btn" type="button" :aria-pressed="!folderPath"
+                :class="{ 'is-selected': !folderPath }" @click="selectUploadFolder('')">
+                <kv-icon name="house"></kv-icon>根目录
               </button>
-            </div>
-            <div class="folder-picker-list" v-if="!isGuest && (uploadFolders.length || uploadFoldersLoading || uploadFoldersFetched)">
-              <button
-                class="folder-picker-chip"
-                type="button"
-                :class="{ active: !folderPath }"
-                @click="selectUploadFolder('')"
-              >
-                <i data-lucide="house"></i>
-                <span>根目录</span>
-              </button>
-              <button
-                class="folder-picker-chip"
-                type="button"
-                v-for="folder in uploadFolderOptions"
-                :key="'upload-folder-' + folder.path"
-                :class="{ active: folder.path === folderPath }"
-                :title="folder.path"
-                @click="selectUploadFolder(folder.path)"
-              >
-                <i data-lucide="folder"></i>
-                <span>{{ folder.path }}</span>
+              <button class="upload-btn" type="button" v-for="folder in uploadFolderOptions"
+                :key="folder.path" :aria-pressed="folder.path === folderPath"
+                :class="{ 'is-selected': folder.path === folderPath }" :title="folder.path"
+                @click="selectUploadFolder(folder.path)">
+                <kv-icon name="folder"></kv-icon><span>{{ folder.path }}</span>
                 <small v-if="Number.isFinite(folder.fileCount)">{{ folder.fileCount }}</small>
               </button>
-              <span class="folder-target-tip" v-if="uploadFoldersLoading">正在读取后端目录...</span>
-              <span class="folder-target-tip" v-else-if="uploadFoldersFetched && uploadFolders.length === 0">暂无后台目录，可直接新建。</span>
             </div>
-            <div class="folder-create-row" v-if="showUploadFolderCreator">
-              <input
-                ref="newFolderInput"
-                type="text"
-                v-model="newUploadFolderPath"
-                placeholder="输入新目录，例如：项目A/二月"
-                @keyup.enter="createUploadFolder"
-              />
-              <button
-                class="folder-action-btn is-primary"
-                type="button"
-                :disabled="uploadFolderCreating"
-                @click="createUploadFolder"
-              >
-                <i data-lucide="check"></i>
-                <span>{{ uploadFolderCreating ? '创建中' : '创建并选中' }}</span>
+            <div class="upload-inline-actions">
+              <button class="upload-btn" type="button" :disabled="uploadFoldersLoading || authChecking"
+                @click="fetchUploadFolders(true)">
+                <kv-icon name="rotate-cw" :class="{ 'upload-spin': uploadFoldersLoading }"></kv-icon>
+                {{ uploadFoldersLoading ? '读取中' : '刷新目录' }}
               </button>
-              <button class="folder-action-btn" type="button" @click="cancelUploadFolderCreator">
-                取消
+              <span class="upload-muted" v-if="uploadFoldersFetched && !uploadFolders.length">暂无已有目录。</span>
+              <span class="upload-muted" v-else-if="!uploadFoldersFetched && !uploadFoldersLoading">未读取到目录，可重试或直接填写路径。</span>
+            </div>
+          </details>
+          <form class="upload-folder-create" v-if="showUploadFolderCreator" @submit.prevent="createUploadFolder">
+            <label for="upload-new-folder">新目录路径</label>
+            <div class="upload-field-row">
+              <input id="upload-new-folder" ref="newFolderInput" type="text" v-model="newUploadFolderPath"
+                placeholder="例如：项目A/二月" :disabled="uploadFolderCreating" required>
+              <button class="upload-btn" type="submit" :disabled="uploadFolderCreating">
+                {{ uploadFolderCreating ? '创建中' : '创建并选中' }}
               </button>
+              <button class="upload-btn" type="button" :disabled="uploadFolderCreating"
+                @click="cancelUploadFolderCreator">取消</button>
             </div>
-            <div class="folder-target-tip">
-              可直接选择后台已有目录，或输入路径新建后上传；上传完成后仍可在后台拖拽移动。
-            </div>
-          </div>
+          </form>
 
-          <div
-            class="image-compress-panel"
-            :class="{ 'is-enabled': imageCompressPanelExpanded, 'is-collapsed': !imageCompressPanelExpanded }"
-          >
-            <div class="image-compress-head">
-              <div class="image-compress-title">
-                <i data-lucide="minimize"></i>
-                <div>
-                  <strong>图片压缩转换</strong>
-                  <span>{{ imageCompressPanelExpanded ? '选择图片上传时的转换格式、质量和尺寸。' : '未开启时默认原图上传，开启后再显示详细选项。' }}</span>
-                </div>
-              </div>
-              <label class="compress-toggle" title="开启后默认在确认窗口中选择压缩">
-                <span>{{ imageCompress.enabled ? '已开启' : '未开启' }}</span>
-                <input
-                  type="checkbox"
-                  v-model="imageCompress.enabled"
-                  @change="handleImageCompressToggle"
-                />
-                <span class="compress-toggle-track"></span>
-              </label>
+          <div class="upload-limit" aria-live="polite">
+            <dl>
+              <dt>单文件有效上限</dt>
+              <dd>{{ currentUploadLimitLabel }}</dd>
+            </dl>
+            <p>{{ currentUploadLimitNote }}</p>
+            <button v-if="!storageStatusLoading && !hasVerifiedUploadLimit" class="upload-text-btn"
+              type="button" @click="checkStorageTarget(false)">重新读取限制</button>
+          </div>
+        </section>
+
+        <section class="upload-add" aria-labelledby="add-files-heading">
+          <div class="upload-section-heading">
+            <h2 id="add-files-heading">添加文件</h2>
+            <span class="upload-muted">添加后自动上传</span>
+          </div>
+          <div class="upload-dropzone" :class="{ 'is-dragging': isDragging }"
+            @dragover.prevent="onDragOver" @dragleave.prevent="onDragLeave" @drop.prevent="onDrop">
+            <kv-icon name="cloud-upload" aria-hidden="true"></kv-icon>
+            <div class="upload-dropzone-copy">
+              <h3>将文件拖到这里</h3>
+              <p>支持多文件，也可使用 Ctrl / Cmd + V 粘贴图片或文件。</p>
             </div>
-            <div class="image-compress-summary">{{ imageCompressSummary }}</div>
-            <div class="image-compress-body" v-if="imageCompressPanelExpanded">
-              <div class="image-upload-decision" role="group" aria-label="图片上传处理方式">
-                <button
-                  type="button"
-                  :class="{ active: imageUploadDecision === 'original' }"
-                  @click.stop="setImageUploadDecision('original')"
-                >
-                  原图
-                </button>
-                <button
-                  type="button"
-                  :class="{ active: imageUploadDecision === 'optimized' }"
-                  @click.stop="setImageUploadDecision('optimized')"
-                >
-                  压缩转换
-                </button>
-                <button
-                  type="button"
-                  :class="{ active: imageUploadDecision === 'ask' }"
-                  @click.stop="setImageUploadDecision('ask')"
-                >
-                  每次询问
-                </button>
+            <button class="upload-btn upload-btn-primary" type="button" :disabled="!canAddUploads"
+              @click="triggerUpload"><kv-icon name="plus" aria-hidden="true"></kv-icon>选择文件</button>
+            <input ref="fileInput" type="file" multiple hidden @change="handleFileSelect">
+          </div>
+          <p class="upload-add-context">新文件将上传到 <strong>{{ storageTarget }}</strong>
+            <span> · {{ normalizeFolderPath(folderPath) || '根目录' }}</span>
+          </p>
+
+          <details class="upload-advanced">
+            <summary>
+              <span>图片压缩与转换</span>
+              <span class="upload-muted">{{ imageCompressSummary }}</span>
+            </summary>
+            <div class="upload-advanced-body">
+              <div class="upload-segmented" role="group" aria-label="图片上传处理方式">
+                <button class="upload-btn" type="button" :aria-pressed="imageUploadDecision === 'original'"
+                  :class="{ 'is-selected': imageUploadDecision === 'original' }"
+                  @click="setImageUploadDecision('original')">原图</button>
+                <button class="upload-btn" type="button" :aria-pressed="imageUploadDecision === 'optimized'"
+                  :class="{ 'is-selected': imageUploadDecision === 'optimized' }"
+                  @click="setImageUploadDecision('optimized')">压缩转换</button>
+                <button class="upload-btn" type="button" :aria-pressed="imageUploadDecision === 'ask'"
+                  :class="{ 'is-selected': imageUploadDecision === 'ask' }"
+                  @click="setImageUploadDecision('ask')">每次询问</button>
               </div>
-              <div class="image-compress-summary">{{ imageUploadDecisionSummary }}</div>
+              <p class="upload-muted">{{ imageUploadDecisionSummary }} 收起设置不会关闭已选的处理方式。</p>
+              <label class="compress-checkbox">
+                <input type="checkbox" v-model="imageCompress.enabled" @change="handleImageCompressToggle">
+                {{ imageUploadDecision === 'ask' ? '询问时默认选择压缩' : '启用图片压缩' }}
+              </label>
               <div class="compress-controls" v-if="imageCompress.enabled || imageUploadDecision === 'optimized'">
-                <div class="compress-format-grid">
-                  <button
-                    class="compress-format-btn"
-                    type="button"
-                    v-for="format in imageCompressFormats"
-                    :key="format.value"
-                    :class="{ active: imageCompress.format === format.value }"
-                    :disabled="!isFormatSupported(format.value)"
+                <div class="compress-format-grid" role="group" aria-label="输出格式">
+                  <button class="compress-format-btn" type="button" v-for="format in imageCompressFormats"
+                    :key="format.value" :class="{ active: imageCompress.format === format.value }"
+                    :aria-pressed="imageCompress.format === format.value" :disabled="!isFormatSupported(format.value)"
                     @click="selectCompressFormat(format.value)"
-                    :title="isFormatSupported(format.value) ? format.tip : '当前浏览器不支持输出 ' + format.label"
-                  >
-                    <i :data-lucide="format.icon" :key="format.icon"></i>
-                    <span>{{ format.label }}</span>
+                    :title="isFormatSupported(format.value) ? format.tip : '当前浏览器不支持输出 ' + format.label">
+                    <kv-icon :name="format.icon" aria-hidden="true"></kv-icon><span>{{ format.label }}</span>
+                    <small v-if="!isFormatSupported(format.value)">不支持</small>
                   </button>
                 </div>
                 <div class="compress-settings-grid">
                   <div class="compress-control">
-                    <label>压缩质量：{{ imageCompress.quality }}%</label>
-                    <div class="compress-range-row">
-                      <input
-                        type="range"
-                        min="30"
-                        max="95"
-                        step="1"
-                        v-model.number="imageCompress.quality"
-                        @change="saveImageCompressSettings"
-                      />
-                    </div>
+                    <label for="upload-quality">压缩质量：{{ imageCompress.quality }}%</label>
+                    <input id="upload-quality" type="range" min="30" max="95" step="1"
+                      v-model.number="imageCompress.quality" @change="saveImageCompressSettings">
                   </div>
                   <div class="compress-control">
-                    <label>最大边长</label>
-                    <div class="compress-range-row">
-                      <input
-                        class="compress-number"
-                        type="number"
-                        min="0"
-                        max="12000"
-                        step="100"
-                        v-model.number="imageCompress.maxDimension"
-                        @change="saveImageCompressSettings"
-                      />
-                      <span class="image-compress-summary">0 为保留原始尺寸</span>
-                    </div>
+                    <label for="upload-dimension">最大边长（像素）</label>
+                    <input id="upload-dimension" class="compress-number" type="number" min="0" max="12000" step="100"
+                      aria-describedby="upload-dimension-help" v-model.number="imageCompress.maxDimension"
+                      @change="saveImageCompressSettings">
+                    <span id="upload-dimension-help" class="upload-muted">0 表示保留原始尺寸</span>
                   </div>
                 </div>
                 <label class="compress-checkbox">
-                  <input
-                    type="checkbox"
-                    v-model="imageCompress.keepOriginalWhenLarger"
-                    @change="saveImageCompressSettings"
-                  />
+                  <input type="checkbox" v-model="imageCompress.keepOriginalWhenLarger" @change="saveImageCompressSettings">
                   压缩后体积更大时自动保留原图
                 </label>
               </div>
+              <p class="upload-muted">仅在浏览器内处理本地图片；GIF、SVG 保持原文件。URL 转存不应用这些设置。</p>
             </div>
-          </div>
+          </details>
 
-          <div class="upload-methods">
-            <button class="method-btn" @click="triggerUpload">
-              <i data-lucide="folder-open"></i>
-              <span>选择文件</span>
+          <div class="upload-inline-actions upload-source-actions">
+            <button class="upload-btn" type="button" :disabled="!canAddUploads || clipboardReading" @click="pasteFromClipboard">
+              <kv-icon name="clipboard" aria-hidden="true"></kv-icon>{{ clipboardReading ? '读取剪贴板中' : '粘贴上传' }}
             </button>
-            <button class="method-btn" @click="pasteFromClipboard">
-              <i data-lucide="clipboard"></i>
-              <span>粘贴上传</span>
-            </button>
-            <button class="method-btn" @click="showUrlInput = !showUrlInput">
-              <i data-lucide="link"></i>
-              <span>URL 上传</span>
-            </button>
+            <button class="upload-btn" type="button" :aria-expanded="showUrlInput" aria-controls="upload-url-form"
+              @click="toggleUrlInput"><kv-icon name="link" aria-hidden="true"></kv-icon>从 URL 转存</button>
           </div>
-
-          <!-- URL上传 -->
-          <div class="url-input-container" v-if="showUrlInput">
-            <input
-              type="text"
-              v-model="urlToUpload"
-              :placeholder="
-                mediaResolve.available
-                  ? '输入文件 URL，或粘贴抖音 / B站等视频分享链接...'
-                  : '输入图片或文件 URL 地址...'
-              "
-              @keyup.enter="uploadFromUrl"
-            />
-            <el-button
-              type="primary"
-              @click="uploadFromUrl"
-              :loading="urlUploading"
-              >{{ urlStage || (urlResolving ? "解析中" : "上传") }}</el-button
-            >
-          </div>
-
-          <!-- 视频清晰度选择 -->
-          <el-dialog
-            title="选择清晰度"
-            custom-class="quality-picker-dialog"
-            :visible.sync="qualityPicker.visible"
-            width="380px"
-            append-to-body
-            :close-on-click-modal="false"
-          >
-            <div v-if="qualityPicker.loading" class="qp-loading">
-              <i data-lucide="loader-circle" data-icon-class="spin"></i>
-              <span>正在解析可用清晰度...</span>
+          <form id="upload-url-form" class="upload-url-form" v-if="showUrlInput" @submit.prevent="uploadFromUrl">
+            <label for="upload-url">文件直链或视频分享链接</label>
+            <div class="upload-field-row">
+              <input id="upload-url" ref="urlInput" type="text" inputmode="url" autocomplete="url"
+                v-model="urlToUpload" :disabled="urlSubmitting" aria-describedby="upload-url-help"
+                :placeholder="mediaResolve.available ? '粘贴 HTTP(S) 直链或视频分享文案' : '粘贴 HTTP(S) 文件直链'">
+              <button class="upload-btn upload-btn-primary" type="submit"
+                :disabled="!canAddUploads || urlSubmitting || !urlToUpload.trim()">
+                {{ urlSubmitting ? '添加中' : '加入转存队列' }}
+              </button>
             </div>
-            <template v-else>
-              <p class="qp-title" :title="qualityPicker.title">
-                {{ qualityPicker.title || "未命名视频" }}
-              </p>
-              <label
-                v-for="item in qualityPicker.variants"
-                :key="item.formatId"
-                class="qp-option"
-                :class="{
-                  'is-selected': qualityPicker.selected === item.formatId,
-                  'is-disabled': isVariantDisabled(item),
-                }"
-              >
-                <input
-                  type="radio"
-                  :value="item.formatId"
-                  v-model="qualityPicker.selected"
-                  :disabled="isVariantDisabled(item)"
-                />
-                <span class="qp-option-height">{{ item.height }}P</span>
-                <span class="qp-option-size">{{
-                  formatBytes(item.filesize)
-                }}</span>
+            <p id="upload-url-help" class="upload-muted">
+              {{ mediaResolve.available ? '已启用视频解析；如有多个可用清晰度，将先让你选择。' : '当前仅支持文件直链；视频解析以服务端能力为准。' }}
+              URL 与视频与本地文件共用队列。远程转存大小由服务端按部署配置、目标与访客限制另行校验，可能低于上方本地上传上限；分片不能绕过此限制。
+            </p>
+          </form>
+        </section>
+
+        <section class="upload-tasks" v-if="uploadingFiles.length || uploadedFiles.length || urlUploading || urlResolving"
+          aria-labelledby="upload-tasks-heading">
+          <div class="upload-section-heading">
+            <h2 id="upload-tasks-heading">任务与结果</h2>
+            <span class="upload-muted">上传成功后才生成链接</span>
+          </div>
+          <p class="upload-sr-only" role="status">{{ activeTaskCount }} 个文件处理中，{{ failedCount }} 个失败，{{ uploadedFiles.length }} 个结果。</p>
+          <div class="upload-url-status" v-if="urlUploading || urlResolving" role="status">
+            <kv-icon name="loader-circle" class="upload-spin" aria-hidden="true"></kv-icon>
+            <div><strong>{{ urlResolving ? '解析视频链接' : 'URL 转存' }}</strong>
+              <p>{{ urlStage || '请求已发出，等待服务器响应；未提供传输进度。' }}</p></div>
+          </div>
+          <div class="upload-queue" v-if="uploadingFiles.length">
+            <div class="upload-subsection-heading">
+              <h3>上传队列 <span class="upload-count">{{ uploadingFiles.length }}</span></h3>
+              <div class="upload-inline-actions">
+                <button class="upload-btn" type="button" v-if="failedCount" @click="retryAllFailed">
+                  <kv-icon name="rotate-cw" aria-hidden="true"></kv-icon>重试失败项（{{ failedCount }}）</button>
+                <button class="upload-btn" type="button" @click="clearUploadQueue" aria-describedby="upload-queue-help">清理队列</button>
+              </div>
+            </div>
+            <p id="upload-queue-help" class="upload-muted">每项沿用添加时的目标、目录和压缩设置，重试不变。清理只移除未开始或已结束的项，不取消进行中的上传。</p>
+            <ul class="upload-task-list">
+              <li class="upload-task-row" v-for="file in uploadingFiles" :key="file.id">
+                <div class="upload-thumb" aria-hidden="true">
+                  <img v-if="file.preview" :src="file.preview" alt="">
+                  <kv-icon v-else :name="getFileIcon(file.name)"></kv-icon>
+                </div>
+                <div class="upload-file-info">
+                  <strong class="upload-file-name">{{ file.name }}</strong>
+                  <p class="upload-file-meta">{{ file.kind === 'file' ? formatSize(file.size) : file.size ? '预计 ' + formatSize(file.size) : '大小待服务端校验' }} · {{ getItemStorageTarget(file) }} · {{ getItemFolderPath(file) || '根目录' }}</p>
+                  <p v-if="file.compressionStatus" class="upload-muted">{{ file.compressionStatus }}</p>
+                  <p v-if="file.error" class="upload-error" role="alert">{{ file.error }}</p>
+                </div>
+                <div class="upload-task-state" :class="'is-' + file.status">
+                  <kv-icon v-if="file.status === 'uploading' || file.status === 'processing' || file.status === 'resolving'"
+                    name="loader-circle" class="upload-spin" aria-hidden="true"></kv-icon>
+                  <kv-icon v-else-if="file.status === 'success'" name="circle-check" aria-hidden="true"></kv-icon>
+                  <kv-icon v-else-if="file.status === 'error'" name="circle-x" aria-hidden="true"></kv-icon>
+                  <span>{{ getUploadTaskStatus(file) }}</span>
+                </div>
+                <button v-if="file.status === 'error'" class="upload-btn" type="button" @click="retryUpload(file)"
+                  :aria-label="'重试上传 ' + file.name">重试</button>
+              </li>
+            </ul>
+          </div>
+
+          <div class="upload-results" v-if="uploadedFiles.length">
+            <div class="upload-subsection-heading">
+              <h3>上传结果 <span class="upload-count">{{ uploadedFiles.length }}</span></h3>
+              <div class="upload-inline-actions">
+                <button class="upload-btn" type="button" @click="selectAll">{{ isAllSelected ? '取消全选' : '全选' }}</button>
+                <button class="upload-btn upload-btn-primary" type="button" @click="copySelectedLinks" :disabled="!selectedCount">复制选中（{{ selectedCount }}）</button>
+                <button class="upload-btn" type="button" @click="copyAllLinks">复制全部</button>
+                <button class="upload-text-btn" type="button" @click="clearResults">清空结果</button>
+              </div>
+            </div>
+            <p class="upload-muted">结果仅属于当前页面；移除或清空结果不会删除服务器文件，也不会清空本地历史。</p>
+            <div class="upload-format-picker" role="group" aria-label="复制链接格式">
+              <span class="upload-muted">链接格式</span>
+              <button class="upload-btn" type="button" v-for="format in linkFormats" :key="format.value"
+                :class="{ 'is-selected': linkFormat === format.value }" :aria-pressed="linkFormat === format.value"
+                @click="linkFormat = format.value">{{ format.label }}</button>
+            </div>
+            <ul class="upload-result-list">
+              <li class="upload-result-row" v-for="(file, index) in uploadedFiles" :key="file.id"
+                :class="{ 'is-selected': file.selected }">
+                <label class="upload-select-control">
+                  <input type="checkbox" v-model="file.selected" :aria-label="'选择结果 ' + getDisplayName(file)">
+                </label>
+                <button class="upload-thumb" type="button" @click="openPreview(file)" :aria-label="'预览 ' + getDisplayName(file)">
+                  <img v-if="isImageFile(getDisplayName(file)) && !file._imgError" :src="getCleanFileUrl(file)" alt=""
+                    loading="lazy" @error="handleHistoryImgError($event, file)">
+                  <kv-icon v-else :name="getFileIcon(getDisplayName(file))" aria-hidden="true"></kv-icon>
+                </button>
+                <div class="upload-file-info">
+                  <strong class="upload-file-name">{{ getDisplayName(file) }}</strong>
+                  <button class="upload-file-link" type="button" @click="copyLink(file)" :title="formatLink(file)"
+                    :aria-label="'复制 ' + getDisplayName(file) + ' 的链接'">{{ formatLink(file) }}</button>
+                </div>
+                <div class="upload-row-actions">
+                  <button class="upload-icon-btn" type="button" @click="copyLink(file)" title="复制链接" :aria-label="'复制 ' + getDisplayName(file) + ' 的链接'">
+                    <kv-icon name="copy" aria-hidden="true"></kv-icon></button>
+                  <button class="upload-icon-btn" type="button" @click="downloadFile(file)" title="下载" :aria-label="'下载 ' + getDisplayName(file)">
+                    <kv-icon name="download" aria-hidden="true"></kv-icon></button>
+                  <button class="upload-icon-btn" type="button" @click="openPreview(file)" title="预览" :aria-label="'预览 ' + getDisplayName(file)">
+                    <kv-icon name="eye" aria-hidden="true"></kv-icon></button>
+                  <button class="upload-icon-btn" type="button" @click="removeFromResults(index)" title="从结果移除，不删除文件" :aria-label="'从结果移除 ' + getDisplayName(file)">
+                    <kv-icon name="x" aria-hidden="true"></kv-icon></button>
+                </div>
+              </li>
+            </ul>
+            <label class="upload-batch-label" for="upload-batch-links">{{ selectedCount ? '选中的链接' : '全部结果链接' }} · 可手动复制</label>
+            <textarea id="upload-batch-links" class="upload-batch-links" :value="getBatchLinks()" readonly rows="3"
+              @focus="$event.target.select()" @click="$event.target.select()"></textarea>
+          </div>
+        </section>
+
+        <section class="upload-local-history" v-if="uploadHistory.length" aria-labelledby="upload-history-heading">
+          <div class="upload-section-heading">
+            <h2 id="upload-history-heading">本地上传历史 <span class="upload-count">{{ uploadHistory.length }}</span></h2>
+            <a class="upload-text-link" href="./admin.html" v-if="!isGuest">管理服务器文件<kv-icon name="arrow-up-right" aria-hidden="true"></kv-icon></a>
+          </div>
+          <p class="upload-muted">仅保存在此浏览器，不是服务器文件列表，也不代表文件仍然可用。移除或清空历史只删除本地记录。</p>
+          <div class="upload-history-summary">
+            <span>图片 {{ historyStats.images }}</span><span>视频 {{ historyStats.videos }}</span>
+            <span>其他 {{ historyStats.others }}</span><span>已知大小 {{ formatSize(historyStats.totalSize) }}</span>
+          </div>
+          <div class="upload-inline-actions">
+            <button class="upload-btn" type="button" @click="selectAllHistory">{{ isAllHistorySelected ? '取消全选' : '全选' }}</button>
+            <button class="upload-btn" type="button" @click="copySelectedHistoryLinks" :disabled="!selectedHistoryCount">复制选中（{{ selectedHistoryCount }}）</button>
+            <label class="upload-history-format" for="history-link-format">复制格式
+              <select id="history-link-format" v-model="linkFormat">
+                <option v-for="format in linkFormats" :key="format.value" :value="format.value">{{ format.label }}</option>
+              </select>
+            </label>
+            <button class="upload-text-btn" type="button" @click="clearHistory">清空本地历史</button>
+          </div>
+          <ul class="upload-history-list">
+            <li class="upload-history-row" v-for="(item, index) in uploadHistory" :key="item.id" :class="{ 'is-selected': item.selected }">
+              <label class="upload-select-control">
+                <input type="checkbox" :checked="item.selected" @change="toggleHistorySelect(index)"
+                  :aria-label="'选择历史记录 ' + getDisplayName(item)">
               </label>
-              <p class="qp-hint">
-                超过上限的档位不可选（当前上限
-                {{ formatBytes(qualityPicker.maxBytes) }}）
-              </p>
-            </template>
-            <span slot="footer">
-              <el-button @click="qualityPicker.visible = false">取消</el-button>
-              <el-button
-                type="primary"
-                :disabled="qualityPicker.loading || !qualityPicker.selected"
-                @click="confirmQualityAndUpload"
-                >转存</el-button
-              >
-            </span>
-          </el-dialog>
-
-          <!-- 上传进度列表 -->
-          <div class="upload-list" v-if="uploadingFiles.length > 0">
-            <div
-              class="card-title"
-              style="
-                margin-top: 20px;
-                margin-bottom: 12px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-              "
-            >
-              <div>
-                <i data-lucide="list-todo"></i>
-                <span>上传队列 ({{ uploadingFiles.length }})</span>
-                <span
-                  v-if="failedCount > 0"
-                  style="color: #f56c6c; margin-left: 8px; font-size: 0.85em"
-                >
-                  ({{ failedCount }} 个失败)
-                </span>
-              </div>
-              <div style="display: flex; gap: 8px">
-                <el-button
-                  v-if="failedCount > 0"
-                  size="mini"
-                  type="warning"
-                  @click="retryAllFailed"
-                >
-                  <i data-lucide="redo"></i> 重试全部失败 ({{ failedCount }})
-                </el-button>
-                <el-button size="mini" type="info" @click="clearUploadQueue">
-                  <i data-lucide="brush"></i> 清空队列
-                </el-button>
-              </div>
-            </div>
-            <div
-              class="upload-item"
-              v-for="(file, index) in uploadingFiles"
-              :key="index"
-            >
-              <img
-                v-if="file.preview"
-                :src="file.preview"
-                class="upload-item-preview"
-              />
-              <div
-                v-else
-                class="upload-item-preview"
-                style="
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                "
-              >
-                <i
-                  :class="getFileIcon(file.name)"
-                  style="font-size: 1.5em; color: var(--text-muted)"
-                ></i>
-              </div>
-              <div class="upload-item-info">
-                <div class="upload-item-name">{{ file.name }}</div>
-                <div class="upload-item-size">{{ formatSize(file.size) }}</div>
-                <div v-if="file.compressionStatus" class="upload-item-compression">
-                  {{ file.compressionStatus }}
-                </div>
-                <div v-if="file.error" class="upload-item-error">
-                  {{ file.error }}
-                </div>
-              </div>
-              <div class="upload-item-status" :class="file.status">
-                <span
-                  class="loading-spinner"
-                  v-if="file.status === 'uploading' || file.status === 'processing'"
-                ></span>
-                <i
-                  data-lucide="circle-check"
-                  v-if="file.status === 'success'"
-                ></i>
-                <i
-                  data-lucide="circle-x"
-                  v-if="file.status === 'error'"
-                ></i>
-                <span
-                  >{{ getStatusText(file.status) }}
-                  <span v-if="file.progress">({{ file.progress }}%)</span></span
-                >
-              </div>
-              <button
-                v-if="file.status === 'error'"
-                class="action-btn"
-                @click="retryUpload(file)"
-                title="重试"
-              >
-                <i data-lucide="redo"></i>
+              <button class="upload-thumb" type="button" @click="openPreview(item)" :aria-label="'预览 ' + getDisplayName(item)">
+                <img v-if="isImageFile(getDisplayName(item)) && !item._imgError" :src="getCleanFileUrl(item)" alt=""
+                  loading="lazy" @error="handleHistoryImgError($event, item)">
+                <kv-icon v-else :name="getFileIcon(getDisplayName(item))" aria-hidden="true"></kv-icon>
               </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 右侧结果区 -->
-        <div class="card result-section">
-          <div class="card-header">
-            <div class="card-title">
-              <i data-lucide="images"></i>
-              <span>上传结果</span>
-              <span
-                v-if="uploadedFiles.length > 0"
-                style="font-size: 0.8em; color: var(--text-muted); margin-left: 8px"
-              >
-                ({{ uploadedFiles.length }}个文件)
-              </span>
-            </div>
-            <div class="result-actions" v-if="uploadedFiles.length > 0">
-              <el-button size="mini" type="primary" @click="selectAll">
-                {{ isAllSelected ? '取消全选' : '全选' }}
-              </el-button>
-              <el-button
-                size="mini"
-                type="success"
-                @click="copySelectedLinks"
-                :disabled="selectedCount === 0"
-              >
-                复制选中 ({{ selectedCount }})
-              </el-button>
-              <el-button size="mini" type="warning" @click="copyAllLinks">
-                复制全部
-              </el-button>
-              <el-button size="mini" type="danger" @click="clearResults">
-                清空
-              </el-button>
-            </div>
-          </div>
-
-          <!-- 链接格式选择 -->
-          <div class="link-format-tabs" v-if="uploadedFiles.length > 0">
-            <span
-              class="format-tab"
-              :class="{ active: linkFormat === 'url' }"
-              @click="linkFormat = 'url'"
-              >直链 URL</span
-            >
-            <span
-              class="format-tab"
-              :class="{ active: linkFormat === 'markdown' }"
-              @click="linkFormat = 'markdown'"
-              >Markdown</span
-            >
-            <span
-              class="format-tab"
-              :class="{ active: linkFormat === 'html' }"
-              @click="linkFormat = 'html'"
-              >HTML</span
-            >
-            <span
-              class="format-tab"
-              :class="{ active: linkFormat === 'bbcode' }"
-              @click="linkFormat = 'bbcode'"
-              >BBCode</span
-            >
-            <span
-              class="format-tab"
-              :class="{ active: linkFormat === 'ubb' }"
-              @click="linkFormat = 'ubb'"
-              >UBB</span
-            >
-          </div>
-
-          <!-- 上传结果列表 -->
-          <div class="result-list" v-if="uploadedFiles.length > 0">
-            <div
-              class="result-item"
-              v-for="(file, index) in uploadedFiles"
-              :key="index"
-              :class="{ selected: file.selected }"
-            >
-              <input
-                type="checkbox"
-                class="result-item-checkbox"
-                v-model="file.selected"
-              />
-              <img
-                :src="getCleanFileUrl(file)"
-                class="result-item-preview"
-                @click="previewImage(getCleanFileUrl(file))"
-                onerror="this.style.display='none'"
-              />
-              <div class="result-item-info">
-                <div class="result-item-name">{{ getDisplayName(file) }}</div>
-                <div
-                  class="result-item-link"
-                  @click="copyLink(file)"
-                  :title="formatLink(file)"
-                >
-                  {{ formatLink(file) }}
-                </div>
+              <div class="upload-file-info">
+                <strong class="upload-file-name">{{ getDisplayName(item) }}</strong>
+                <span class="upload-file-meta">{{ item.size ? formatSize(item.size) : '大小未记录' }}</span>
               </div>
-              <div class="result-item-actions">
-                <button
-                  class="action-btn"
-                  @click="copyLink(file)"
-                  title="复制链接"
-                >
-                  <i data-lucide="copy"></i>
-                </button>
-                <button
-                  class="action-btn"
-                  @click="downloadFile(file)"
-                  title="下载"
-                >
-                  <i data-lucide="download"></i>
-                </button>
-                <button
-                  class="action-btn"
-                  @click="openPreview(file)"
-                  title="预览"
-                >
-                  <i data-lucide="eye"></i>
-                </button>
-                <button
-                  class="action-btn delete"
-                  @click="removeFromResults(index)"
-                  title="移除"
-                >
-                  <i data-lucide="x"></i>
-                </button>
+              <div class="upload-row-actions">
+                <button class="upload-icon-btn" type="button" @click="copyLink(item)" title="复制链接" :aria-label="'复制 ' + getDisplayName(item) + ' 的链接'">
+                  <kv-icon name="copy" aria-hidden="true"></kv-icon></button>
+                <button class="upload-icon-btn" type="button" @click="openPreview(item)" title="预览" :aria-label="'预览 ' + getDisplayName(item)">
+                  <kv-icon name="eye" aria-hidden="true"></kv-icon></button>
+                <button class="upload-icon-btn" type="button" @click="removeFromHistory(index)" title="仅移除本地记录" :aria-label="'移除本地记录 ' + getDisplayName(item)">
+                  <kv-icon name="x" aria-hidden="true"></kv-icon></button>
               </div>
-            </div>
-          </div>
-
-          <!-- 批量复制文本框 -->
-          <textarea
-            class="batch-links"
-            v-if="uploadedFiles.length > 0"
-            :value="getBatchLinks()"
-            readonly
-            @click="$event.target.select()"
-            placeholder="选中的链接将显示在这里..."
-          ></textarea>
-
-          <!-- 空状态 -->
-          <div class="empty-state" v-if="uploadedFiles.length === 0">
-            <i data-lucide="cloud-upload"></i>
-            <div>上传文件后，链接将显示在这里</div>
-            <div style="margin-top: 8px; font-size: 0.9em">
-              支持批量选择和一键复制
-            </div>
-          </div>
-        </div>
+            </li>
+          </ul>
+        </section>
+        <p class="upload-local-note" v-else>本地上传历史仅保存在此浏览器，清理浏览器数据后不会保留。</p>
+        <p class="upload-notice upload-notice-error" v-if="historySaveError" role="alert">{{ historySaveError }}</p>
+        <button v-if="historyReadBlocked && !uploadHistory.length" class="upload-text-btn" type="button" @click="clearHistory">清空损坏的本地历史</button>
+      </main>
       </div>
 
-      <!-- 上传历史区域 -->
-      <div class="card history-section" v-if="uploadHistory.length > 0">
-        <div class="card-header">
-          <div class="card-title">
-            <i data-lucide="clock-arrow-down"></i>
-            <span>本地上传历史</span>
-            <span style="font-size: 0.8em; color: var(--text-muted); margin-left: 8px"
-              >({{ uploadHistory.length }})</span
-            >
+      <div class="upload-modal-overlay" v-if="qualityPicker.visible" @click.self="cancelQualityPicker">
+        <section ref="qualityDialog" class="upload-dialog quality-picker-dialog" role="dialog" aria-modal="true"
+          aria-labelledby="quality-title" aria-describedby="quality-help" tabindex="-1" :aria-busy="qualityPicker.loading">
+          <div class="upload-dialog-heading">
+            <h2 id="quality-title">选择视频清晰度</h2>
+            <button class="upload-icon-btn" type="button" data-dialog-focus aria-label="取消视频解析与选择" @click="cancelQualityPicker">
+              <kv-icon name="x" aria-hidden="true"></kv-icon>
+            </button>
           </div>
-          <div class="result-actions">
-            <el-button size="mini" type="primary" @click="selectAllHistory">
-              {{ isAllHistorySelected ? '取消全选' : '全选' }}
-            </el-button>
-            <el-button
-              size="mini"
-              type="success"
-              @click="copySelectedHistoryLinks"
-              :disabled="selectedHistoryCount === 0"
-            >
-              复制选中 ({{ selectedHistoryCount }})
-            </el-button>
-            <el-button size="mini" type="danger" @click="clearHistory">
-              清空历史
-            </el-button>
+          <p id="quality-help" class="upload-muted">体积为解析器提供的估计值；未知体积仍须由服务端校验，分片不会提高转存上限。关闭只取消本项解析与选择，不会开始转存。</p>
+          <p v-if="qualityPicker.error" class="upload-error" role="alert">{{ qualityPicker.error }}</p>
+          <p class="upload-file-meta" v-if="qualityPicker.task">{{ getItemStorageTarget(qualityPicker.task) }} · {{ getItemFolderPath(qualityPicker.task) || '根目录' }}</p>
+          <p v-if="qualityPicker.loading" class="upload-dialog-status" role="status"><kv-icon name="loader-circle" class="upload-spin" aria-hidden="true"></kv-icon>正在解析，尚未开始转存。</p>
+          <template v-else>
+            <p class="upload-dialog-title">{{ qualityPicker.title || '视频文件' }}</p>
+            <fieldset class="quality-picker-options">
+              <legend class="upload-sr-only">可用清晰度</legend>
+              <label v-for="variant in qualityPicker.variants" :key="variant.formatId" class="quality-picker-option" :class="{ 'is-disabled': isVariantDisabled(variant) }">
+                <input type="radio" name="upload-video-quality" :value="variant.formatId" v-model="qualityPicker.selected" :disabled="isVariantDisabled(variant)">
+                <span><strong>{{ variant.label }}</strong><small>{{ variant.filesize ? '预计 ' + formatSize(variant.filesize) : '大小未知，以上传响应为准' }}{{ variant.needsAudio ? ' · 需合并音轨' : '' }}</small></span>
+                <small v-if="isVariantDisabled(variant)" class="upload-error">超过上限</small>
+              </label>
+            </fieldset>
+            <p class="upload-muted">本次校验上限：{{ qualityPicker.maxBytes ? formatSize(qualityPicker.maxBytes) : '服务端未提供' }}。</p>
+          </template>
+          <div class="upload-dialog-actions">
+            <button class="upload-btn" type="button" @click="cancelQualityPicker">取消，不转存</button>
+            <button class="upload-btn upload-btn-primary" type="button" :disabled="qualityPicker.loading || !canConfirmQuality" @click="confirmQualityAndUpload">转存所选清晰度</button>
           </div>
-        </div>
-
-        <!-- 统计条 -->
-        <div class="stats-bar">
-          <div class="stat-item">
-            <i data-lucide="images"></i>
-            <span
-              >图片:
-              <span class="stat-value">{{ historyStats.images }}</span></span
-            >
-          </div>
-          <div class="stat-item">
-            <i data-lucide="video"></i>
-            <span
-              >视频:
-              <span class="stat-value">{{ historyStats.videos }}</span></span
-            >
-          </div>
-          <div class="stat-item">
-            <i data-lucide="file"></i>
-            <span
-              >其他:
-              <span class="stat-value">{{ historyStats.others }}</span></span
-            >
-          </div>
-          <div class="stat-item">
-            <i data-lucide="hard-drive"></i>
-            <span
-              >总大小:
-              <span class="stat-value"
-                >{{ formatSize(historyStats.totalSize) }}</span
-              ></span
-            >
-          </div>
-        </div>
-
-        <!-- 历史记录网格 -->
-        <div class="history-grid">
-          <div
-            class="history-item"
-            v-for="(item, index) in uploadHistory"
-            :key="index"
-            :class="{ selected: item.selected }"
-            @click="toggleHistorySelect(index)"
-            :title="getDisplayName(item)"
-          >
-            <!-- 图片文件显示缩略图 -->
-            <img
-              v-if="isImageFile(getDisplayName(item))"
-              :src="getCleanFileUrl(item)"
-              @error="handleHistoryImgError($event, item)"
-            />
-            <!-- 非图片文件显示图标 -->
-            <div
-              v-else
-              class="history-file-icon"
-              :class="getFileIconClass(getDisplayName(item))"
-            >
-              <i :class="getFileIcon(getDisplayName(item))"></i>
-              <span class="file-ext"
-                >{{ getFileExt(getDisplayName(item)) }}</span
-              >
-            </div>
-            <div class="history-item-overlay">
-              <button
-                class="action-btn"
-                @click.stop="copyLink(item)"
-                style="background: rgba(255, 255, 255, 0.2); color: white"
-              >
-                <i data-lucide="copy"></i>
-              </button>
-              <button
-                class="action-btn"
-                @click.stop="openPreview(item)"
-                style="background: rgba(255, 255, 255, 0.2); color: white"
-              >
-                <i data-lucide="eye"></i>
-              </button>
-              <button
-                class="action-btn delete"
-                @click.stop="removeFromHistory(index)"
-                style="background: rgba(245, 108, 108, 0.8)"
-              >
-                <i data-lucide="trash"></i>
-              </button>
-            </div>
-          </div>
-        </div>
+        </section>
       </div>
 
-      <!-- 预览弹窗 - 原生图片 / iframe 预览 -->
-      <div class="preview-modal" v-if="previewData" @click="closePreview">
-        <button class="preview-close" @click.stop="closePreview">
-          <i data-lucide="x"></i>
+      <div class="upload-modal-overlay" v-if="historyConfirmOpen" @click.self="historyConfirmOpen = false">
+        <section ref="historyDialog" class="upload-dialog" role="dialog" aria-modal="true" aria-labelledby="history-clear-title" aria-describedby="history-clear-help" tabindex="-1">
+          <h2 id="history-clear-title">清空本地上传历史？</h2>
+          <p id="history-clear-help">只清除此浏览器中的记录（包括损坏的旧数据），不会删除服务器文件或当前上传结果。此操作不可撤销。</p>
+          <p v-if="historySaveError" class="upload-error" role="alert">{{ historySaveError }}</p>
+          <div class="upload-dialog-actions">
+            <button class="upload-btn" type="button" data-dialog-focus @click="historyConfirmOpen = false">保留历史</button>
+            <button class="upload-btn upload-btn-danger" type="button" @click="confirmClearHistory">清空本地历史</button>
+          </div>
+        </section>
+      </div>
+
+      <!-- 弹窗位于背景容器外；打开时隔离背景并约束键盘焦点。 -->
+      <div ref="previewDialog" class="preview-modal" v-if="previewData" @click.self="closePreview"
+        role="dialog" aria-modal="true" aria-labelledby="preview-title" tabindex="-1">
+        <h2 id="preview-title" class="upload-sr-only">预览 {{ previewData.fileName }}</h2>
+        <button class="preview-close" type="button" data-dialog-focus aria-label="关闭文件预览" @click.stop="closePreview">
+          <kv-icon name="x" aria-hidden="true"></kv-icon>
         </button>
         <!-- 原生图片预览 -->
         <img
           v-if="previewData.type === 'native-image'"
           :src="previewData.url"
+          :alt="previewData.fileName || '文件预览'"
           @click.stop
         />
         <!-- iframe 预览（视频/音频/文档） -->
@@ -866,6 +461,8 @@
           <iframe
             ref="previewIframe"
             :src="previewData.iframeUrl"
+            :title="'预览 ' + previewData.fileName"
+            @load="bindPreviewIframeKeys"
             allow="clipboard-write; autoplay; fullscreen; encrypted-media"
             allowfullscreen
           >
@@ -891,158 +488,55 @@
         </div>
       </div>
 
-      <div
-        class="compress-confirm-modal"
-        v-if="pendingUploadBatch"
-        @click.self="cancelPendingUpload"
-      >
-        <div class="compress-confirm-card">
-          <div class="compress-confirm-header">
-            <div>
-              <div class="compress-confirm-title">
-                <i data-lucide="images"></i>
-                <span>上传前确认图片处理方式</span>
-              </div>
-              <div class="compress-confirm-note">
-                本次选择中包含图片文件。请选择直接上传原图，或先在浏览器中压缩/转换后再上传。
-              </div>
-            </div>
-            <button
-              class="compress-confirm-close"
-              type="button"
-              @click="cancelPendingUpload"
-              title="取消"
-            >
-              <i data-lucide="x"></i>
+      <div class="compress-confirm-modal upload-modal-overlay" v-if="pendingUploadBatch" @click.self="cancelPendingUpload">
+        <section ref="compressionDialog" class="compress-confirm-card upload-dialog" role="dialog" aria-modal="true"
+          aria-labelledby="compress-confirm-title" aria-describedby="compress-confirm-help" tabindex="-1">
+          <div class="upload-dialog-heading">
+            <h2 id="compress-confirm-title">上传前确认图片处理方式</h2>
+            <button class="upload-icon-btn" type="button" data-dialog-focus aria-label="取消本批文件上传" @click="cancelPendingUpload">
+              <kv-icon name="x" aria-hidden="true"></kv-icon>
             </button>
           </div>
-
-          <div class="compress-confirm-stats">
-            <div class="compress-stat">
-              <span>文件数量</span>
-              <strong>{{ pendingUploadStats.fileCount }}</strong>
-            </div>
-            <div class="compress-stat">
-              <span>可处理图片</span>
-              <strong>{{ pendingUploadStats.imageCount }}</strong>
-            </div>
-            <div class="compress-stat">
-              <span>总大小</span>
-              <strong>{{ formatSize(pendingUploadStats.totalSize) }}</strong>
-            </div>
+          <p id="compress-confirm-help" class="upload-muted">本批参数与目标已固定；此处修改仅用于本批文件。压缩后的实际文件仍须符合上传上限。</p>
+          <p class="upload-file-meta">{{ pendingUploadBatch.context.storageTarget }} · {{ pendingUploadBatch.context.folderPath || '根目录' }}</p>
+          <dl class="compress-confirm-stats">
+            <div><dt>文件数量</dt><dd>{{ pendingUploadStats.fileCount }}</dd></div>
+            <div><dt>可处理图片</dt><dd>{{ pendingUploadStats.imageCount }}</dd></div>
+            <div><dt>原始总大小</dt><dd>{{ formatSize(pendingUploadStats.totalSize) }}</dd></div>
+          </dl>
+          <div class="compress-mode-grid" role="group" aria-label="本批图片处理方式">
+            <button class="upload-btn" type="button" :class="{ 'is-selected': pendingCompressionChoice === 'original' }"
+              :aria-pressed="pendingCompressionChoice === 'original'" @click="setPendingCompressionMode('original')">直接上传原图</button>
+            <button class="upload-btn" type="button" :class="{ 'is-selected': pendingCompressionChoice === 'compress' }"
+              :aria-pressed="pendingCompressionChoice === 'compress'" @click="setPendingCompressionMode('compress')">压缩/转换后上传</button>
           </div>
-
-          <div class="compress-mode-grid">
-            <button
-              class="compress-mode-btn"
-              type="button"
-              :class="{ active: pendingCompressionChoice === 'original' }"
-              @click="setPendingCompressionMode('original')"
-            >
-              <i data-lucide="file-image"></i>
-              <div>
-                <strong>直接上传原图</strong>
-                <span>保持文件格式、尺寸和质量不变。</span>
-              </div>
-            </button>
-            <button
-              class="compress-mode-btn"
-              type="button"
-              :class="{ active: pendingCompressionChoice === 'compress' }"
-              @click="setPendingCompressionMode('compress')"
-            >
-              <i data-lucide="minimize"></i>
-              <div>
-                <strong>压缩/转换后上传</strong>
-                <span>适合节省 S3、WebDAV、R2 等存储空间。</span>
-              </div>
-            </button>
-          </div>
-
           <div class="compress-controls" v-if="pendingCompressionChoice === 'compress'">
-            <div class="compress-format-grid">
-              <button
-                class="compress-format-btn"
-                type="button"
-                v-for="format in imageCompressFormats"
-                :key="'modal-' + format.value"
-                :class="{ active: imageCompress.format === format.value }"
-                :disabled="!isFormatSupported(format.value)"
-                @click="selectCompressFormat(format.value)"
-                :title="isFormatSupported(format.value) ? format.tip : '当前浏览器不支持输出 ' + format.label"
-              >
-                <i :data-lucide="format.icon" :key="format.icon"></i>
-                <span>{{ format.label }}</span>
+            <div class="compress-format-grid" role="group" aria-label="本批输出格式">
+              <button class="compress-format-btn" type="button" v-for="format in imageCompressFormats" :key="format.value"
+                :class="{ active: pendingUploadBatch.imageOptions.format === format.value }" :aria-pressed="pendingUploadBatch.imageOptions.format === format.value"
+                :disabled="!isFormatSupported(format.value)" @click="pendingUploadBatch.imageOptions.format = format.value">
+                <kv-icon :name="format.icon" aria-hidden="true"></kv-icon>{{ format.label }}<small v-if="!isFormatSupported(format.value)">不支持</small>
               </button>
             </div>
             <div class="compress-settings-grid">
               <div class="compress-control">
-                <label>压缩质量：{{ imageCompress.quality }}%</label>
-                <div class="compress-range-row">
-                  <input
-                    type="range"
-                    min="30"
-                    max="95"
-                    step="1"
-                    v-model.number="imageCompress.quality"
-                    @change="saveImageCompressSettings"
-                  />
-                </div>
+                <label for="pending-quality">压缩质量：{{ pendingUploadBatch.imageOptions.quality }}%</label>
+                <input id="pending-quality" type="range" min="30" max="95" step="1" v-model.number="pendingUploadBatch.imageOptions.quality">
               </div>
               <div class="compress-control">
-                <label>最大边长</label>
-                <div class="compress-range-row">
-                  <input
-                    class="compress-number"
-                    type="number"
-                    min="0"
-                    max="12000"
-                    step="100"
-                    v-model.number="imageCompress.maxDimension"
-                    @change="saveImageCompressSettings"
-                  />
-                  <span class="image-compress-summary">0 为保留原始尺寸</span>
-                </div>
+                <label for="pending-dimension">最大边长（像素）</label>
+                <input id="pending-dimension" class="compress-number" type="number" min="0" max="12000" step="100"
+                  aria-describedby="pending-dimension-help" v-model.number="pendingUploadBatch.imageOptions.maxDimension">
+                <span id="pending-dimension-help" class="upload-muted">0 表示保留原始尺寸</span>
               </div>
             </div>
-            <label class="compress-checkbox">
-              <input
-                type="checkbox"
-                v-model="imageCompress.keepOriginalWhenLarger"
-                @change="saveImageCompressSettings"
-              />
-              压缩后体积更大时自动保留原图
-            </label>
+            <label class="compress-checkbox"><input type="checkbox" v-model="pendingUploadBatch.imageOptions.keepOriginalWhenLarger">压缩后体积更大时保留原图</label>
           </div>
-
-          <div class="compress-confirm-actions">
-            <button
-              class="compress-action-btn"
-              type="button"
-              @click="cancelPendingUpload"
-            >
-              取消
-            </button>
-            <button
-              class="compress-action-btn"
-              :class="{ primary: pendingCompressionChoice === 'original' }"
-              type="button"
-              @click="uploadPendingOriginal"
-            >
-              <i data-lucide="file-up"></i>
-              上传原图
-            </button>
-            <button
-              class="compress-action-btn"
-              :class="{ primary: pendingCompressionChoice === 'compress' }"
-              type="button"
-              @click="uploadPendingCompressed"
-            >
-              <i data-lucide="minimize"></i>
-              压缩后上传
-            </button>
+          <div class="upload-dialog-actions">
+            <button class="upload-btn" type="button" @click="cancelPendingUpload">取消</button>
+            <button class="upload-btn upload-btn-primary" type="button" @click="confirmPendingUpload">{{ pendingCompressionChoice === 'compress' ? '压缩后上传' : '上传原图' }}</button>
           </div>
-        </div>
+        </section>
       </div>
 
       <div
@@ -1082,8 +576,9 @@
         <div
           class="toast"
           :class="toast.type"
-          v-for="(toast, index) in toasts"
-          :key="index"
+          v-for="toast in toasts"
+          :key="toast.id"
+          role="status"
         >
           <i :data-lucide="getToastIcon(toast.type)" :key="toast.type"></i>
           <span>{{ toast.message }}</span>
@@ -1091,8 +586,9 @@
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js" integrity="sha384-ULpZhk1pvhc/UK5ktA9kwb2guy9ovNSTyxPNHANnA35YjBQgdwI+AhLkixDvdlw4" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="/icons-subset.js?v=be1dad3cb5"></script>
+    <script src="/icons.js?v=fc3fc216e0"></script>
     <script>
       const LOCAL_PREVIEW_PAGE = "/preview.html";
 
@@ -1100,12 +596,33 @@
         el: "#app",
         data: {
           baseURL: document.location.origin,
+          theme: document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light",
+          storageStatusLoading: false,
+          storageStatusVerified: false,
+          authStatusVerified: false,
+          authRequired: null,
+          guestLimitVerified: false,
+          guestDailyLimitVerified: false,
+          telegramAvailable: false,
+          authError: "",
+          authLoginRequired: false,
+          storageStatusError: "",
+          historySaveError: "",
+          historyReadBlocked: false,
+          historyConfirmOpen: false,
+          clipboardReading: false,
+          linkFormats: [
+            { value: "url", label: "直链" },
+            { value: "markdown", label: "Markdown" },
+            { value: "html", label: "HTML" },
+            { value: "bbcode", label: "BBCode" },
+            { value: "ubb", label: "UBB" },
+          ],
           isDragging: false,
           showUrlInput: false,
           urlToUpload: "",
-          urlUploading: false,
-          urlResolving: false,
-          urlStage: "",
+          urlSubmitting: false,
+          clockNow: Date.now(),
           urlStageTimer: null,
           // Media resolve capability, loaded from /api/resolve-url/status. The
           // allowed-host list stays server side so this UI can never disagree
@@ -1124,8 +641,11 @@
             selected: "",
             maxBytes: 0,
             sourceUrl: "",
+            task: null,
+            error: "",
           },
           pendingUploadBatch: null,
+          pendingUploadBatches: [],
           pendingCompressionChoice: "original",
           pasteUploadNotice: null,
           pasteUploadNoticeTimer: null,
@@ -1176,6 +696,26 @@
             maxConcurrent: 3,
           },
           uploadLimits: {},
+          storageStates: {},
+        },
+        created() {
+          this._idSequence = 0;
+          this._idPrefix = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+          this._uploadRunning = new Set();
+          this._taskControllers = new Map();
+          this._requestControllers = new Set();
+          this._objectUrls = new Set();
+          this._imageCancellations = new Set();
+          this._toastTimers = new Set();
+          this._successTimers = new Map();
+          this._queueTimer = null;
+          this._maxConcurrent = Math.max(1, Math.floor(Number(this.uploadConfig.maxConcurrent) || 3));
+          this._pumping = false;
+          this._telegramRunning = false;
+          this._telegramNextAt = 0;
+          this._resolveGeneration = 0;
+          this._dialogLocked = false;
+          this._isDisposed = false;
         },
         computed: {
           selectedCount() {
@@ -1283,9 +823,94 @@
                 });
               });
           },
+          storageOptions() {
+            const options = [
+              { mode: "telegram", label: "Telegram", target: "Telegram 频道", brand: "fab fa-telegram", available: this.telegramAvailable },
+              { mode: "r2", label: "R2", target: "R2 存储桶", icon: "cloud", available: this.r2Available },
+              { mode: "s3", label: "S3", target: "S3 存储", icon: "database", available: this.s3Available },
+              { mode: "discord", label: "Discord", target: "Discord 频道", brand: "fab fa-discord", available: this.discordAvailable },
+              { mode: "huggingface", label: "HuggingFace", target: "HuggingFace 仓库", icon: "folder-git-2", available: this.huggingfaceAvailable },
+              { mode: "github", label: "GitHub", target: "GitHub 仓库", brand: "fab fa-github", available: this.githubAvailable },
+            ];
+            return this.isGuest ? options.filter((option) => ["telegram", "r2"].includes(option.mode)) : options;
+          },
+          canAddUploads() {
+            return !this.authChecking && this.authStatusVerified && !this.authLoginRequired &&
+              !this.storageStatusLoading && this.storageStatusVerified &&
+              this.storageOptions.some((option) => option.mode === this.storageMode && option.available);
+          },
+          activeTaskCount() {
+            return this.uploadingFiles.filter((file) => ["waiting", "processing", "uploading", "resolving", "choosing"].includes(file.status)).length;
+          },
+          urlUploading() {
+            return this.uploadingFiles.some((file) => file.kind !== "file" && file.status === "uploading");
+          },
+          urlResolving() {
+            return this.uploadingFiles.some((file) => file.status === "resolving");
+          },
+          urlActivityCount() {
+            return this.uploadingFiles.filter((file) => file.kind !== "file" && ["uploading", "resolving"].includes(file.status)).length;
+          },
+          urlStage() {
+            const active = this.uploadingFiles.filter((file) => file.kind !== "file" && ["uploading", "resolving"].includes(file.status));
+            if (!active.length) return "";
+            const startedAt = Math.min(...active.map((file) => file.startedAt || this.clockNow));
+            const seconds = Math.max(0, Math.floor((this.clockNow - startedAt) / 1000));
+            return `${active.length} 个远程任务等待服务端响应；最早一项已等待 ${seconds} 秒。未提供传输进度。`;
+          },
+          activeUploadDialog() {
+            if (this.qualityPicker.visible) return "qualityDialog";
+            if (this.pendingUploadBatch) return "compressionDialog";
+            if (this.previewData) return "previewDialog";
+            return this.historyConfirmOpen ? "historyDialog" : "";
+          },
+          activeDialogKey() {
+            const id = this.qualityPicker.visible && this.qualityPicker.task
+              ? this.qualityPicker.task.id
+              : this.pendingUploadBatch ? this.pendingUploadBatch.id : "";
+            return this.activeUploadDialog ? `${this.activeUploadDialog}:${id}` : "";
+          },
+          canConfirmQuality() {
+            if (!this.qualityPicker.visible || this.qualityPicker.loading || this.qualityPicker.error) return false;
+            const task = this.qualityPicker.task;
+            const variant = this.qualityPicker.variants.find((item) => item.formatId === this.qualityPicker.selected);
+            return !!task && task.status === "choosing" && !!variant && !this.isVariantDisabled(variant);
+          },
+          effectiveUploadLimit() {
+            const maxBytes = this.getUploadLimit(this.storageMode).maxBytes || this.uploadConfig.maxSize;
+            return this.isGuest && this.guestUploadConfig
+              ? Math.min(maxBytes, this.guestUploadConfig.maxFileSize)
+              : maxBytes;
+          },
+          hasVerifiedUploadLimit() {
+            const limit = this.uploadLimits[this.storageMode];
+            return !this.authChecking && !this.storageStatusLoading && this.authStatusVerified &&
+              this.storageStatusVerified && !!limit && Number.isFinite(limit.maxBytes) && limit.maxBytes > 0 &&
+              (!this.isGuest || this.guestLimitVerified);
+          },
           currentUploadLimitLabel() {
-            const limit = this.getUploadLimit(this.storageMode);
-            return this.formatSize(limit.maxBytes || this.uploadConfig.maxSize);
+            if (this.authChecking || this.storageStatusLoading) return "读取中";
+            return this.hasVerifiedUploadLimit ? this.formatSize(this.effectiveUploadLimit) : "暂未确认";
+          },
+          currentUploadLimitNote() {
+            if (this.authChecking || this.storageStatusLoading) return "正在读取服务端配置与访客限制，不以预设值代替实际限制。";
+            if (!this.hasVerifiedUploadLimit) {
+              return `未取得完整的服务端限制；前端暂按 ${this.formatSize(this.effectiveUploadLimit)} 校验，这不是已确认的服务端上限。最终以上传响应为准。`;
+            }
+            const limit = this.uploadLimits[this.storageMode];
+            const notes = ["已读取服务端限制。"];
+            if (this.isGuest) {
+              notes.push(`已叠加访客单文件上限 ${this.formatSize(this.guestUploadConfig.maxFileSize)}；访客不支持分片上传。`);
+            } else if (limit.supportsChunkUpload === false) {
+              notes.push("当前目标不支持分片上传。");
+            } else if (limit.supportsChunkUpload === true) {
+              const threshold = limit.directThreshold || this.uploadConfig.smallFileThreshold;
+              notes.push(`超过 ${this.formatSize(threshold)} 时使用分片${limit.directThreshold ? "" : "（前端默认阈值）"}；分片不会提高单文件上限。`);
+            } else {
+              notes.push("服务端未提供分片能力信息，实际以上传响应为准。");
+            }
+            if (typeof limit.message === "string" && limit.message) notes.push(limit.message);
+            return notes.join(" ");
           },
           pendingUploadStats() {
             const files = this.pendingUploadBatch?.files || [];
@@ -1324,7 +949,238 @@
             return stats;
           },
         },
+        watch: {
+          activeDialogKey(key) {
+            if (key && !this._dialogLocked) {
+              this._dialogLocked = true;
+              this._dialogReturnFocus = document.activeElement;
+              this._dialogOverflow = document.body.style.overflow;
+              document.body.style.overflow = "hidden";
+            }
+            this.$nextTick(() => {
+              if (this._isDisposed || key !== this.activeDialogKey) return;
+              if (key) {
+                this.focusActiveDialog();
+                this.isolateUploadSurface();
+              } else {
+                this.restoreDialogEnvironment(true);
+                this.showNextPendingUpload();
+                this.startUpload();
+              }
+            });
+          },
+        },
         methods: {
+          nextUploadId(prefix = "task") {
+            return `${prefix}-${this._idPrefix}-${++this._idSequence}`;
+          },
+
+          abortError() {
+            const error = new Error("操作已取消");
+            error.name = "AbortError";
+            return error;
+          },
+
+          isUploadTaskActive(item) {
+            return !this._isDisposed && this.uploadingFiles.includes(item);
+          },
+
+          assertUploadActive(item, signal) {
+            if (this._isDisposed || signal?.aborted || (item && !this.isUploadTaskActive(item))) {
+              throw this.abortError();
+            }
+          },
+
+          // 控制器保留到响应体读完；非队列请求也在销毁时统一中止。
+          async requestJson(url, options = {}, item = null) {
+            const controller = options.signal ? null : new AbortController();
+            const signal = options.signal || controller.signal;
+            if (controller) this._requestControllers.add(controller);
+            try {
+              this.assertUploadActive(item, signal);
+              const response = await fetch(url, { credentials: "include", ...options, signal });
+              this.assertUploadActive(item, signal);
+              let data;
+              try {
+                data = await response.json();
+              } catch (error) {
+                this.assertUploadActive(item, signal);
+                const invalid = new Error(`服务端未返回有效 JSON（HTTP ${response.status}），请检查服务或代理。`);
+                invalid.status = response.status;
+                throw invalid;
+              }
+              this.assertUploadActive(item, signal);
+              const result = Array.isArray(data) ? data[0] : data;
+              if (!response.ok || result?.success === false || result?.error) {
+                const detail = result?.errorDetail || result?.error;
+                const error = new Error(typeof detail === "string" ? detail : `请求失败（HTTP ${response.status}）`);
+                error.status = response.status;
+                throw error;
+              }
+              return data;
+            } finally {
+              if (controller) this._requestControllers.delete(controller);
+            }
+          },
+
+          ensureCanAddUploads() {
+            if (this._isDisposed) return false;
+            if (this.canAddUploads) return true;
+            this.showToast("请先确认身份及可用存储目标，再添加文件。可重新读取服务端状态。", "error");
+            return false;
+          },
+
+          createTrackedObjectURL(file) {
+            if (this._isDisposed) throw this.abortError();
+            const url = URL.createObjectURL(file);
+            this._objectUrls.add(url);
+            return url;
+          },
+
+          releaseObjectURL(url) {
+            if (url && this._objectUrls.delete(url)) URL.revokeObjectURL(url);
+          },
+
+          removeUploadTask(item) {
+            const timer = this._successTimers.get(item.id);
+            if (timer !== undefined) clearTimeout(timer);
+            this._successTimers.delete(item.id);
+            this.releaseObjectURL(item.preview);
+            item.preview = null;
+            item.file = null;
+            item.originalFile = null;
+            const index = this.uploadingFiles.indexOf(item);
+            if (index !== -1) this.uploadingFiles.splice(index, 1);
+          },
+
+          getDialogControls(root) {
+            if (!root) return [];
+            return Array.from(root.querySelectorAll(
+              'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])',
+            )).filter((node) => !node.disabled && node.tabIndex >= 0 && node.getClientRects().length && !node.closest('[inert], [hidden], [aria-hidden="true"]'));
+          },
+
+          focusActiveDialog() {
+            const dialog = this.$refs[this.activeUploadDialog];
+            if (!dialog) return;
+            const preferred = dialog.querySelector("[data-dialog-focus]:not([disabled])");
+            (preferred || this.getDialogControls(dialog)[0] || dialog).focus();
+          },
+
+          isolateUploadSurface() {
+            const surface = this.$refs.uploadSurface;
+            if (!surface) return;
+            if (!this._surfaceState) {
+              this._surfaceState = {
+                node: surface,
+                inert: surface.getAttribute("inert"),
+                ariaHidden: surface.getAttribute("aria-hidden"),
+              };
+            }
+            surface.setAttribute("inert", "");
+            surface.setAttribute("aria-hidden", "true");
+          },
+
+          restoreDialogEnvironment(restoreFocus) {
+            const state = this._surfaceState;
+            if (state) {
+              for (const [name, value] of [["inert", state.inert], ["aria-hidden", state.ariaHidden]]) {
+                if (value === null) state.node.removeAttribute(name);
+                else state.node.setAttribute(name, value);
+              }
+              this._surfaceState = null;
+            }
+            if (this._dialogLocked) document.body.style.overflow = this._dialogOverflow || "";
+            this._dialogLocked = false;
+            const previous = this._dialogReturnFocus;
+            this._dialogReturnFocus = null;
+            if (restoreFocus && !this._isDisposed) {
+              const target = previous?.isConnected && !previous.disabled && !previous.closest("[inert]")
+                ? previous : this.$refs.uploadMain;
+              target?.focus?.();
+            }
+          },
+
+          syncTheme() {
+            this.theme = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+          },
+
+          toggleTheme() {
+            if (window.ThemeManager) {
+              window.ThemeManager.toggleTheme();
+            } else {
+              const next = this.theme === "dark" ? "light" : "dark";
+              document.documentElement.setAttribute("data-theme", next);
+              document.documentElement.style.colorScheme = next;
+              try { localStorage.setItem("themeMode", next); } catch (e) {}
+            }
+            this.syncTheme();
+          },
+
+          toggleUrlInput() {
+            this.showUrlInput = !this.showUrlInput;
+            if (this.showUrlInput) this.$nextTick(() => this.$refs.urlInput && this.$refs.urlInput.focus());
+          },
+
+          handleWorkbenchKeydown(event) {
+            const name = this.activeUploadDialog;
+            const dialog = this.$refs[name];
+            if (!dialog) return;
+            if (event.key === "Escape") {
+              event.preventDefault();
+              if (name === "compressionDialog") this.cancelPendingUpload();
+              else this.closePreview();
+              return;
+            }
+            if (event.key !== "Tab") return;
+            const controls = Array.from(dialog.querySelectorAll(
+              'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])',
+            )).filter((node) => node.getClientRects().length && !node.closest("[inert]"));
+            const first = controls[0];
+            const last = controls[controls.length - 1];
+            const active = document.activeElement;
+            if (!first) {
+              event.preventDefault();
+              dialog.focus();
+            } else if (event.shiftKey && (active === first || active === dialog || !dialog.contains(active))) {
+              event.preventDefault();
+              last.focus();
+            } else if (!event.shiftKey && (active === last || !dialog.contains(active))) {
+              event.preventDefault();
+              first.focus();
+            }
+          },
+
+          bindPreviewIframeKeys() {
+            try {
+              const frame = this.$refs.previewIframe;
+              if (frame && frame.contentDocument) {
+                frame.contentDocument.addEventListener("keydown", (event) => {
+                  if (event.key === "Escape") this.handleWorkbenchKeydown(event);
+                });
+              }
+            } catch (e) { /* 跨源内容仍可通过弹窗关闭按钮退出。 */ }
+          },
+
+          getUploadTaskStatus(file) {
+            if (file.status === "waiting") return "等待上传";
+            if (file.status === "processing") return "浏览器内处理图片";
+            if (file.status === "success") return "上传成功";
+            if (file.status === "error") return "上传失败";
+            if (file.uploadStage === "initializing") return "初始化分片上传";
+            if (file.uploadStage === "merging") return "分片已接收，等待合并与存储";
+            if (file.uploadStage === "chunks") return `服务端已接收 ${file.confirmedChunks}/${file.totalChunks} 片`;
+            return "请求已发出，等待服务器响应（无传输百分比）";
+          },
+
+          async refreshUploadLimits() {
+            if (this.authChecking || this.storageStatusLoading) return;
+            if (!this.authStatusVerified || (this.isGuest && !this.guestLimitVerified)) {
+              if (!(await this.checkAuth())) return;
+            }
+            await this.checkStorageTarget(false);
+          },
+
           normalizeFolderPath(value) {
             const parts = String(value || "")
               .replace(/\\/g, "/")
@@ -1799,7 +1655,8 @@
 
           // 打开清晰度选择；只剩一个可用档位时直接转存，省掉多余点击
           async openQualityPicker(rawUrl) {
-            this.startUrlTicker("解析中", 0);
+            this.urlResolving = true;
+            this.startUrlTicker("解析中");
             this.qualityPicker.visible = true;
             this.qualityPicker.loading = true;
             this.qualityPicker.title = "";
@@ -1815,10 +1672,18 @@
               this.stopUrlTicker();
               this.qualityPicker.visible = false;
               this.qualityPicker.loading = false;
+              this.urlResolving = false;
               this.showToast("解析失败：" + err.message, "error");
               return;
             }
 
+            this.urlResolving = false;
+            this.stopUrlTicker();
+            // 用户关闭解析窗口后，不自动发起转存。
+            if (!this.qualityPicker.visible) {
+              this.qualityPicker.loading = false;
+              return;
+            }
             const maxBytes = Number(info.maxImportBytes) || 0;
             const variants = (info.variants || []).filter((item) => item.formatId);
             const usable = variants.filter(
@@ -1840,15 +1705,14 @@
             this.qualityPicker.selected = usable[0].formatId;
           },
 
-          // 转存阶段的服务器侧耗时没有进度事件，但体积是解析阶段就确定的，
-          // 按实测的 0.55MB/s 上行速率换算成预估秒数，至少让等待有个刻度。
-          startUrlTicker(baseText, estimateSeconds) {
+          // 服务端没有传输进度事件；只显示实测等待时长，不推算百分比或完成时间。
+          startUrlTicker(baseText) {
+            this.stopUrlTicker();
             const startedAt = Date.now();
-            const suffix = estimateSeconds > 0 ? `，预计约 ${estimateSeconds} 秒` : "";
-            this.urlStage = `${baseText}…`;
+            this.urlStage = `${baseText}… 等待服务器响应，未提供传输进度。`;
             this.urlStageTimer = setInterval(() => {
               const seconds = Math.round((Date.now() - startedAt) / 1000);
-              this.urlStage = `${baseText}… 已等待 ${seconds} 秒${suffix}`;
+              this.urlStage = `${baseText}… 已等待 ${seconds} 秒，未提供传输进度。`;
             }, 1000);
           },
 
@@ -1870,18 +1734,13 @@
           },
 
           async runMediaUpload(rawUrl, variant) {
-            this.urlResolving = true;
+            this.urlResolving = false;
             this.urlUploading = true;
-            const size = Number(variant && variant.filesize) || 0;
-            this.startUrlTicker(
-              "转存中",
-              size > 0 ? Math.round(size / 1048576 / 0.55) : 0,
-            );
+            this.startUrlTicker("视频转存中");
             try {
               const data = await this.submitMediaUpload(rawUrl, variant);
-              if (Array.isArray(data) && data[0]?.src) {
-                this.registerUploadedUrlFile(data[0].src, rawUrl);
-              }
+              if (!Array.isArray(data) || !data[0]?.src) throw new Error("未返回文件路径");
+              this.registerUploadedUrlFile(data[0].src, rawUrl);
               this.urlToUpload = "";
             } catch (err) {
               this.showToast("转存失败：" + err.message, "error");
@@ -1942,6 +1801,7 @@
           },
 
           async uploadFromUrl() {
+            if (this.authChecking || this.urlUploading || this.urlResolving || this.qualityPicker.visible) return;
             const pasted = String(this.urlToUpload || "").trim();
             if (!pasted) {
               this.showToast("请输入有效的URL", "error");
@@ -1973,26 +1833,63 @@
             }
 
             this.urlUploading = true;
+            this.startUrlTicker("URL 转存中");
             try {
               const data = await this.uploadPlainUrlToServer(submittedUrl);
 
               // 处理成功响应 - 后端返回格式与普通上传一致 [{ src: '/file/xxx' }]
-              if (Array.isArray(data) && data[0]?.src) {
-                this.registerUploadedUrlFile(data[0].src, submittedUrl);
-              }
+              if (!Array.isArray(data) || !data[0]?.src) throw new Error("未返回文件路径");
+              this.registerUploadedUrlFile(data[0].src, submittedUrl);
 
               this.urlToUpload = "";
             } catch (err) {
               this.showToast("URL上传失败：" + err.message, "error");
+            } finally {
+              this.stopUrlTicker();
+              this.urlUploading = false;
             }
-            this.urlUploading = false;
           },
 
+          // 在入口处固定配置；后续切换目标、目录或图片设置不修改已有任务。
           createUploadContext() {
-            return {
+            const limit = { ...this.getUploadLimit(this.storageMode) };
+            if (this.isGuest && this.guestUploadConfig) {
+              limit.maxBytes = Math.min(limit.maxBytes, this.guestUploadConfig.maxFileSize);
+              limit.supportsChunkUpload = false;
+            }
+            const chunkSize = Number(this.uploadConfig.chunkSize);
+            return Object.freeze({
               storageMode: this.storageMode,
               storageTarget: this.storageTarget,
               folderPath: this.normalizeFolderPath(this.folderPath),
+              isGuest: this.isGuest,
+              limit: Object.freeze(limit),
+              chunkSize: Number.isSafeInteger(chunkSize) && chunkSize > 0 ? chunkSize : 5 * 1024 * 1024,
+            });
+          },
+
+          snapshotFileBatchOptions() {
+            return {
+              context: this.createUploadContext(),
+              decision: this.imageUploadDecision,
+              imageOptions: this.snapshotImageCompressOptions(this.imageCompress.enabled),
+            };
+          },
+
+          createUploadTask(kind, context, fields = {}) {
+            return {
+              id: this.nextUploadId(), kind, context,
+              storageMode: context.storageMode,
+              storageTarget: context.storageTarget,
+              folderPath: context.folderPath,
+              name: "", size: null, file: null, originalFile: null, preview: null,
+              status: "waiting", uploadStage: "waiting", error: null,
+              progress: 0, confirmedChunks: 0, totalChunks: 0, isChunked: false,
+              startedAt: 0, attempts: 0, resultRegistered: false,
+              compressionStatus: "", imageCompressionPrepared: false,
+              imageCompressOptions: null, sourceUrl: "", variant: null,
+              mediaResolved: false, mediaMaxBytes: 0,
+              ...fields,
             };
           },
 
@@ -2083,27 +1980,34 @@
             };
           },
 
+          getTaskMaxBytes(item) {
+            const maxBytes = item.context.limit.maxBytes;
+            // 原快照不会因切换设置放宽；身份变为访客时再叠加当前限制。
+            return this.isGuest && this.guestUploadConfig
+              ? Math.min(maxBytes, this.guestUploadConfig.maxFileSize) : maxBytes;
+          },
+
           validateUploadItemSize(item) {
-            const limit = this.getUploadLimit(this.getItemStorageMode(item));
-            const maxBytes =
-              this.isGuest && this.guestUploadConfig
-                ? Math.min(limit.maxBytes || Infinity, this.guestUploadConfig.maxFileSize)
-                : limit.maxBytes;
-            if (maxBytes && item.file.size > maxBytes) {
-              throw new Error(
-                `${this.getItemStorageTarget(item)} 单文件上限为 ${this.formatSize(maxBytes)}。` +
-                  `较大的浏览器上传请切换到 R2、S3、WebDAV 或 GitHub。`
-              );
+            const maxBytes = this.getTaskMaxBytes(item);
+            if (item.file.size > maxBytes) {
+              throw new Error(`${this.getItemStorageTarget(item)} 本任务单文件校验上限为 ${this.formatSize(maxBytes)}。请减小文件，或按新目标重新添加；重试保留原配置。`);
             }
           },
 
           shouldUseChunkedUpload(item) {
-            if (this.isGuest) return false;
-            const limit = this.getUploadLimit(this.getItemStorageMode(item));
-            if (limit.supportsChunkUpload === false) return false;
-            const threshold =
-              limit.directThreshold || this.uploadConfig.smallFileThreshold;
-            return item.file.size > threshold;
+            const limit = item.context.limit;
+            return !item.context.isGuest && !this.isGuest && limit.supportsChunkUpload === true &&
+              item.file.size > limit.directThreshold;
+          },
+
+          assertTaskPermission(item) {
+            if (!this.authStatusVerified || this.authChecking || this.authLoginRequired) {
+              throw new Error("身份尚未确认，请重新读取状态后重试。");
+            }
+            if (!this.storageStatusVerified || !this.storageOptions.some((option) =>
+              option.mode === item.context.storageMode && option.available)) {
+              throw new Error(`原目标 ${item.context.storageTarget} 当前不可用或无权使用；不会自动切换存储。请重新读取状态后重试。`);
+            }
           },
 
           async detectImageCompressionSupport() {
@@ -2246,148 +2150,95 @@
             return !["image/gif", "image/svg+xml"].includes(type);
           },
 
-          validateUploadFiles(files) {
-            const valid = [];
-            const invalid = [];
-
-            const selectedLimit = this.getUploadLimit(this.storageMode);
-            const maxSize =
-              this.isGuest && this.guestUploadConfig
-                ? Math.min(
-                    selectedLimit.maxBytes || Infinity,
-                    this.guestUploadConfig.maxFileSize,
-                  )
-                : selectedLimit.maxBytes || this.uploadConfig.maxSize;
-            const maxSizeLabel = this.formatSize(maxSize);
-
-            files.forEach((file) => {
-              if (file.size > maxSize) {
-                invalid.push(file.name);
-              } else {
-                valid.push(file);
-              }
-            });
-
-            if (invalid.length > 0) {
-              this.showToast(
-                `${invalid.length}个文件超过${maxSizeLabel}限制`,
-                "error",
-              );
-            }
-
-            if (valid.length === 0) return;
+          validateUploadFiles(files, context = this.createUploadContext(), allowCompression = false) {
+            const maxSize = context.limit.maxBytes;
+            const valid = Array.from(files || []).filter((file) => file && Number.isFinite(file.size) &&
+              (file.size <= maxSize || (allowCompression && this.isCompressibleImage(file))));
+            const rejected = Array.from(files || []).length - valid.length;
+            if (rejected) this.showToast(`${rejected} 个文件超过本批 ${this.formatSize(maxSize)} 校验上限或无法读取`, "error");
             return valid;
           },
 
           async prepareFilesForUpload(files, options = {}) {
-            const valid = options.skipValidation
-              ? Array.from(files || [])
-              : this.validateUploadFiles(files);
-            if (!valid || valid.length === 0) {
-              return { fileCount: 0, totalSize: 0, pending: false };
+            if (!this.ensureCanAddUploads()) return { fileCount: 0 };
+            const snapshot = options.context ? options : this.snapshotFileBatchOptions();
+            const { context, decision, imageOptions } = snapshot;
+            // 可压缩图片允许先处理，真正发请求前仍按处理后的大小校验。
+            const valid = this.validateUploadFiles(files, context, decision !== "original");
+            if (!valid.length) return { fileCount: 0, totalSize: 0, pending: false };
+            const imageCount = valid.filter((file) => this.isCompressibleImage(file)).length;
+            const pending = imageCount > 0 && decision === "ask";
+            if (pending) {
+              this.pendingUploadBatches.push({
+                id: this.nextUploadId("batch"), files: valid, context,
+                imageOptions: { ...imageOptions },
+                choice: imageOptions.enabled ? "compress" : "original",
+              });
+              this.showNextPendingUpload();
+            } else {
+              this.processFiles(valid, { ...imageOptions, enabled: imageCount > 0 && decision === "optimized" }, context);
             }
-
-            const context = this.createUploadContext();
-            const imageCount = valid.filter((file) =>
-              this.isCompressibleImage(file),
-            ).length;
-            const totalSize = valid.reduce((sum, file) => sum + (file.size || 0), 0);
-
-            if (imageCount > 0) {
-              if (this.imageUploadDecision !== "ask") {
-                await this.processFiles(
-                  valid,
-                  this.snapshotImageCompressOptions(
-                    this.imageUploadDecision === "optimized",
-                  ),
-                  context,
-                );
-                return {
-                  fileCount: valid.length,
-                  imageCount,
-                  totalSize,
-                  pending: false,
-                  storageTarget: context.storageTarget,
-                  folderPath: context.folderPath,
-                };
-              }
-
-              this.pendingUploadBatch = { files: valid, context };
-              this.pendingCompressionChoice = this.imageCompress.enabled
-                ? "compress"
-                : "original";
-              return {
-                fileCount: valid.length,
-                imageCount,
-                totalSize,
-                pending: true,
-                storageTarget: context.storageTarget,
-                folderPath: context.folderPath,
-              };
-            }
-
-            await this.processFiles(
-              valid,
-              this.snapshotImageCompressOptions(false),
-              context,
-            );
             return {
-              fileCount: valid.length,
-              imageCount,
-              totalSize,
-              pending: false,
-              storageTarget: context.storageTarget,
-              folderPath: context.folderPath,
+              fileCount: valid.length, imageCount,
+              totalSize: valid.reduce((sum, file) => sum + file.size, 0),
+              pending, storageTarget: context.storageTarget, folderPath: context.folderPath,
             };
           },
 
+          showNextPendingUpload() {
+            if (this._isDisposed || this.activeUploadDialog || !this.pendingUploadBatches.length) return;
+            this.pendingUploadBatch = this.pendingUploadBatches.shift();
+            this.pendingCompressionChoice = this.pendingUploadBatch.choice;
+          },
+
           setPendingCompressionMode(mode) {
-            this.pendingCompressionChoice = mode;
+            if (["original", "compress"].includes(mode)) this.pendingCompressionChoice = mode;
           },
 
           cancelPendingUpload() {
-            this.pendingUploadBatch = null;
-            this.pendingCompressionChoice = "original";
+            const batch = this.consumePendingUploadBatch();
+            if (batch) batch.files = [];
           },
 
           consumePendingUploadBatch() {
             const batch = this.pendingUploadBatch;
             this.pendingUploadBatch = null;
+            this.$nextTick(() => {
+              if (this._isDisposed) return;
+              this.showNextPendingUpload();
+              this.startUpload();
+            });
             return batch;
           },
 
-          async uploadPendingOriginal() {
+          confirmPendingUpload() {
+            if (!this.pendingUploadBatch || this._isDisposed) return;
+            const enabled = this.pendingCompressionChoice === "compress";
             const batch = this.consumePendingUploadBatch();
-            if (!batch) return;
-            this.pendingCompressionChoice = "original";
-            await this.processFiles(
-              batch.files,
-              this.snapshotImageCompressOptions(false),
-              batch.context,
-            );
+            this.processFiles(batch.files, { ...batch.imageOptions, enabled }, batch.context);
+            batch.files = [];
           },
 
-          async uploadPendingCompressed() {
-            const batch = this.consumePendingUploadBatch();
-            if (!batch) return;
+          uploadPendingOriginal() {
+            this.pendingCompressionChoice = "original";
+            this.confirmPendingUpload();
+          },
+
+          uploadPendingCompressed() {
             this.pendingCompressionChoice = "compress";
-            await this.processFiles(
-              batch.files,
-              this.snapshotImageCompressOptions(true),
-              batch.context,
-            );
+            this.confirmPendingUpload();
           },
 
           getItemStorageMode(item) {
-            return item.storageMode || this.storageMode;
+            return item.context.storageMode;
           },
 
           getItemStorageTarget(item) {
-            return item.storageTarget || this.storageTarget;
+            return item.context.storageTarget;
           },
 
           getItemFolderPath(item) {
-            return this.normalizeFolderPath(item.folderPath || "");
+            return item.context.folderPath;
           },
 
           replaceFileExtension(name, ext) {
@@ -2560,246 +2411,190 @@
             }
           },
 
-          // 处理文件列表
-          async processFiles(files, imageCompressOptions, uploadContext) {
-            if (!files || files.length === 0) return;
+          // 所有入口都只入队；并发槽只由 startUpload 分配。
+          processFiles(files, imageCompressOptions, uploadContext) {
+            if (this._isDisposed || !files?.length) return;
             const context = uploadContext || this.createUploadContext();
-            const compressOptions =
-              imageCompressOptions ||
-              this.snapshotImageCompressOptions(this.imageCompress.enabled);
-
-            // 添加到上传队列
+            const imageOptions = Object.freeze({ ...(imageCompressOptions || this.snapshotImageCompressOptions(false)) });
             for (const file of files) {
-              const uploadItem = {
-                name: file.name,
-                size: file.size,
-                file: file,
-                originalFile: file,
-                originalName: file.name,
-                originalSize: file.size,
-                status: "waiting",
-                preview: null,
-                progress: 0,
-                error: null,
-                compressionStatus: "",
-                imageCompressionPrepared: false,
-                imageCompressOptions: { ...compressOptions },
-                storageMode: context.storageMode,
-                storageTarget: context.storageTarget,
-                folderPath: context.folderPath,
-                isChunked: false,
-              };
-
-              // 生成预览
-              if (file.type.startsWith("image/")) {
-                uploadItem.preview = URL.createObjectURL(file);
+              const item = this.createUploadTask("file", context, {
+                name: file.name, size: file.size, file, originalFile: file,
+                originalName: file.name, originalSize: file.size,
+                imageCompressOptions: imageOptions,
+              });
+              if (String(file.type).startsWith("image/")) {
+                try { item.preview = this.createTrackedObjectURL(file); } catch (error) { /* 预览失败不阻止上传。 */ }
               }
-
-              this.uploadingFiles.push(uploadItem);
+              this.uploadingFiles.push(item);
             }
-
-            // 开始上传
-            await this.startUpload();
+            this.startUpload();
           },
 
-          // 开始上传
-          async startUpload() {
-            const waiting = this.uploadingFiles.filter(
-              (f) => f.status === "waiting",
-            );
-            if (waiting.length === 0) return;
-
-            // Telegram 模式串行上传，每个文件之间 500ms 延迟，避免频率限制
-            const telegramItems = waiting.filter(
-              (item) => this.getItemStorageMode(item) === "telegram",
-            );
-            const otherItems = waiting.filter(
-              (item) => this.getItemStorageMode(item) !== "telegram",
-            );
-
-            for (let i = 0; i < telegramItems.length; i++) {
-              await this.uploadFile(telegramItems[i]);
-              if (i < telegramItems.length - 1) {
-                await new Promise((resolve) => setTimeout(resolve, 500));
-              }
-            }
-
-            // 其他存储模式使用并发上传
-            const concurrent = this.uploadConfig.maxConcurrent;
-            for (let i = 0; i < otherItems.length; i += concurrent) {
-              const batch = otherItems.slice(i, i + concurrent);
-              await Promise.all(batch.map((item) => this.uploadFile(item)));
-            }
-
-            // 上传完成
-            const successCount = waiting.filter(
-              (f) => f.status === "success",
-            ).length;
-            if (successCount > 0) {
-              const targets = [
-                ...new Set(waiting.map((item) => this.getItemStorageTarget(item))),
-              ];
-              const targetText = targets.length === 1 ? targets[0] : "多个存储目标";
-              this.showToast(
-                `成功上传 ${successCount} 个文件到 ${targetText}`,
-                "success",
-              );
-            }
-
-            // 清理完成的上传项
-            setTimeout(() => {
-              this.uploadingFiles = this.uploadingFiles.filter(
-                (f) => f.status !== "success",
-              );
-            }, 2000);
+          canScheduleTask(item) {
+            return item.status === "waiting" && !this._uploadRunning.has(item.id) &&
+              !(item.kind === "media" && !item.mediaResolved && this.activeUploadDialog);
           },
 
-          // 上传单个文件
-          async uploadFile(item) {
+          // 页面级统一调度：先同步占槽，再执行异步操作，防止多批次和重试重入。
+          startUpload() {
+            if (this._isDisposed || this._pumping || this.authChecking || this.storageStatusLoading) return;
+            this._pumping = true;
+            clearTimeout(this._queueTimer);
+            this._queueTimer = null;
             try {
-              await this.prepareUploadItem(item);
-              this.validateUploadItemSize(item);
-              item.status = "uploading";
-              item.progress = 0;
-              item.isChunked = this.shouldUseChunkedUpload(item);
-              // 根据文件大小决定使用普通上传还是分片上传
-              if (item.isChunked) {
-                await this.chunkedUpload(item);
-              } else {
-                await this.directUpload(item);
+              while (this._uploadRunning.size < this._maxConcurrent) {
+                const item = this.uploadingFiles.find((task) => this.canScheduleTask(task) &&
+                  (this.getItemStorageMode(task) !== "telegram" ||
+                    (!this._telegramRunning && Date.now() >= this._telegramNextAt)));
+                if (!item) break;
+                const telegram = this.getItemStorageMode(item) === "telegram";
+                this._uploadRunning.add(item.id);
+                if (telegram) this._telegramRunning = true;
+                const controller = new AbortController();
+                this._taskControllers.set(item.id, controller);
+                item.status = item.kind === "media" && !item.mediaResolved ? "resolving" : "uploading";
+                item.startedAt = Date.now();
+                item.attempts += 1;
+                if (item.kind !== "file") this.startUrlTicker();
+                this.runUploadTask(item, controller.signal, telegram);
               }
-            } catch (err) {
-              item.status = "error";
-              item.error = err.message;
-              console.error("Upload error:", err);
+              const delay = this._telegramNextAt - Date.now();
+              if (!this._telegramRunning && delay > 0 && this._uploadRunning.size < this._maxConcurrent &&
+                this.uploadingFiles.some((item) => this.canScheduleTask(item) && this.getItemStorageMode(item) === "telegram")) {
+                this._queueTimer = setTimeout(() => { this._queueTimer = null; this.startUpload(); }, delay);
+              }
+            } finally {
+              this._pumping = false;
             }
           },
 
-          // 直接上传（小文件 <20MB）
-          async directUpload(item) {
+          async runUploadTask(item, signal, telegram) {
+            try {
+              this.assertUploadActive(item, signal);
+              this.assertTaskPermission(item);
+              if (item.kind === "file") await this.uploadFile(item, signal);
+              else if (item.kind === "media" && !item.mediaResolved) await this.openQualityPicker(item, signal);
+              else await this.uploadRemoteTask(item, signal);
+            } catch (error) {
+              if (this.isUploadTaskActive(item) && error.name !== "AbortError") {
+                item.status = "error";
+                item.error = error.message || "请求失败，请重试";
+                if (this.qualityPicker.task === item) {
+                  this.qualityPicker.loading = false;
+                  this.qualityPicker.error = item.error;
+                }
+                this.showToast(`${item.name}：${item.error}`, "error");
+              }
+            } finally {
+              this._taskControllers.delete(item.id);
+              this._uploadRunning.delete(item.id);
+              if (telegram) {
+                this._telegramRunning = false;
+                // 包括失败、取消、解析与重试；跨批次继续遵守 500ms 间隔。
+                this._telegramNextAt = Date.now() + 500;
+              }
+              if (!this._isDisposed) {
+                if (!this.urlActivityCount) this.stopUrlTicker();
+                this.startUpload();
+              }
+            }
+          },
+
+          async uploadFile(item, signal) {
+            await this.prepareUploadItem(item, signal);
+            this.assertUploadActive(item, signal);
+            this.assertTaskPermission(item);
+            this.validateUploadItemSize(item);
+            item.status = "uploading";
+            item.progress = 0;
+            item.isChunked = this.shouldUseChunkedUpload(item);
+            if (item.isChunked) await this.chunkedUpload(item, signal);
+            else await this.directUpload(item, signal);
+          },
+
+          // 直接上传：fetch 不提供请求体的传输进度，只报告请求阶段。
+          async directUpload(item, signal) {
+            item.uploadStage = "requesting";
             const formData = new FormData();
             formData.append("file", item.file);
             formData.append("storageMode", this.getItemStorageMode(item));
             formData.append("folderPath", this.getItemFolderPath(item));
-
-            const response = await fetch(`${this.baseURL}/upload`, {
-              method: "POST",
-              body: formData,
-              credentials: "include",
-            });
-
-            const data = await response.json();
-
-            if (!response.ok || (Array.isArray(data) && data[0]?.error)) {
-              const serverError = Array.isArray(data)
-                ? data[0]?.error
-                : data?.error;
-              throw new Error(serverError || "上传失败");
-            }
-
-            const src = data[0]?.src;
-            if (!src) throw new Error("未返回文件路径");
-
-            item.status = "success";
-            item.progress = 100;
-            this.handleUploadSuccess(item, src);
+            const data = await this.requestJson(`${this.baseURL}/upload`, {
+              method: "POST", body: formData, signal,
+            }, item);
+            this.handleUploadSuccess(item, this.getUploadResponse(data));
           },
 
-          // 分片上传（大文件 >=20MB）
-          async chunkedUpload(item) {
+          // 分片数量只代表已接收；合并/写存储返回有效 src 后才算完成。
+          async chunkedUpload(item, signal) {
             const file = item.file;
-            const chunkSize = this.uploadConfig.chunkSize;
+            const chunkSize = item.context.chunkSize;
             const totalChunks = Math.ceil(file.size / chunkSize);
-
-            // 1. 初始化上传
-            const initResponse = await fetch(
-              `${this.baseURL}/api/chunked-upload/init`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  fileName: file.name,
-                  fileSize: file.size,
-                  fileType: file.type,
-                  totalChunks: totalChunks,
-                  storageMode: this.getItemStorageMode(item),
-                  folderPath: this.getItemFolderPath(item),
-                }),
-                credentials: "include",
-              },
-            );
-
-            const initData = await initResponse.json();
-            if (!initResponse.ok) {
-              throw new Error(initData.error || "初始化上传失败");
-            }
-
-            const uploadId = initData.uploadId;
-
-            // 2. 上传分片
+            item.uploadStage = "initializing";
+            item.confirmedChunks = 0;
+            item.totalChunks = totalChunks;
+            const init = await this.requestJson(`${this.baseURL}/api/chunked-upload/init`, {
+              method: "POST", headers: { "Content-Type": "application/json" }, signal,
+              body: JSON.stringify({
+                fileName: file.name, fileSize: file.size, fileType: file.type, totalChunks,
+                storageMode: this.getItemStorageMode(item), folderPath: this.getItemFolderPath(item),
+              }),
+            }, item);
+            const uploadId = (init?.data || init)?.uploadId;
+            if (typeof uploadId !== "string" || !uploadId.trim()) throw new Error("初始化未返回有效的上传标识");
+            item.uploadStage = "chunks";
             for (let i = 0; i < totalChunks; i++) {
-              const start = i * chunkSize;
-              const end = Math.min(start + chunkSize, file.size);
-              const chunk = file.slice(start, end);
-
+              this.assertUploadActive(item, signal);
               const formData = new FormData();
-              formData.append("chunk", chunk);
+              formData.append("chunk", file.slice(i * chunkSize, Math.min((i + 1) * chunkSize, file.size)));
               formData.append("uploadId", uploadId);
               formData.append("chunkIndex", i);
-
-              const chunkResponse = await fetch(
-                `${this.baseURL}/api/chunked-upload/chunk`,
-                {
-                  method: "POST",
-                  body: formData,
-                  credentials: "include",
-                },
-              );
-
-              if (!chunkResponse.ok) {
-                const errData = await chunkResponse.json();
-                throw new Error(errData.error || `分片 ${i + 1} 上传失败`);
-              }
-
-              // 更新进度
-              item.progress = Math.round(((i + 1) / totalChunks) * 90); // 留 10% 给合并
+              const result = await this.requestJson(`${this.baseURL}/api/chunked-upload/chunk`, {
+                method: "POST", body: formData, signal,
+              }, item);
+              if ((result?.data || result)?.success !== true) throw new Error(`分片 ${i + 1} 未获服务端确认`);
+              item.confirmedChunks = i + 1;
             }
-
-            // 3. 完成上传
-            const completeResponse = await fetch(
-              `${this.baseURL}/api/chunked-upload/complete`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ uploadId }),
-                credentials: "include",
-              },
-            );
-
-            const completeData = await completeResponse.json();
-            if (!completeResponse.ok) {
-              throw new Error(completeData.error || "合并分片失败");
-            }
-
-            item.status = "success";
-            item.progress = 100;
-            this.handleUploadSuccess(item, completeData.src);
+            item.uploadStage = "merging";
+            const data = await this.requestJson(`${this.baseURL}/api/chunked-upload/complete`, {
+              method: "POST", headers: { "Content-Type": "application/json" }, signal,
+              body: JSON.stringify({ uploadId }),
+            }, item);
+            this.handleUploadSuccess(item, this.getUploadResponse(data));
           },
 
-          // 处理上传成功
-          handleUploadSuccess(item, src) {
-            const uploadedFile = {
-              name: item.file.name, // 原始文件名
-              fileName: item.file.name, // 保存原始文件名用于显示
-              url: `${this.baseURL}${src}`,
-              path: src,
-              size: item.file.size,
-              selected: false,
-              uploadTime: Date.now(),
-            };
+          getUploadResponse(data) {
+            const payload = data?.data || data;
+            const result = Array.isArray(payload) ? payload[0] : payload?.items?.[0] || payload;
+            if (typeof result?.src !== "string" || !result.src.trim()) throw new Error("未返回有效的文件路径");
+            const url = new URL(result.src, this.baseURL);
+            if (!["http:", "https:"].includes(url.protocol)) throw new Error("返回的文件链接协议无效");
+            return { ...result, url: url.href };
+          },
 
+          handleUploadSuccess(item, result) {
+            this.assertUploadActive(item);
+            if (item.resultRegistered) return;
+            const name = item.file?.name || result.fileName || result.name || item.name;
+            const size = item.file ? item.file.size : Number.isFinite(result.size) ? result.size : null;
+            const uploadedFile = {
+              id: this.nextUploadId("result"), taskId: item.id,
+              name, fileName: name, url: result.url, path: result.src, size,
+              storageMode: item.context.storageMode, storageTarget: item.context.storageTarget,
+              folderPath: item.context.folderPath, selected: false, uploadTime: Date.now(),
+            };
+            item.resultRegistered = true;
+            item.status = "success";
+            item.uploadStage = "complete";
+            item.progress = 100;
             this.uploadedFiles.unshift(uploadedFile);
             this.addToHistory(uploadedFile);
+            this.showToast(`已上传 ${name} 到 ${item.context.storageTarget}`, "success");
+            const timer = setTimeout(() => {
+              this._successTimers.delete(item.id);
+              if (!this._isDisposed && item.status === "success") this.removeUploadTask(item);
+            }, 2000);
+            this._successTimers.set(item.id, timer);
           },
 
           // 格式化链接
@@ -2840,25 +2635,24 @@
           },
 
           // 复制选中链接
-          copySelectedLinks() {
-            const links = this.uploadedFiles
-              .filter((f) => f.selected)
-              .map((f) => this.formatLink(f))
-              .join("\n");
-            this.copyToClipboard(links);
-            this.showToast(`已复制 ${this.selectedCount} 个链接`, "success");
+          async copySelectedLinks() {
+            await this.copyFileLinks(this.uploadedFiles.filter((file) => file.selected));
           },
 
           // 复制全部链接
-          copyAllLinks() {
-            const links = this.uploadedFiles
-              .map((f) => this.formatLink(f))
-              .join("\n");
-            this.copyToClipboard(links);
-            this.showToast(
-              `已复制 ${this.uploadedFiles.length} 个链接`,
-              "success",
-            );
+          async copyAllLinks() {
+            await this.copyFileLinks(this.uploadedFiles);
+          },
+
+          async copyFileLinks(files) {
+            if (!files.length) return;
+            const count = files.length;
+            try {
+              await this.copyToClipboard(files.map((file) => this.formatLink(file)).join("\n"));
+              this.showToast(`已复制 ${count} 个链接`, "success");
+            } catch (error) {
+              this.showToast("复制失败，请使用链接文本手动复制", "error");
+            }
           },
 
           // 选择全部
@@ -3011,27 +2805,13 @@
           },
 
           // 复制预览文件的直链
-          copyPreviewLink() {
+          async copyPreviewLink() {
             if (!this.previewData) return;
-            const link = this.previewData.url;
-            const fallback = () => {
-              const textarea = document.createElement("textarea");
-              textarea.value = link;
-              textarea.style.position = "fixed";
-              textarea.style.opacity = "0";
-              document.body.appendChild(textarea);
-              textarea.select();
-              document.execCommand("copy");
-              document.body.removeChild(textarea);
+            try {
+              await this.copyToClipboard(this.previewData.url);
               this.showToast("直链已复制", "success");
-            };
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard
-                .writeText(link)
-                .then(() => this.showToast("直链已复制", "success"))
-                .catch(() => fallback());
-            } else {
-              fallback();
+            } catch (error) {
+              this.showToast("复制失败，请返回结果区手动复制链接", "error");
             }
           },
 
@@ -3064,16 +2844,8 @@
               !this.uploadHistory[index].selected;
           },
 
-          copySelectedHistoryLinks() {
-            const links = this.uploadHistory
-              .filter((f) => f.selected)
-              .map((f) => this.formatLink(f))
-              .join("\n");
-            this.copyToClipboard(links);
-            this.showToast(
-              `已复制 ${this.selectedHistoryCount} 个链接`,
-              "success",
-            );
+          async copySelectedHistoryLinks() {
+            await this.copyFileLinks(this.uploadHistory.filter((file) => file.selected));
           },
 
           removeFromHistory(index) {
@@ -3264,22 +3036,26 @@
           },
 
           clearHistory() {
-            this.$confirm("确定要清空所有上传历史吗？", "提示", {
-              type: "warning",
-            })
-              .then(() => {
-                this.uploadHistory = [];
-                this.saveHistory();
-                this.showToast("历史记录已清空", "success");
-              })
-              .catch(() => {});
+            this.historyConfirmOpen = true;
+          },
+
+          confirmClearHistory() {
+            this.uploadHistory = [];
+            this.historyConfirmOpen = false;
+            // 读取被损坏数据阻断过的话，清空之后这个状态也该解除。
+            this.historyReadBlocked = false;
+            if (this.saveHistory()) this.showToast("本地历史已清空，服务器文件未删除", "success");
           },
 
           saveHistory() {
-            localStorage.setItem(
-              "uploadHistory",
-              JSON.stringify(this.uploadHistory),
-            );
+            try {
+              localStorage.setItem("uploadHistory", JSON.stringify(this.uploadHistory));
+              this.historySaveError = "";
+              return true;
+            } catch (error) {
+              this.historySaveError = "本地历史未能保存，可能是浏览器存储已满或被禁用。当前记录仍在本页，刷新后可能丢失；已成功上传的服务器文件不受影响，请先复制链接。";
+              return false;
+            }
           },
 
           loadHistory() {
@@ -3533,19 +3309,30 @@
           // 检查认证状态
           async checkAuth() {
             this.authChecking = true;
+            this.authStatusVerified = false;
+            this.guestLimitVerified = false;
+            this.guestDailyLimitVerified = false;
             try {
               const response = await fetch("/api/auth/check", {
                 credentials: "include",
+                cache: "no-store",
               });
+              if (!response.ok) throw new Error(`认证状态读取失败（${response.status}）`);
               const data = await response.json();
+              if (!data || typeof data.authRequired !== "boolean" || typeof data.authenticated !== "boolean") {
+                throw new Error("认证状态响应无效");
+              }
+              this.authStatusVerified = true;
 
               if (data.authRequired && !data.authenticated) {
                 this.isAuthenticated = false;
                 if (data.guestUpload && data.guestUpload.enabled) {
                   this.isGuest = true;
+                  this.guestLimitVerified = Number.isFinite(data.guestUpload.maxFileSize) && data.guestUpload.maxFileSize > 0;
+                  this.guestDailyLimitVerified = Number.isFinite(data.guestUpload.dailyLimit) && data.guestUpload.dailyLimit > 0;
                   this.guestUploadConfig = {
-                    maxFileSize: data.guestUpload.maxFileSize || 5 * 1024 * 1024,
-                    maxDailyUploads: data.guestUpload.dailyLimit || 10,
+                    maxFileSize: this.guestLimitVerified ? data.guestUpload.maxFileSize : 5 * 1024 * 1024,
+                    maxDailyUploads: this.guestDailyLimitVerified ? data.guestUpload.dailyLimit : 10,
                   };
                   this.storageMode = "telegram";
                   this.storageTarget = "Telegram 频道";
@@ -3572,13 +3359,21 @@
           },
 
           // 检查存储目标
-          async checkStorageTarget() {
+          async checkStorageTarget(restoreSavedMode = true) {
+            if (this.storageStatusLoading) return;
+            this.storageStatusLoading = true;
+            this.storageStatusVerified = false;
             try {
               const response = await fetch("/api/status", {
                 credentials: "include",
+                cache: "no-store",
               });
+              if (!response.ok) throw new Error(`存储状态读取失败（${response.status}）`);
               const status = await response.json();
-              this.uploadLimits = status.uploadLimits || {};
+              if (!status || typeof status !== "object" || Array.isArray(status)) throw new Error("存储状态响应无效");
+              this.uploadLimits = status.uploadLimits && typeof status.uploadLimits === "object" ? status.uploadLimits : {};
+              this.storageStatusVerified = true;
+              this.telegramAvailable = status.telegram ? this.storageEnabledFromStatus(status.telegram) : true;
 
               // 检查各存储后端是否可用
               this.r2Available = this.storageEnabledFromStatus(status.r2);
@@ -3591,9 +3386,12 @@
               );
               this.githubAvailable = this.storageEnabledFromStatus(status.github);
 
-              // 恢复用户上次保存的存储模式
-              const savedMode = localStorage.getItem("storageMode");
+              // 手动刷新限制不改变当前目标；只有初始化时恢复偏好。
+              if (!restoreSavedMode) return;
+              let savedMode = "";
+              try { savedMode = localStorage.getItem("storageMode") || ""; } catch (e) {}
               const modeAvailability = {
+                telegram: this.telegramAvailable,
                 r2: this.r2Available,
                 s3: this.s3Available,
                 discord: this.discordAvailable,
@@ -3629,14 +3427,19 @@
                 this.storageTarget = modeLabels["telegram"];
               }
             } catch (e) {
-              this.storageMode = "telegram";
-              this.storageTarget = "Telegram 频道";
+              console.warn("Storage status unavailable:", e);
               this.uploadLimits = {};
-              this.r2Available = false;
-              this.s3Available = false;
-              this.discordAvailable = false;
-              this.huggingfaceAvailable = false;
-              this.githubAvailable = false;
+              if (restoreSavedMode) {
+                this.storageMode = "telegram";
+                this.storageTarget = "Telegram 频道";
+                this.r2Available = false;
+                this.s3Available = false;
+                this.discordAvailable = false;
+                this.huggingfaceAvailable = false;
+                this.githubAvailable = false;
+              }
+            } finally {
+              this.storageStatusLoading = false;
             }
           },
 
@@ -3760,6 +3563,5 @@
         },
       });
     </script>
-    <script src="/icons.js"></script>
 </body>
 </html>
