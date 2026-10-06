@@ -116,4 +116,22 @@ describe('frontend third-party asset contract', function () {
       });
     }
   });
+
+  describe('page-specific CSS lives in a cacheable file, not inline', function () {
+    // HTML 走 no-cache，内联 <style> 每次导航都要重传；CSS 文件带内容哈希可以缓存
+    // 一年。admin.html 原来有 1.9 KB 内联样式，而 admin.css 只被它一个页面加载，
+    // 所以搬过去是纯收益。搬动位置也有讲究：内联块原本在 admin.css 之后、
+    // workbench.css 之前，追加到 admin.css 末尾才能保住原来的级联顺序。
+    it('no page ships an inline <style> block', function () {
+      const offenders = allPages.filter((p) => /<style[\s>]/.test(read(p)));
+      assert.deepStrictEqual(offenders, [], '这些页面又出现了内联样式，HTML 不可缓存，等于每次导航重传');
+    });
+
+    it('admin.css still carries the migrated rules', function () {
+      const css = read('admin.css');
+      for (const sel of ['.kv-files .files-feedback', '.folder-drawer-backdrop', '.preview-close']) {
+        assert.ok(css.includes(sel), `admin.css 少了 ${sel}，内联块搬迁不完整`);
+      }
+    });
+  });
 });
