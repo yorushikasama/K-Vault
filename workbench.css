@@ -238,12 +238,14 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
   .kv-workbench .upload-storage-option > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .kv-workbench .upload-storage-option small { margin-left: auto; flex-shrink: 0; font-size: 12px; }
 
-  /* 360px 以下把「未启用」徽章收起来。
-     两列布局下每张卡只有约 142px，减去内边距与图标后剩不到 92px，
-     「Telegram」加「未启用」要 102px——不收起徽章就会把存储名截成
-     「Teleg…」，用户分不清是哪个目标，这比看不到徽章更糟。
-     禁用态仍由 opacity 与 title 属性表达，信息没有丢。 */
-  @media (max-width: 360px) {
+  /* 440px 以下把「未启用」徽章收起来。
+     两列布局下每张卡只有约 (vw-28-8)/2 宽：375px 屏上约 169px，
+     减去内边距与图标后文字区约 82px，而「HuggingFace」本身就要 88px——
+     留着徽章就会把存储名截成「HuggingF…」，用户分不清是哪个目标，
+     这比看不到徽章更糟。禁用态仍由 opacity 与 title 属性表达，信息没丢。
+     390px 时文字区约 127px，本来够放「HuggingFace + 未启用」，所以阈值
+     取 440 而不是更宽：不必为了极少数最长的名字牺牲主流宽度的信息量。 */
+  @media (max-width: 440px) {
     .kv-workbench .upload-storage-option small { display: none; }
   }
 
