@@ -27,8 +27,7 @@ const CACHE_FILE = path.join(ROOT, "node_modules", ".cache", `lucide-${LUCIDE_VE
 const OUT_FILE = path.join(ROOT, "icons-subset.js");
 
 // 这些名字是动态拼出来的（三元 / 映射表 / 服务端下发），静态扫描可能漏，显式兜底。
-const ALWAYS_INCLUDE = [
-  "file",
+const ALWAYS_INCLUDE = [  "file",
   "folder",
   "folder-open",
   "bookmark",
@@ -44,6 +43,21 @@ const ALWAYS_INCLUDE = [
   "clipboard-check",
   "loader-circle",
 ];
+
+/**
+ * 经核对确认「没有任何页面把它当图标名用」的英文词，扫到也不收。
+ *
+ * 候选集是靠扫字符串字面量得到的，范围放宽是刻意的（图标名常由代码拼出来，
+ * 例如 `name="chevron-" + dir`），所以任何普通英文单词只要与某个图标同名，
+ * 就会被当成使用中。这类误报本身只是多几 KB，真正的问题是**子集随无关改动漂移**：
+ * scripts/extract-admin-shared.cjs 里有个 `'watch'` 字面量，于是 Watch 被打了进来；
+ * 那个脚本一挪走它又消失，diff 跟着抖动。
+ *
+ * 只列已经核实过的词。注意这里**只管**「宽松的字符串字面量」这条线索，
+ * 显式的 name="x" / data-lucide="x" 仍然一律收录——所以即使某个词既普通
+ * 又是真图标名（search、user 之类），只要页面真的用了就绝不会被漏掉。
+ */
+const NON_ICON_TOKENS = new Set(["watch", "store", "signal"]);
 
 function download(url) {
   return new Promise((resolve, reject) => {
@@ -118,6 +132,58 @@ function indexIconDefinitions(src) {
   return defs;
 }
 
+/**
+ * 剥掉源码里的注释，只留下会被执行的部分。
+ *
+ * 图标名候选集是靠「扫字符串字面量」得来的，范围放宽是刻意的：图标名常常是
+ * 拼出来的（`name="chevron-" + dir`），漏一个就会在页面上变成空白方块。
+ * 但注释里的词永远不会在运行时被当作图标名，留着只会把误报带进子集——
+ * 例如本仓库 admin-shared.js 顶部的文档里有 `watch:`，就会把 Watch 图标打进来。
+ *
+ * HTML 注释、JS 行注释/块注释、CSS 块注释都要处理；重点是**不要破坏字符串**，
+ * 否则会把 `"http://x"` 里的 `//` 当成注释开头，反而切坏代码。
+ */
+function stripComments(src) {
+  let out = "";
+  let i = 0;
+  let quote = null; // 当前所在的字符串定界符
+  while (i < src.length) {
+    const c = src[i];
+    if (quote) {
+      // 字符串内部：只找结束引号，注意转义
+      if (c === "\\") { out += src.slice(i, i + 2); i += 2; continue; }
+      if (c === quote) quote = null;
+      out += c;
+      i++;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === "`") { quote = c; out += c; i++; continue; }
+    if (c === "/" && src[i + 1] === "/") {
+      const nl = src.indexOf("\n", i);
+      i = nl === -1 ? src.length : nl; // 保留换行，避免把两行黏在一起
+      continue;
+    }
+    if (c === "/" && src[i + 1] === "*") {
+      const end = src.indexOf("*/", i + 2);
+      const stop = end === -1 ? src.length : end + 2;
+      // 注释里的换行要留着，否则行号与原文对不上
+      out += (src.slice(i, stop).match(/\n/g) || []).join("\n");
+      i = stop;
+      continue;
+    }
+    if (c === "<" && src.startsWith("<!--", i)) {
+      const end = src.indexOf("-->", i + 4);
+      const stop = end === -1 ? src.length : end + 3;
+      out += (src.slice(i, stop).match(/\n/g) || []).join("\n");
+      i = stop;
+      continue;
+    }
+    out += c;
+    i++;
+  }
+  return out;
+}
+
 function collectUsedNames(iconExportNames) {
   // Lucide 的 toPascalCase 与 kv-icon 的 kebab->Pascal 规则一致，这里反查：
   // 建 PascalCase -> true 的集合，扫到的 kebab token 转成 Pascal 再判存在。
@@ -165,9 +231,16 @@ function collectUsedNames(iconExportNames) {
 
   for (const name of ALWAYS_INCLUDE) consider(name);
   for (const f of targets) {
-    const src = fs.readFileSync(f, "utf8");
+    const src = stripComments(fs.readFileSync(f, "utf8"));
+    // 字符串字面量是「可能被当成图标名」的线索，范围放宽是刻意的：
+    // 图标名常常是拼出来的（name="chevron-" + dir），漏掉会在运行时变成空白方块。
+    // 代价是普通英文词也会进候选集——比如注释里出现 "watch" 就会把 Watch 图标
+    // 打进来（本文件顶部文档里恰好有这个词）。先把注释剥掉，把误报压到最低：
+    // 注释里的词永远不会是运行时用到的图标名。
     for (const tok of src.match(/['"`][a-z0-9][a-z0-9-]*['"`]/g) || []) {
-      consider(tok.slice(1, -1));
+      const name = tok.slice(1, -1);
+      if (NON_ICON_TOKENS.has(name)) continue;
+      consider(name);
     }
     // data-lucide="x" / name="x" 即使没被引号 token 规则覆盖也兜一层
     for (const m of src.matchAll(/(?:data-lucide|\bname)="([a-z0-9][a-z0-9-]*)"/g)) {

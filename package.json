@@ -22,7 +22,9 @@
     "assets:stamp": "node scripts/stamp-asset-versions.cjs",
     "assets:check": "node scripts/stamp-asset-versions.cjs --check",
     "css:prune": "node scripts/prune-dead-selectors.cjs",
-    "css:check": "node scripts/prune-dead-selectors.cjs --check"
+    "css:check": "node scripts/prune-dead-selectors.cjs --check",
+    "shared:check": "node scripts/extract-admin-shared.cjs --check",
+    "shared:extract": "node scripts/extract-admin-shared.cjs"
   },
   "dependencies": {
     "@cloudflare/pages-plugin-sentry": "^1.1.4",

@@ -1,7 +1,7 @@
 /**
  * Lucide 1.49.0 子集 — 由 scripts/build-icon-subset.cjs 生成，请勿手改。
  *
- * 只包含仓库实际用到的 170 个图标（全量 2117 个）。
+ * 只包含仓库实际用到的 168 个图标（全量 2117 个）。
  * 暴露形状与官方 UMD 一致（window.lucide.icons / createIcons / 具名导出），
  * 因此 icons.js、theme-core.js、admin.html 的 kv-icon 都无需改动。
  *
@@ -1154,17 +1154,6 @@ const defaultAttributes = {
     ["path", { d: "M7 15h4M15 15h2M7 11h2M13 11h4" }]
   ];
 
-  const Store = [
-    ["path", { d: "M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5" }],
-    [
-      "path",
-      {
-        d: "M17.774 10.31a1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.451 0 1.12 1.12 0 0 0-1.548 0 2.5 2.5 0 0 1-3.452 0 1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244"
-      }
-    ],
-    ["path", { d: "M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05" }]
-  ];
-
   const SquareBookmark = [
     [
       "path",
@@ -1200,14 +1189,6 @@ const defaultAttributes = {
     ["path", { d: "M21 8h.01" }],
     ["path", { d: "M7 14h.01" }],
     ["path", { d: "M9 8h.01" }]
-  ];
-
-  const Signal = [
-    ["path", { d: "M2 20h.01" }],
-    ["path", { d: "M7 20v-4" }],
-    ["path", { d: "M12 20v-8" }],
-    ["path", { d: "M17 20V8" }],
-    ["path", { d: "M22 4v16" }]
   ];
 
   const Settings = [
@@ -1579,13 +1560,11 @@ const defaultAttributes = {
     Shell: Shell,
     Shield: Shield,
     Shrink: Shrink,
-    Signal: Signal,
     SlidersHorizontal: SlidersHorizontal,
     Square: Square,
     SquareCheck: SquareCheck,
     Star: Star,
     Sticker: Sticker,
-    Store: Store,
     Subtitles: Captions,
     Summary: Summary,
     Sun: Sun,
