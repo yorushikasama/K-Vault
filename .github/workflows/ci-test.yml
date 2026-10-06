@@ -25,5 +25,6 @@ jobs:
         npm run assets:check
         npm run css:check
         npm run shared:check
+        npm run dead:check
     - name: Run tests
       run: npm run ci-test

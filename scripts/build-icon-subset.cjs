@@ -280,11 +280,17 @@ async function main() {
   // 不能用固定的结束标记（会把后面的定义一起吞掉）。
   const allDefs = indexIconDefinitions(upstream);
 
-  // 需要内联的图标实现（去重后的底层 const 名）
+  // 需要内联的图标实现（去重后的底层 const 名）。
+  //
+  // 排序是必须的：used 是 Map，插入顺序取决于「哪个文件先扫到这个名字」。
+  // 不排序的话，删一个无关方法（连带删掉它字符串里的图标名）就会让实现块
+  // 整体重排，生成物出现大片无意义 diff，--check 也在源码没变时误报。
+  const implNames = [...new Set(
+    [...used.values()].map((pascal) => aliasOf.get(pascal))
+  )].sort((a, b) => a.localeCompare(b));
+
   const impls = new Map(); // implName -> 定义源码
-  for (const pascal of used.values()) {
-    const impl = aliasOf.get(pascal);
-    if (impls.has(impl)) continue;
+  for (const impl of implNames) {
     const def = allDefs.get(impl);
     if (!def) throw new Error(`上游源码里找不到图标实现：${impl}`);
     impls.set(impl, def);

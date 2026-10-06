@@ -24,7 +24,9 @@
     "css:prune": "node scripts/prune-dead-selectors.cjs",
     "css:check": "node scripts/prune-dead-selectors.cjs --check",
     "shared:check": "node scripts/extract-admin-shared.cjs --check",
-    "shared:extract": "node scripts/extract-admin-shared.cjs"
+    "shared:extract": "node scripts/extract-admin-shared.cjs",
+    "dead:prune": "node scripts/prune-dead-methods.cjs",
+    "dead:check": "node scripts/prune-dead-methods.cjs --check"
   },
   "dependencies": {
     "@cloudflare/pages-plugin-sentry": "^1.1.4",

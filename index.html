@@ -587,7 +587,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js" integrity="sha384-ULpZhk1pvhc/UK5ktA9kwb2guy9ovNSTyxPNHANnA35YjBQgdwI+AhLkixDvdlw4" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="/icons-subset.js?v=0e040a4a31"></script>
+    <script src="/icons-subset.js?v=3e770e0ce2"></script>
     <script src="/icons.js?v=fc3fc216e0"></script>
     <script>
       const LOCAL_PREVIEW_PAGE = "/preview.html";
@@ -793,14 +793,7 @@
             };
             return messages[this.imageUploadDecision] || messages.original;
           },
-          imageCompressPanelExpanded() {
-            return (
-              this.imageCompress.enabled ||
-              this.imageUploadDecision === "optimized" ||
-              this.imageUploadDecision === "ask"
-            );
-          },
-          uploadFolderOptions() {
+                    uploadFolderOptions() {
             return (this.uploadFolders || [])
               .map((folder) => {
                 const path = this.normalizeFolderPath(
@@ -1637,15 +1630,7 @@
             return data;
           },
 
-          formatBytes(bytes) {
-            const value = Number(bytes) || 0;
-            if (value <= 0) return "大小未知";
-            if (value >= 1024 * 1024 * 1024) {
-              return (value / 1024 / 1024 / 1024).toFixed(2) + " GB";
-            }
-            return Math.round(value / 1024 / 1024) + " MB";
-          },
-
+          
           // 已知体积且超过上限的档位不可选；体积未知时放行，交给服务端判定
           isVariantDisabled(variant) {
             const maxBytes = Number(this.qualityPicker.maxBytes) || 0;
@@ -2219,16 +2204,8 @@
             batch.files = [];
           },
 
-          uploadPendingOriginal() {
-            this.pendingCompressionChoice = "original";
-            this.confirmPendingUpload();
-          },
-
-          uploadPendingCompressed() {
-            this.pendingCompressionChoice = "compress";
-            this.confirmPendingUpload();
-          },
-
+          
+          
           getItemStorageMode(item) {
             return item.context.storageMode;
           },
@@ -2729,13 +2706,7 @@
           },
 
           // 预览图片（原生 Lightbox 模式）
-          previewImage(url) {
-            this.previewData = {
-              type: "native-image",
-              url: url,
-            };
-          },
-
+          
           // 打开预览页面 - 使用统一媒体预览服务
           openPreview(file) {
             // 使用安全的文件名获取方法
@@ -2912,18 +2883,7 @@
           },
 
           // 从 URL 中提取干净的文件路径（不带域名，格式：/file/xxx.ext）
-          getCleanFilePath(item) {
-            const fullUrl = this.getCleanFileUrl(item);
-            try {
-              const url = new URL(fullUrl);
-              return url.pathname;
-            } catch {
-              // 如果解析失败，尝试直接提取
-              const match = fullUrl.match(/(\/file\/[^?#]+)/);
-              return match ? match[1] : fullUrl;
-            }
-          },
-
+          
           // 文件类型判断方法
           isImageFile(filename) {
             if (!filename) return false;
@@ -2993,42 +2953,7 @@
             return iconMap[ext] || "file";
           },
 
-          getFileIconClass(filename) {
-            const ext = this.getFileExt(filename).toLowerCase();
-            const videoExts = ["mp4", "webm", "avi", "mov", "mkv", "flv"];
-            const audioExts = ["mp3", "wav", "ogg", "flac", "aac", "m4a"];
-            const docExts = [
-              "pdf",
-              "doc",
-              "docx",
-              "xls",
-              "xlsx",
-              "ppt",
-              "pptx",
-              "txt",
-              "md",
-            ];
-            const archiveExts = ["zip", "rar", "7z", "tar", "gz"];
-            const codeExts = [
-              "js",
-              "ts",
-              "py",
-              "java",
-              "c",
-              "cpp",
-              "html",
-              "css",
-              "json",
-            ];
-
-            if (videoExts.includes(ext)) return "video-file";
-            if (audioExts.includes(ext)) return "audio-file";
-            if (docExts.includes(ext)) return "document-file";
-            if (archiveExts.includes(ext)) return "archive-file";
-            if (codeExts.includes(ext)) return "code-file";
-            return "other-file";
-          },
-
+          
           handleHistoryImgError(event, item) {
             // 图片加载失败时，将其标记为非图片，让Vue重新渲染为图标
             item._imgError = true;
@@ -3180,17 +3105,7 @@
             return bytes.toFixed(i > 0 ? 2 : 0) + " " + units[i];
           },
 
-          getStatusText(status) {
-            const texts = {
-              waiting: "等待中",
-              processing: "处理中",
-              uploading: "上传中",
-              success: "成功",
-              error: "失败",
-            };
-            return texts[status] || status;
-          },
-
+          
           getFileIcon(filename) {
             const ext = filename.split(".").pop().toLowerCase();
             const iconMap = {

@@ -291,7 +291,7 @@
 <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/index.js" integrity="sha384-+gBC+PMSL+TRFl/FIZXz0BFZ9goHb5wqIwBbAscP86Bd6JJJ1TS5MwaN1SAIjzGj" crossorigin="anonymous" referrerpolicy="no-referrer"></script> <!-- ElementUI -->
 <!-- 必须在下面 new Vue 之前：icons.js 用 Vue.mixin 注册渲染钩子，而 Vue.mixin
      只作用于之后创建的实例。放在后面的话 v-if 里的图标永远不会被替换。 -->
-<script src="/icons-subset.js?v=0e040a4a31"></script>
+<script src="/icons-subset.js?v=3e770e0ce2"></script>
 <script src="/icons.js?v=fc3fc216e0"></script>
 <script src="/admin-shared.js?v=278244fd7d"></script>
 <script>
@@ -479,81 +479,7 @@
         });
       },
       // 文件操作
-      async uploadFiles(event) {
-        const files = Array.from(event.target.files || []);
-        if (!files.length) return;
-        // 文件验证配置
-        // telegram-bot可分发的最大文件大小（20MB）
-        // 大于20MB虽然能够成功上传，但无法获取文件链接
-        const config = this.uploadConfig;
-        // 过滤有效文件
-        const valid = [], invalid = [];
-        files.forEach(file => {
-          (file.size <= config.maxSize ? valid : invalid).push(file);
-        });
-        // 显示错误信息
-        if(invalid.length) { this.$message.error(`文件超过${config.maxSize/1024/1024}MB: \n${invalid.map(f => f.name).join('\n')}`); }
-        if(!valid.length) { this.$message.info('没有符合条件的文件'); event.target.value = ''; return; }
-
-        try {
-          await this.$confirm(`确定要上传这 ${valid.length} 个文件吗?`, '提示', {
-            type: 'warning'
-          });
-          const loading = this.$message({ message: '上传中...', duration: 0 });
-          let [successCount, failed] = [0, []];
-          // 并发上传处理函数
-          const upload = async file => {
-            try {
-              const formData = new FormData();
-              formData.append('file', file);
-              const res = await fetch(`${this.baseURL}/upload`, {
-                method: 'POST',
-                body: formData,
-                credentials: 'include'
-              });
-              const data = await res.json();
-              if (!res.ok || (Array.isArray(data) && data[0]?.error)) {
-                const serverError = Array.isArray(data)
-                  ? data[0]?.error
-                  : data?.error;
-                throw new Error(serverError || '上传失败');
-              }
-              const src = data[0]?.src;
-              if (!src) throw new Error('未返回文件路径');
-              // 验证并添加到列表
-              const preview = await fetch(`${this.baseURL}${src}`, {
-                credentials: 'include'
-              });
-              if (preview.ok) {
-                this.tableData.unshift({
-                  name: src.replace(/^\/file\//, ''),
-                  selected: false,
-                  metadata: { TimeStamp: Date.now(), fileSize: file.size, fileName: file.name }
-                });
-                successCount++;
-              }
-            } catch (err) {
-              failed.push(`${file.name} (${err.message})`);
-              console.error('Upload error:', err);
-            }
-          };
-          // 分批上传
-          for (let i = 0; i < valid.length; i += config.maxConcurrent) {
-            await Promise.all(
-              valid.slice(i, i + config.maxConcurrent).map(upload)
-            );
-          }
-          loading.close();
-          successCount && this.$message.success(`成功上传 ${successCount} 个文件`);
-          failed.length && this.$message.error(`上传失败: ${failed.join(', ')}`);
-          this.refreshFileList();
-
-        } catch {
-          this.$message.info('已取消上传');
-        }
-        event.target.value = '';
-      },
-      async refreshFileList() {  // 不刷新页面，仅更新数据
+            async refreshFileList() {  // 不刷新页面，仅更新数据
         try {
           const result = await fetch("./api/manage/list?limit=100&includeStats=1", { method: 'GET', credentials: 'include' })
             .then(response => response.json());
