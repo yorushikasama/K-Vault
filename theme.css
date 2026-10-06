@@ -333,6 +333,15 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
     padding: 8px 12px;
     font-size: 0.82em;
   }
+
+  /* 手机上的输入框抬到 44px：桌面端 36–40px 是给鼠标的，手指点不准，
+     而且聚焦弹键盘后更容易误触。只调 min-height，不动 padding 与字号，
+     避免连带改变页面布局。 */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  select,
+  textarea {
+    min-height: 44px;
+  }
 }
 
 /* ===== Unified Background + Surface Layer =====

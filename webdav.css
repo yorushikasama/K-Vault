@@ -637,8 +637,12 @@
       }
 
       @media (max-width: 980px) {
+        /* 必须写 minmax(0, 1fr)，不能写裸 1fr：1fr 等价于 minmax(auto, 1fr)，
+           而 grid 子项的 min-width:auto 不会小于内容宽度。卡片里有
+           white-space:nowrap 的长文本（状态行、当前目录），单列下就会把
+           轨道顶到 503px，在 390px 视口里横向溢出 123px。 */
         .layout {
-          grid-template-columns: 1fr;
+          grid-template-columns: minmax(0, 1fr);
         }
 
         .span-2 {
@@ -690,5 +694,16 @@
 
         #uploadFilesBtn {
           width: 100%;
+        }
+
+        /* 文件选择区的两行文字是 nowrap + ellipsis，宽屏下截断得好看，
+           窄屏会把「支持多选、拖拽到此区域…」这类说明直接切掉半句
+           （320px 下只显示到「上传后自动记」）。移动端改成换行，
+           说明文字本就短，换行比截断更好读。 */
+        .file-picker-title,
+        .file-picker-hint {
+          white-space: normal;
+          overflow: visible;
+          text-overflow: clip;
         }
       }

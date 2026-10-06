@@ -181,7 +181,117 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
   .kv-workbench .upload-modal-overlay { padding: 12px; align-items: flex-end; }
   .kv-workbench .upload-dialog { width: 100%; max-height: 92dvh; padding: 18px 16px; }
   .kv-workbench .upload-dialog-actions .upload-btn { flex: 1 1 auto; min-height: 44px; }
+
+  /* 页头在窄屏放不下：品牌 107 + 导航 268 + 工具 75 ≈ 450px，加上两侧
+     28px 内边距和 28px 间隙，390px 视口横向溢出 68px（导航被推出屏幕）。
+     桌面端的 nowrap + 大 padding 是为宽屏留白设计的，窄屏要允许换行。
+     admin.html 的页头早有这套处理（它加载 mobile-refactor.css），
+     首页改用 workbench.css 后漏了，这里补齐。 */
+  .kv-workbench .workspace-header {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 10px 14px;
+    row-gap: 6px;
+  }
+
+  /* 窄屏正文留白收一收：桌面端 28px 侧边距在 320–430px 上吃掉近 1/5 宽度，
+     内容区被压得太窄。与页头用同一组数值，视觉上对齐。 */
+  .kv-workbench .upload-workspace { padding-left: 14px; padding-right: 14px; }
+  .kv-workbench :is(.upload-destination, .upload-add, .upload-tasks, .upload-local-history) { padding: 18px 0; }
+  .kv-workbench .upload-section-heading { margin-bottom: 12px; }
+
+  /* 触摸目标统一抬到 44px（WCAG 2.5.5 / Apple HIG 的下限）。
+     首页不加载 mobile-refactor.css（那份规则放在那里统一约束其余 9 页），
+     所以这里要自己写一份，否则页面上所有按钮都停留在桌面端的 38px。
+     只调 min-height 与必要处的 min-width，不改 padding/字号，避免改布局。 */
+  .kv-workbench :is(.upload-btn, .workspace-nav a, .workspace-tool, .upload-storage-option) {
+    min-height: 44px;
+  }
+  /* 只含图标的按钮还要保证宽度，否则是个 44×30 的瘦条 */
+  .kv-workbench .workspace-tool-icon { min-width: 44px; }
+  /* 品牌 logo 链接：logo 本身 30×30，链接的可点区也就只有那么大。
+     抬到 44px 见方，手指才点得准。 */
+  .kv-workbench .workspace-brand { min-height: 44px; min-width: 44px; }
+  /* <summary> 是"选择已有目录"的可点行，桌面端 40px，手机上补齐 */
+  .kv-workbench summary { min-height: 44px; }
+
+  /* 存储目标改用两列网格：原本是 flex-wrap + 内容自适应宽度，
+     窄屏下每张卡宽度不一、右侧留大片空白（Telegram 独占一行、
+     R2/S3 一行、其余各占半行）。固定两列后卡片对齐，扫描起来整齐得多。
+     minmax(0, 1fr) 而不是 1fr：卡片里有 nowrap 的标签文字，
+     裸 1fr 会被内容顶开（webdav.css 的 .layout 踩过同一个坑）。 */
+  .kv-workbench .upload-storage-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .kv-workbench .upload-storage-option {
+    min-height: 44px;
+    justify-content: flex-start;
+    /* 长站点名（HuggingFace）要能截断，否则会把网格撑开 */
+    min-width: 0;
+  }
+  .kv-workbench .upload-storage-option > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kv-workbench .upload-storage-option small { margin-left: auto; flex-shrink: 0; }
+
+  /* 360px 以下把「未启用」徽章收起来。
+     两列布局下每张卡只有约 142px，减去内边距与图标后剩不到 92px，
+     「Telegram」加「未启用」要 102px——不收起徽章就会把存储名截成
+     「Teleg…」，用户分不清是哪个目标，这比看不到徽章更糟。
+     禁用态仍由 opacity 与 title 属性表达，信息没有丢。 */
+  @media (max-width: 360px) {
+    .kv-workbench .upload-storage-option small { display: none; }
+  }
+
+  /* 目录输入行改为网格：输入框的 flex-basis 是 260px，在 390px 屏上占了
+     可用宽度的七成，右侧按钮被挤成窄条（"根目录"只剩两个字宽）。
+     改成两列网格——输入框跨满整行，两个按钮各占一列并排，
+     既保住了输入框宽度，也不会把这块拉成三行。 */
+  .kv-workbench .upload-field-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .kv-workbench .upload-field-row > input { grid-column: 1 / -1; width: 100%; min-height: 44px; }
+  .kv-workbench .upload-field-row > .upload-btn { min-height: 44px; justify-content: center; }
+
+  /* 导航单独占一行并允许横向滚动：比换行更整齐，链接多时也不会把页头
+     撑得过高。scrollbar 隐藏是刻意的——移动端横向滚动条会很显眼，
+     而用户能从内容被截断的边缘看出可以滑。 */
+  .kv-workbench .workspace-nav {
+    order: 3;
+    flex: 1 1 100%;
+    gap: 2px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .kv-workbench .workspace-nav::-webkit-scrollbar { display: none; }
+
+  /* 触摸目标抬到 44px（WCAG 2.5.5 / Apple HIG 的下限），
+     桌面端的 40px 是给鼠标的。 */
+  .kv-workbench .workspace-nav a,
+  .kv-workbench .workspace-tool { min-height: 44px; }
+  .kv-workbench .workspace-tool-icon { width: 44px; }
+  .kv-workbench .workspace-nav a { padding: 8px 12px; }
+
+  /* 工具区靠右，品牌靠左，二者共用第一行 */
+  .kv-workbench .workspace-tools { margin-left: auto; }
 }
+
+@media (max-width: 480px) {
+  /* 极窄屏（320–430）保留 logo 但收起文字品牌名：省下约 62px，
+     让导航和工具不用挤成两行文字。logo 本身已能表达品牌。 */
+  .kv-workbench .workspace-brand span { display: none; }
+  .kv-workbench .workspace-brand { gap: 0; }
+
+  .kv-workbench .workspace-header { padding: 8px 12px; }
+
+  /* 主题按钮只留图标：文字标签（夜间/亮色）在 430px 以下会挤占导航空间，
+     图标本身含义明确，且 aria-label 已经提供了可访问名称。 */
+  .kv-workbench .workspace-tool > span { display: none; }
+  .kv-workbench .workspace-tool { padding: 8px 10px; width: 44px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kv-workbench .upload-spin { animation: none; }
 }

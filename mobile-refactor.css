@@ -1055,3 +1055,118 @@ html[data-theme="dark"] .el-image__placeholder {
     grid-template-columns: repeat(5, 40px);
   }
 }
+
+/* ---------------------------------------------------------------------------
+   触摸目标下限（WCAG 2.5.5 与 Apple HIG 都要求 44×44 CSS px）。
+
+   放在这个文件的末尾有两个原因：
+     1. 它在 9 个页面上是最后加载的样式表，能盖住各页自己写的 40px；
+        放在 theme.css 里会被后面的页面样式表按「后加载同优先级」压掉
+        （实测过：a.action-link 仍是 40px，min-height 被覆盖）。
+     2. 这个文件已经集中处理移动端，触摸目标属于同一类关注点。
+
+   只调 min-height，不改 padding / font-size / 宽度：
+   后者会连带改变布局，而这里要的只是「点得到」。
+
+   注意用 !important 是必要的，不是偷懒：各页样式表里的 min-height
+   与这里的优先级相同（都是单类选择器），而它们在本文件之前加载，
+   不加 !important 会被反向覆盖。这个文件的既有规则也是这个写法。
+   --------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  /* 兜底：所有按钮与按钮样式的链接都要够大。
+     有些页面（webdav.html）的按钮是裸 <button> 或只挂颜色类（.btn-primary），
+     既没有 .btn 也没有 .action-btn，枚举具体类名必然漏。
+     放在这一组的最前面，后面更具体的规则可以继续叠加宽度等约束。
+
+     不用 * 选择器：那会把 <summary>、checkbox 之外的所有元素都拉高，
+     破坏文本流。button 与 a 是「可交互元素」的准确边界。 */
+  button,
+  a[class*="btn"],
+  a[class*="action"],
+  a[class*="link"] {
+    min-height: 44px !important;
+  }
+
+  .nav-btn,
+  .back-btn,
+  .action-link,
+  .action-btn,
+  .upload-btn,
+  .btn,
+  .method-btn,
+  .storage-btn,
+  .login-btn,
+  .file-choose-btn,
+  .load-btn,
+  .theme-floating-toggle,
+  .theme-admin-toggle,
+  .gallery-theme-toggle,
+  .workspace-brand,
+  .workspace-nav a,
+  .workspace-tool,
+  .format-btn,
+  .btn-prev,
+  .btn-next,
+  .files-title-refresh,
+  .folder-crumb {
+    min-height: 44px !important;
+  }
+
+  /* Element UI 的按钮默认 40px（mini 尺寸更小），后台两页大量用它。
+     它的高度由 padding 与 line-height 撑开，所以这里只抬下限，
+     不动 padding，免得连带打乱行内布局。 */
+  .el-button {
+    min-height: 44px !important;
+  }
+  .el-button--mini {
+    min-height: 40px !important;
+  }
+
+  /* 图标型按钮（只有图标、没有文字）还要保证宽度，否则是个 44×30 的瘦条。
+     主题切换按钮与品牌链接同理：它们是纯图标或小 logo，宽度只有 30px 左右。 */
+  .workspace-tool-icon,
+  .btn-prev,
+  .btn-next,
+  .theme-admin-toggle,
+  .theme-floating-toggle,
+  .gallery-theme-toggle,
+  .workspace-brand {
+    min-width: 44px !important;
+  }
+
+  /* 分页按钮原本是 30×28 的小方块，手机上很难点中；
+     链接格式按钮（URL/MD/HTML/BB）宽度只有 36–39px，同样补齐。 */
+  .el-pagination button,
+  .format-btn {
+    min-width: 44px !important;
+  }
+
+  /* 页脚里的文字链接默认只有一行高（约 20px）。这类链接成行排列，
+     直接加到 44px 会把页脚撑得很空，所以用 padding 撑开可点区、
+     再用负外边距抵消占位——视觉高度几乎不变，点按范围翻倍。 */
+  footer a,
+  .footer a,
+  .footer div {
+    display: inline-block;
+    padding: 12px 4px !important;
+    margin: -12px -4px !important;
+  }
+
+  /* Element UI 的提示条硬编码了 min-width: 380px（含 padding），
+     在 320px 屏上左边被裁掉，消息读不全。
+
+     注意它的水平定位是 `left: 50%` + `transform: translateX(-50%)`：
+     只改 left 不够——残留的 -50% 位移会把元素再往左推自身宽度的一半，
+     实测 left 变成 -171px。必须把 transform 一起清掉，改用 left/right 定位。 */
+  .el-message {
+    min-width: 0 !important;
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    left: 12px !important;
+    right: auto !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+  }
+  /* 消息里的文字通常较长，窄屏允许换行，避免撑破刚设的宽度 */
+  .el-message__content { word-break: break-word; }
+}
