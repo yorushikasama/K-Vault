@@ -230,9 +230,13 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
     justify-content: flex-start;
     /* 长站点名（HuggingFace）要能截断，否则会把网格撑开 */
     min-width: 0;
+    /* 收一收内边距，把省下的宽度留给标签文字：390px 下单卡的文字区
+       只有约 127px，而「HuggingFace + 未启用」需要 128px，差 1px 就截断。 */
+    padding: 8px 10px;
+    gap: 6px;
   }
   .kv-workbench .upload-storage-option > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .kv-workbench .upload-storage-option small { margin-left: auto; flex-shrink: 0; }
+  .kv-workbench .upload-storage-option small { margin-left: auto; flex-shrink: 0; font-size: 12px; }
 
   /* 360px 以下把「未启用」徽章收起来。
      两列布局下每张卡只有约 142px，减去内边距与图标后剩不到 92px，
@@ -459,8 +463,10 @@ html[data-theme="dark"] .token-manager-dialog .token-loading { color: #9ca3af; }
   .kv-files .files-filter-button,
   .kv-files .files-view-switch button { min-height: 44px; }
   .kv-files .files-view-switch button { width: 46px; }
-  .kv-files .file-icon-action { width: 40px; height: 40px; }
-  .kv-files .file-text-action { min-height: 40px; }
+  /* 44px 而不是 40：这是纯图标按钮，宽高都要够（WCAG 2.5.5 的下限）。
+     一行的动作按钮数不多，44px 在 320px 屏上也排得开。 */
+  .kv-files .file-icon-action { width: 44px; height: 44px; }
+  .kv-files .file-text-action { min-height: 44px; }
   .kv-files .folder-help { font-size: .8125rem; }
 }
 @media (prefers-reduced-motion: reduce) {

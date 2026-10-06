@@ -1118,8 +1118,11 @@ html[data-theme="dark"] .el-image__placeholder {
   .el-button {
     min-height: 44px !important;
   }
+  /* mini 尺寸原本只有 40px。它用在 admin-imgtc 的卡片操作行上
+     （复制/编辑/删除），是手机上最常点的按钮之一，所以同样抬到 44px——
+     不因为它是「mini 风格」就放宽下限，WCAG 的下限不按视觉尺寸分级。 */
   .el-button--mini {
-    min-height: 40px !important;
+    min-height: 44px !important;
   }
 
   /* 图标型按钮（只有图标、没有文字）还要保证宽度，否则是个 44×30 的瘦条。

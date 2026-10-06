@@ -585,12 +585,17 @@
       .image-card-name {
         font-size: 0.75em;
       }
-      
+
+      /* 卡片上的操作按钮：原来这里把它从 32px 缩到 30px，比桌面端还小，
+         手机上几乎点不中（实测 32×44 与 30×30 都出现过）。
+         四个按钮一行：4×44 + 3×6(gap) = 194px，320px 屏也放得下。
+         .card-btn 是纯图标按钮，宽度和高度都要给足。 */
       .card-btn {
-        width: 30px;
-        height: 30px;
+        width: 44px;
+        height: 44px;
         font-size: 0.8em;
       }
+      .image-card-actions { gap: 8px; }
       
       .batch-bar { 
         flex-wrap: wrap; 
