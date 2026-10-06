@@ -517,6 +517,15 @@
         const selected = !this.paginatedTableData.every(file => file.selected);
         this.paginatedTableData.forEach(file => file.selected = selected);
       },
+      clearSelection() {  // 取消全部选择
+        // 必须清底层的 file.selected，不能只写 this.selectedFiles = []：
+        // 模板上的勾选态绑定的是 item.selected（el-checkbox 的 v-model、
+        // 卡片的 :class="{ selected: item.selected }"），而 selectedFiles 只是
+        // 由 watch:tableData(deep) 回填出来的派生副本。只清副本的话勾选标记还在，
+        // 而且 tableData 下次有任何深层变动，watch 会按底层 true 值把它重新填回来
+        // ——表现就是「取消选择后又自己选上了」。
+        this.tableData.forEach(file => { file.selected = false; });
+      },
       handleBatchDelete() {  // 批量删除
         this.$confirm('此操作将永久删除这 ' + this.selectedFiles.length + ' 个文件, 是否继续?', '提示', {
           confirmButtonText: '确定',
@@ -535,7 +544,7 @@
                   }
                 }
               });
-              this.selectedFiles = [];
+              this.clearSelection();
               this.updateStats();
               this.$message.success('批量删除成功!');
             })
@@ -552,7 +561,7 @@
             link.click();
           }, index * 800);
         });
-        this.selectedFiles = [];
+        this.clearSelection();
       },
       handleBatchBlockOrUnblock(type) {  // 批量加入黑/白名单
         if (type !== 'Block' && type !== 'White') { this.$message.error('无效的操作类型'); return; }
@@ -575,7 +584,7 @@
                 }
               });
               this.$message.success(`批量加入${typeToName[type]}成功`);
-              this.selectedFiles = [];
+              this.clearSelection();
             })
             .catch(() => this.$message.error(`操作失败，请检查网络连接`));
         });

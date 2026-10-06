@@ -1101,6 +1101,7 @@ API_CORS_ORIGINS=https://app.example.com,https://dashboard.example.com
 - [Cloudflare Pages 文档](https://developers.cloudflare.com/pages/)
 - [Docker 部署说明](README-DOCKER.md)
 - [自托管实例运维笔记](docs/self-hosting-ops.md)（裸机 nginx + systemd 的实际结构与更新方式）
+- [死代码判定的边界](docs/dead-code-boundaries.md)（哪三类东西不该靠扫描去删，以及为什么）
 - [Docker 镜像工作流](.github/workflows/docker-image.yml)
 - [Telegram Bot API](https://core.telegram.org/bots/api)
 - [Telegram Bot API Server（自部署）](https://github.com/tdlib/telegram-bot-api)
