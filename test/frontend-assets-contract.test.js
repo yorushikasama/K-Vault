@@ -134,4 +134,45 @@ describe('frontend third-party asset contract', function () {
       }
     });
   });
+
+  describe('admin.html keeps every stylesheet it actually applies', function () {
+    // 这组是防「想当然去合并/删除」的。曾判断 admin-imgtc.css 在 admin.html 上是
+    // 冗余（25 KB，直觉上像是给 admin-imgtc 用的），实际不是：
+    // 用「把 <link> 置为 disabled，再逐元素对比计算样式」实测，
+    // admin-imgtc.css 影响 19 个元素（分页器按钮圆角、页脚字号与颜色、
+    // .el-main 的 flex-direction），workbench.css 影响 335 个，theme/mobile-refactor
+    // 分别 48/37 个，admin.css 43 个——5 张本地样式表全都有效，没有可删的。
+    //
+    // 合并同样不是净收益：theme.css 被 10 个页面共享、mobile-refactor.css 被 9 个、
+    // workbench.css 被 2 个，把 admin 专属规则并进共享表会让其它页面多下载。
+    // admin-imgtc.css 与 admin.css 的选择器交集为 0，合并也减不掉重复。
+    const ADMIN_SHEETS = ['theme.css', 'admin-imgtc.css', 'mobile-refactor.css', 'admin.css', 'workbench.css'];
+
+    it('loads exactly the sheets each page needs', function () {
+      const html = read('admin.html');
+      for (const sheet of ADMIN_SHEETS) {
+        assert.ok(
+          new RegExp(`href="[./]*${sheet.replace('.', '\\.')}`).test(html),
+          `admin.html 不再加载 ${sheet}；删除前请先用「禁用样式表 + 计算样式对比」确认它在本页真的无效`
+        );
+      }
+    });
+
+    it('keeps the cascade order that was verified', function () {
+      // 顺序有意义：这次把内联块追加到 admin.css 末尾，就是为了让它仍然排在
+      // workbench.css 之前。调整顺序前要重新做一次计算样式快照比对。
+      const html = read('admin.html');
+      const at = (sheet) => html.search(new RegExp(`href="[./]*${sheet.replace('.', '\\.')}`));
+      assert.ok(at('admin.css') < at('workbench.css'), 'admin.css 必须排在 workbench.css 之前');
+      assert.ok(at('theme.css') < at('admin.css'), 'theme.css 必须排在最前');
+    });
+
+    it('does not load a stylesheet that is dead on this page', function () {
+      // 反向约束：admin-imgtc.css 只在 admin.html / admin-imgtc.html 上有意义时才有理由
+      // 被 admin.html 加载；这里只防止误加与 admin 无关的表。
+      const html = read('admin.html');
+      assert.doesNotMatch(html, /href="[./]*index\.css/, 'index.css 属于上传首页，admin.html 不该加载');
+      assert.doesNotMatch(html, /href="[./]*gallery\.css/, 'gallery.css 不属于 admin.html');
+    });
+  });
 });
