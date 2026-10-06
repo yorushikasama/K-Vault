@@ -627,9 +627,12 @@
           // Media resolve capability, loaded from /api/resolve-url/status. The
           // allowed-host list stays server side so this UI can never disagree
           // with what the backend actually accepts.
+          // allowUnknownHosts 表示服务端不限制域名（只拒绝内网地址）；此时
+          // allowedHosts 会被服务端刻意返回空数组，不能拿空数组做匹配。
           mediaResolve: {
             available: false,
             allowedHosts: [],
+            allowUnknownHosts: false,
             loaded: false,
           },
           // 分享链接的清晰度选择；variants 由服务端 yt-dlp 的格式清单按分辨率去重得到
@@ -1552,18 +1555,49 @@
 
           // URL上传 - 通过服务器端代理获取外部URL，解决CORS限制
           // 分享链接（抖音/B站等）由服务端 yt-dlp 解析；普通直链仍走原有代理上传
+          //
+          // 判定必须与服务端的 isHostAllowed() 保持一致，否则会出现「服务端明明
+          // 能解析，前端却按普通直链上传」——URL 上传看起来没走解析就是这个原因。
+          // 服务端的规则是：
+          //   1. host 命中 allowedHosts（含子域）-> 允许
+          //   2. 否则若 allowUnknownHosts 为真 -> 只要不是内网地址就允许
+          //   3. 否则拒绝
+          // 注意第 2 条：allowUnknownHosts 为真时服务端会把 allowedHosts 返回成
+          // **空数组**（表示「不限域名」），所以只做 allowedHosts.some(...) 会恒为
+          // false，把抖音/B站链接全判成普通直链，解析入口等于是死的。
+          //
+          // 另外要排除「URL 本身就是流文件」的情况：服务端的 STREAM_PATH_RE
+          // 对 .mp4/.m3u8/.mp3 这类路径不做页面嗅探，直接当流处理。这类直链走
+          // /api/upload-from-url 更直接（不必先解析再转存，也少一次服务端往返）。
+          // 两边边界保持一致，才不会出现「前端送去做解析、服务端却当直链」的错配。
           isMediaShareLink(rawUrl) {
             if (!this.mediaResolve.loaded || !this.mediaResolve.available) {
               return false;
             }
+            let parsed;
             try {
-              const host = new URL(rawUrl).hostname.toLowerCase();
-              return this.mediaResolve.allowedHosts.some(
-                (allowed) => host === allowed || host.endsWith("." + allowed),
-              );
+              parsed = new URL(rawUrl);
             } catch {
               return false;
             }
+            // 本身就是流文件（含 m3u8/mpd 清单）-> 走直链上传
+            if (/\.(m3u8|mpd|mp4|m4a|mp3|flv|ts|webm|mkv)$/i.test(parsed.pathname)) {
+              return false;
+            }
+            const host = parsed.hostname.toLowerCase();
+            const listed = this.mediaResolve.allowedHosts.some(
+              (allowed) => host === allowed || host.endsWith("." + allowed),
+            );
+            if (listed) return true;
+            if (!this.mediaResolve.allowUnknownHosts) return false;
+            // 服务端在 allowUnknownHosts 下只拒绝内网地址。这里刻意**不做**
+            // 完整的内网判定：那套逻辑包含 IPv6 字面量、十进制/八进制/十六进制
+            // 伪装等分支，前端复刻一遍必然漏，而漏判的后果只是把本该被服务端
+            // 拒绝的地址发过去、拿回一个明确错误（openQualityPicker 会提示
+            // 解析失败），不会造成安全问题——真正的拦截在服务端。
+            // 前端这里只需要排除最明显的本地名字，避免把 http://localhost
+            // 这类显然不是视频分享的链接送去做无谓解析。
+            return !/^(localhost|.*\.localhost|.*\.local|.*\.internal)$/.test(host);
           },
 
           // 能力探测失败时保持关闭：普通 URL 上传不受影响
@@ -1581,6 +1615,9 @@
                 )
                   ? data.allowedHosts
                   : [];
+                // 必须一并读回：服务端在不限域名时把 allowedHosts 返回成空数组，
+                // 只看那个字段会把所有分享链接判成普通直链。
+                this.mediaResolve.allowUnknownHosts = data.allowUnknownHosts === true;
               }
             } catch {
               this.mediaResolve.available = false;
