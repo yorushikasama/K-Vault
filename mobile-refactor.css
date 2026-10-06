@@ -296,9 +296,13 @@ html[data-theme="dark"] {
     font-size: 0.75rem !important;
   }
 
+  /* 这条规则原本把图片卡的操作按钮压到 32px，与本文件末尾的触摸目标
+     下限（44px）自相矛盾，而且它在 768px 档里、比末尾那条更早，
+     靠 !important + 后加载才没被翻掉——但 gallery.css 自己还有一条
+     26px 的 480px 规则能盖过它。统一改成 44px，消除这个冲突。 */
   .card-btn {
-    width: 32px !important;
-    height: 32px !important;
+    width: 44px !important;
+    height: 44px !important;
   }
 
   .batch-bar,

@@ -707,10 +707,14 @@
         font-size: 0.75em;
       }
       
+      /* 这里原先把卡片操作按钮缩到 26px，是「小屏就更小」的旧思路——
+         实际上屏幕越小，手指的绝对误差越大，目标应该更大而不是更小。
+         改成与 768px 档一致的 44px（WCAG 2.5.5 的下限）。
+         四个按钮一行 4×44+3×8 = 194px，320px 屏放得下。 */
       .card-btn {
-        width: 26px;
-        height: 26px;
-        font-size: 0.72em;
+        width: 44px;
+        height: 44px;
+        font-size: 0.8em;
       }
       
       .image-card-name {
