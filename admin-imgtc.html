@@ -371,11 +371,15 @@
 
           // 文件类型匹配
           const ext = data.name.split('.').pop().toLowerCase();
+          // 用 fileConfig 里的实际键来判断，不要直接索引 this.fileType：
+          // 后者可能被 localStorage 带进越界值（历史版本存过 "all"），
+          // fileConfig[越界值] 是 undefined，取 .exts 会整段抛错、列表渲染不出来。
+          const config = this.fileConfig[this.fileType];
           const matchesType = this.fileType === 'document' ?
           !Object.keys(this.fileConfig).some(type =>
             type !== 'document' && this.fileConfig[type].exts.includes(ext) // 匹配其他所有文件
           ) :
-          this.fileConfig[this.fileType].exts.includes(ext);
+          !config || config.exts.includes(ext);
           return matchesSearch && matchesFilter && matchesType;
         });
       },
@@ -598,12 +602,16 @@
           case 'exportLinks': this.exportAllLinks(); break;
         }
       },
-                  switchFileType(type) {  // 切换文件类型
-        this.fileType = type;
+      switchFileType(type) {  // 切换文件类型
+        // type 常来自 localStorage，而 localStorage 是长期存在的：早期版本支持过
+        // "all"，用户浏览器里可能还留着这个值。fileConfig 只有
+        // image/video/audio/document 四个键，拿越界的键取 fileConfig[type].name
+        // 会读到 undefined 上的属性而抛错，所以先把非法值挡回默认类型。
+        this.fileType = Object.prototype.hasOwnProperty.call(this.fileConfig, type) ? type : 'image';
         this.currentPage = 1;
-        localStorage.setItem('fileType', type);
+        localStorage.setItem('fileType', this.fileType);
         this.$message({
-          message: `已切换为${this.fileConfig[type].name}模式, 共${this.fileConfig[type].count}个文件`,
+          message: `已切换为${this.fileConfig[this.fileType].name}模式, 共${this.fileConfig[this.fileType].count}个文件`,
           type: 'success',
           duration: 1500
         });
