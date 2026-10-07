@@ -86,8 +86,6 @@ html[data-theme="dark"] {
   .nav-links a,
   .nav-btn,
   .btn,
-  .method-btn,
-  .storage-btn,
   .batch-btn,
   .login-btn,
   .action-btn {
@@ -95,8 +93,6 @@ html[data-theme="dark"] {
     border-radius: var(--m-radius-md) !important;
     font-weight: 600 !important;
   }
-
-  .upload-zone:hover,
   .image-card:hover,
   .video-card:hover,
   .audio-card:hover,
@@ -146,30 +142,6 @@ html[data-theme="dark"] {
     justify-content: center;
   }
 
-  .nav-links .theme-toggle-btn {
-    position: absolute;
-    top: -42px;
-    right: 0;
-    min-height: 34px;
-    padding: 6px 10px;
-    margin: 0;
-    border-radius: 999px !important;
-    white-space: nowrap;
-    z-index: 3;
-  }
-
-  .header .header-theme-toggle {
-    position: absolute !important;
-    top: 10px !important;
-    right: 10px !important;
-    min-height: 34px;
-    padding: 6px 10px;
-    margin: 0 !important;
-    border-radius: 999px !important;
-    white-space: nowrap;
-    z-index: 4;
-  }
-
   .header-actions > * {
     flex: 1 1 auto;
     min-width: 0;
@@ -187,11 +159,6 @@ html[data-theme="dark"] {
     margin-bottom: 14px !important;
   }
 
-  .upload-zone {
-    padding: 24px 16px !important;
-    border-width: 2px !important;
-  }
-
   .upload-icon {
     font-size: 2.65em !important;
     margin-bottom: 12px !important;
@@ -206,37 +173,11 @@ html[data-theme="dark"] {
     line-height: 1.45 !important;
   }
 
-  .storage-switcher {
-    align-items: stretch !important;
-    gap: 10px !important;
-    padding: 12px !important;
-    border-radius: var(--m-radius-md) !important;
-  }
-
   .storage-options {
     width: 100%;
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px !important;
-  }
-
-  .storage-btn {
-    justify-content: center !important;
-    padding: 10px 8px !important;
-    font-size: 0.82rem !important;
-  }
-
-  .upload-methods {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px !important;
-  }
-
-  .method-btn {
-    justify-content: center !important;
-    padding: 10px 8px !important;
-    font-size: 0.84rem !important;
-    gap: 6px !important;
   }
 
   .upload-item,
@@ -602,7 +543,6 @@ html[data-theme="dark"] {
 
 @media (max-width: 560px) {
   .storage-options,
-  .upload-methods,
   .content,
   .image-grid {
     grid-template-columns: 1fr !important;
@@ -641,22 +581,17 @@ html[data-theme="dark"] {
   }
 
   .header-title,
-  .title,
-  .card-title {
+  .title {
     font-size: 1rem !important;
   }
 
   .nav-links a,
   .nav-btn,
-  .btn,
-  .method-btn,
-  .storage-btn {
+  .btn {
     font-size: 0.8rem !important;
     padding: 8px 10px !important;
     gap: 6px !important;
   }
-
-  .nav-links .theme-toggle-btn [data-theme-label],
   .gallery-theme-toggle [data-theme-label] {
     display: inline !important;
   }
@@ -697,12 +632,6 @@ html[data-theme="dark"] {
 }
 
 @media (max-width: 900px) {
-  .header .header-theme-toggle {
-    position: absolute !important;
-    top: 10px !important;
-    right: 10px !important;
-    z-index: 4;
-  }
 
   .header-content .actions {
     align-items: flex-start !important;
@@ -1097,8 +1026,6 @@ html[data-theme="dark"] .el-image__placeholder {
   .action-btn,
   .upload-btn,
   .btn,
-  .method-btn,
-  .storage-btn,
   .login-btn,
   .file-choose-btn,
   .load-btn,

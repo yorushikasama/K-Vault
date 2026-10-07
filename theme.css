@@ -122,12 +122,9 @@ html[data-theme="dark"] .el-message-box__header,
 html[data-theme="dark"] .el-message-box__btns,
 html[data-theme="dark"] .el-card:not(.video-card):not(.audio-card):not(.file-card),
 html[data-theme="dark"] .image-card,
-html[data-theme="dark"] .storage-btn,
-html[data-theme="dark"] .method-btn,
 html[data-theme="dark"] .format-tab,
 html[data-theme="dark"] .upload-item,
 html[data-theme="dark"] .result-item,
-html[data-theme="dark"] .history-item,
 html[data-theme="dark"] .stats,
 html[data-theme="dark"] .toast,
 html[data-theme="dark"] .search-card .el-input__inner,
@@ -138,8 +135,6 @@ html[data-theme="dark"] .batch-links {
   color: #e8eeff !important;
   border-color: rgba(130, 152, 196, 0.35) !important;
 }
-
-html[data-theme="dark"] .storage-switcher,
 html[data-theme="dark"] .stats-bar,
 html[data-theme="dark"] .guest-notice {
   background: #141d31 !important;
@@ -148,7 +143,6 @@ html[data-theme="dark"] .guest-notice {
 
 html[data-theme="dark"] .header-title,
 html[data-theme="dark"] .title,
-html[data-theme="dark"] .card-title,
 html[data-theme="dark"] .file-name,
 html[data-theme="dark"] .file-title,
 html[data-theme="dark"] .video-title,
@@ -179,8 +173,6 @@ html[data-theme="dark"] .el-message-box__message p {
 html[data-theme="dark"] a {
   color: #c4d4ff;
 }
-
-html[data-theme="dark"] .upload-zone,
 html[data-theme="dark"] .container,
 html[data-theme="dark"] .image-card,
 html[data-theme="dark"] .el-main,
@@ -471,13 +463,10 @@ body > .container {
 .list-view-card,
 .search-card,
 .stats,
-.storage-switcher,
 .guest-notice,
-.upload-zone,
 .storage-target,
 .upload-item,
 .result-item,
-.history-item,
 .image-card,
 .toolbar-row,
 .status-pill,
@@ -552,8 +541,6 @@ html[data-theme="dark"] .gallery-theme-toggle i,
 html[data-theme="dark"] .gallery-theme-toggle svg.lucide {
   color: #d0dcff !important;
 }
-
-html[data-theme="dark"] .storage-switcher,
 html[data-theme="dark"] .stats-bar,
 html[data-theme="dark"] .guest-notice {
   background: rgba(var(--ui-surface-rgb), var(--ui-card-opacity)) !important;

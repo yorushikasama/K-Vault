@@ -23,20 +23,6 @@
         --warning-text-color: #e8be73;
       }
 
-      html[data-theme="dark"] .upload-zone {
-        border-color: rgba(181, 189, 248, 0.45);
-        background: rgba(154, 169, 255, 0.1);
-      }
-
-      html[data-theme="dark"] .upload-zone::before {
-        background: rgba(154, 169, 255, 0.18);
-      }
-
-      html[data-theme="dark"] .storage-switcher {
-        background: rgba(20, 29, 49, 0.9);
-        border-color: rgba(154, 169, 255, 0.25);
-      }
-
       html[data-theme="dark"] .image-compress-panel,
       html[data-theme="dark"] .compress-control,
       html[data-theme="dark"] .compress-confirm-card,
@@ -44,45 +30,13 @@
         background: rgba(20, 29, 49, 0.92);
         border-color: rgba(154, 169, 255, 0.24);
       }
-
-      html[data-theme="dark"] .storage-btn:hover:not(.disabled),
-      html[data-theme="dark"] .method-btn:hover,
-      html[data-theme="dark"] .compress-format-btn:hover:not(:disabled),
-      html[data-theme="dark"] .compress-mode-btn:hover {
+      html[data-theme="dark"] .compress-format-btn:hover:not(:disabled) {
         background: rgba(154, 169, 255, 0.14);
       }
 
       html[data-theme="dark"] .storage-target,
       html[data-theme="dark"] .stats-bar {
         background: rgba(154, 169, 255, 0.2);
-      }
-
-      html[data-theme="dark"] .history-file-icon {
-        background: #24324f;
-      }
-
-      html[data-theme="dark"] .history-file-icon.video-file {
-        background: #412546;
-      }
-
-      html[data-theme="dark"] .history-file-icon.audio-file {
-        background: #27335b;
-      }
-
-      html[data-theme="dark"] .history-file-icon.document-file {
-        background: #21405a;
-      }
-
-      html[data-theme="dark"] .history-file-icon.archive-file {
-        background: #5b4125;
-      }
-
-      html[data-theme="dark"] .history-file-icon.code-file {
-        background: #234c37;
-      }
-
-      html[data-theme="dark"] .history-file-icon.other-file {
-        background: #2b3649;
       }
 
       html[data-theme="dark"] .result-item.selected {
@@ -194,47 +148,6 @@
         color: white;
       }
 
-      .nav-links .theme-toggle-btn,
-      .header-theme-toggle {
-        border: 1.5px solid rgba(138, 75, 255, 0.25);
-        background: rgba(138, 75, 255, 0.16);
-        color: var(--text-primary);
-        padding: 10px 14px;
-        border-radius: var(--radius-sm);
-        font-size: 0.88em;
-        font-weight: 600;
-        cursor: pointer;
-        transition: var(--transition);
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .header-theme-toggle {
-        margin-left: auto;
-        margin-right: 8px;
-      }
-
-      .nav-links .theme-toggle-btn i,
-            .header-theme-toggle i,
-      .header-theme-toggle svg.lucide {
-        color: var(--primary-color);
-        width: 14px;
-        text-align: center;
-      }
-
-      .nav-links .theme-toggle-btn:hover,
-      .header-theme-toggle:hover {
-        border-color: var(--primary-color);
-        background: rgba(138, 75, 255, 0.24);
-      }
-
-      html[data-theme="dark"] .nav-links .theme-toggle-btn,
-      html[data-theme="dark"] .header-theme-toggle {
-        background: rgba(154, 169, 255, 0.2);
-        border-color: rgba(154, 169, 255, 0.45);
-      }
-
       /* 主容器 */
       .main-container {
         display: grid;
@@ -344,60 +257,6 @@
         gap: 12px;
       }
 
-      .card-title {
-        font-size: 1.25em;
-        font-weight: 600;
-        color: var(--text-primary);
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-            .card-title i,
-      .card-title svg.lucide {
-        color: var(--primary-color);
-        font-size: 1.1em;
-      }
-
-      /* 上传区域 */
-      .upload-zone {
-        border: 2.5px dashed var(--primary-light);
-        border-radius: var(--radius-md);
-        padding: 50px 40px;
-        text-align: center;
-        cursor: pointer;
-        transition: var(--transition);
-        background: rgba(138, 75, 255, 0.03);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .upload-zone::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(138, 75, 255, 0.08);
-        opacity: 0;
-        transition: var(--transition);
-      }
-
-      .upload-zone:hover::before,
-      .upload-zone.dragover::before {
-        opacity: 1;
-      }
-
-      .upload-zone:hover,
-      .upload-zone.dragover {
-        border-color: var(--primary-color);
-      }
-
-      .upload-zone.dragover {
-        background: rgba(138, 75, 255, 0.06);
-      }
-
       .upload-icon {
         font-size: 4em;
         color: var(--primary-light);
@@ -405,10 +264,6 @@
         transition: var(--transition);
         position: relative;
         z-index: 1;
-      }
-
-      .upload-zone:hover .upload-icon {
-        color: var(--primary-color);
       }
 
       .upload-text {
@@ -443,19 +298,6 @@
             .storage-target i,
       .storage-target svg.lucide {
         font-size: 1em;
-      }
-
-      /* 存储切换器 */
-      .storage-switcher {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 16px;
-        margin-top: 20px;
-        padding: 16px;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: var(--radius-md);
-        border: 1px solid rgba(138, 75, 255, 0.1);
       }
 
       .storage-label {
@@ -789,8 +631,7 @@
         gap: 10px;
       }
 
-      .compress-format-btn,
-      .compress-mode-btn {
+      .compress-format-btn {
         border: 1.5px solid var(--input-border);
         border-radius: var(--radius-sm);
         background: var(--surface-1);
@@ -809,13 +650,11 @@
         font-weight: 700;
       }
 
-      .compress-format-btn:hover:not(:disabled),
-      .compress-mode-btn:hover {
+      .compress-format-btn:hover:not(:disabled) {
         border-color: var(--primary-light);
       }
 
-      .compress-format-btn.active,
-      .compress-mode-btn.active {
+      .compress-format-btn.active {
         border-color: var(--primary-color);
         color: var(--primary-color);
         background: rgba(138, 75, 255, 0.1);
@@ -889,85 +728,8 @@
         max-width: 280px;
       }
 
-      .storage-btn {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 20px;
-        border: 2px solid var(--input-border);
-        border-radius: var(--radius-sm);
-        background: var(--surface-1);
-        cursor: pointer;
-        transition: var(--transition);
-        font-size: 0.9em;
-        color: var(--text-secondary);
-      }
-
-      .storage-btn:hover:not(.disabled) {
-        border-color: var(--primary-light);
-        background: rgba(138, 75, 255, 0.05);
-      }
-
-      .storage-btn.active {
-        border-color: var(--primary-color);
-        background: rgba(138, 75, 255, 0.1);
-        color: var(--primary-color);
-        font-weight: 600;
-      }
-
-            .storage-btn.active i,
-      .storage-btn.active svg.lucide {
-        color: var(--primary-color);
-      }
-
-      .storage-btn.disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-            .storage-btn i,
-      .storage-btn svg.lucide {
-        font-size: 1.1em;
-      }
-
       .upload-input {
         display: none;
-      }
-
-      /* 上传方式选择 */
-      .upload-methods {
-        display: flex;
-        gap: 12px;
-        margin-top: 24px;
-        justify-content: center;
-        flex-wrap: wrap;
-      }
-
-      .method-btn {
-        padding: 14px 24px;
-        border: 2px solid var(--primary-light);
-        border-radius: var(--radius-sm);
-        background: var(--surface-1);
-        cursor: pointer;
-        transition: var(--transition);
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 0.95em;
-        font-weight: 500;
-        color: var(--text-secondary);
-      }
-
-      .method-btn:hover {
-        border-color: var(--primary-color);
-        background: rgba(138, 75, 255, 0.08);
-        color: var(--primary-color);
-      }
-
-            .method-btn i,
-      .method-btn svg.lucide {
-        color: var(--primary-color);
-        font-size: 1.1em;
       }
 
       /* 上传进度列表 */
@@ -1225,103 +987,6 @@
         margin-top: 16px;
       }
 
-      .history-item {
-        position: relative;
-        aspect-ratio: 1;
-        border-radius: 12px;
-        overflow: hidden;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        background: var(--surface-3);
-      }
-
-      .history-item:hover {
-        transform: scale(1.03);
-      }
-
-      .history-item img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-
-      /* 非图片文件图标显示 */
-      .history-file-icon {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background: #f8f9fa;
-        padding: 8px;
-      }
-
-            .history-file-icon i,
-      .history-file-icon svg.lucide {
-        font-size: 2.2em;
-        margin-bottom: 6px;
-      }
-
-      .history-file-icon .file-ext {
-        font-size: 0.65em;
-        font-weight: 600;
-        color: var(--text-secondary);
-        text-transform: uppercase;
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .history-file-icon.video-file {
-        background: #fff0f6;
-      }
-            .history-file-icon.video-file i,
-      .history-file-icon.video-file svg.lucide {
-        color: #eb2f96;
-      }
-
-      .history-file-icon.audio-file {
-        background: #f0f5ff;
-      }
-            .history-file-icon.audio-file i,
-      .history-file-icon.audio-file svg.lucide {
-        color: #2f54eb;
-      }
-
-      .history-file-icon.document-file {
-        background: #e6f7ff;
-      }
-            .history-file-icon.document-file i,
-      .history-file-icon.document-file svg.lucide {
-        color: #1890ff;
-      }
-
-      .history-file-icon.archive-file {
-        background: #fff7e6;
-      }
-            .history-file-icon.archive-file i,
-      .history-file-icon.archive-file svg.lucide {
-        color: #fa8c16;
-      }
-
-      .history-file-icon.code-file {
-        background: #f6ffed;
-      }
-            .history-file-icon.code-file i,
-      .history-file-icon.code-file svg.lucide {
-        color: #52c41a;
-      }
-
-      .history-file-icon.other-file {
-        background: #f5f5f5;
-      }
-            .history-file-icon.other-file i,
-      .history-file-icon.other-file svg.lucide {
-        color: #8c8c8c;
-      }
-
       .history-item-overlay {
         position: absolute;
         top: 0;
@@ -1336,17 +1001,6 @@
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.3s;
-      }
-
-      .history-item:hover .history-item-overlay {
-        opacity: 1;
-        pointer-events: auto;
-      }
-
-      .history-item.selected .history-item-overlay {
-        opacity: 1;
-        pointer-events: auto;
-        background: rgba(138, 75, 255, 0.7);
       }
 
       /* 图片预览弹窗 - 原生图片 / iframe */
@@ -1547,35 +1201,6 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 12px;
         margin-bottom: 16px;
-      }
-
-      .compress-mode-btn {
-        text-align: left;
-        padding: 14px;
-        display: flex;
-        gap: 12px;
-        align-items: flex-start;
-      }
-
-            .compress-mode-btn i,
-      .compress-mode-btn svg.lucide {
-        color: var(--primary-color);
-        font-size: 1.15em;
-        margin-top: 2px;
-      }
-
-      .compress-mode-btn strong {
-        display: block;
-        color: inherit;
-        font-size: 0.98em;
-        margin-bottom: 4px;
-      }
-
-      .compress-mode-btn span {
-        display: block;
-        color: var(--text-muted);
-        font-size: 0.82em;
-        line-height: 1.5;
       }
 
       .compress-confirm-note {
@@ -1903,22 +1528,6 @@
           gap: 6px;
         }
 
-        .nav-links .theme-toggle-btn {
-          padding: 8px 12px;
-          font-size: 0.85em;
-        }
-
-        .header-theme-toggle {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          min-height: 36px;
-          padding: 8px 12px;
-          font-size: 0.85em;
-          border-radius: 999px;
-          z-index: 3;
-        }
-
         .card {
           padding: 20px;
           border-radius: 14px;
@@ -1930,32 +1539,8 @@
           gap: 8px;
         }
 
-        .card-title {
-          font-size: 1.1em;
-        }
-
-        .upload-zone {
-          padding: 40px 20px;
-        }
-
-        .upload-methods {
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .method-btn {
-          justify-content: center;
-          width: 100%;
-        }
-
         .main-container {
           gap: 16px;
-        }
-
-        .storage-switcher {
-          flex-direction: column;
-          align-items: stretch;
-          gap: 10px;
         }
 
         .folder-target-row {
@@ -2046,22 +1631,6 @@
           gap: 4px;
         }
 
-        .nav-links .theme-toggle-btn {
-          padding: 6px 10px;
-          font-size: 0.78em;
-          border-radius: 8px;
-          gap: 6px;
-        }
-
-        .header-theme-toggle {
-          top: 8px;
-          right: 8px;
-          min-height: 34px;
-          padding: 6px 10px;
-          font-size: 0.78em;
-          gap: 6px;
-        }
-
                 .nav-links a i,
         .nav-links a svg.lucide {
           font-size: 0.9em;
@@ -2074,45 +1643,6 @@
 
         .card-header {
           margin-bottom: 16px;
-        }
-
-        .card-title {
-          font-size: 1em;
-          gap: 8px;
-        }
-
-                .card-title i,
-        .card-title svg.lucide {
-          font-size: 1em;
-        }
-
-        .upload-zone {
-          padding: 30px 15px;
-          border-radius: 12px;
-        }
-
-                .upload-zone i,
-        .upload-zone svg.lucide {
-          font-size: 2.5em !important;
-        }
-
-        .upload-zone p {
-          font-size: 0.9em;
-        }
-
-        .upload-zone span {
-          font-size: 0.8em;
-        }
-
-        .upload-methods {
-          gap: 8px;
-          margin-top: 16px;
-        }
-
-        .method-btn {
-          padding: 10px 16px;
-          font-size: 0.85em;
-          border-radius: 10px;
         }
 
         .storage-label {

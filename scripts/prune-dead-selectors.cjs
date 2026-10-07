@@ -7,8 +7,20 @@
  * 里 .title / .stats 都是活的。整条删会连带删掉活规则，手改 35 处又容易漏。
  * 脚本只摘选择器，整条全死才删，并且 --check 能在 CI 里守住不回流。
  *
- * 死因（2026-10 核实）：.status-panel / .status-item / .home-btn 这三个类名
+ * 死因一（2026-10 核实）：.status-panel / .status-item / .home-btn 这三个类名
  * 只出现在 CSS 里，仓库内没有任何 HTML 模板或 JS 会产生带这些类的元素。
+ *
+ * 死因二（2026-10 核实）：3257348 把 index.html 从旧版上传页整体换成
+ * workbench 外壳，存储目标从 .storage-btn 变成 .upload-storage-option、
+ * 上传方式从 .method-btn 变成 .upload-btn、历史记录与标题样式不再带类名。
+ * 那一版留下的样式一直没清。逐个核对过该提交的 diff：下面这批类名
+ * 在那次迁移里全是「只删不加」（删除行数 > 0 且新增行数 = 0），
+ * 也就是确实存在过、被显式替换掉了，而不是本来就从没用过。
+ *
+ * .nav-links 明明同样搜不到 HTML 引用，这里却没有删：theme-core.js:120
+ * 有 `document.querySelector(".header .nav-links")`，一旦将来补上匹配的
+ * 标记就会真的把主题按钮插进去，删了样式等于埋一个看不见的坑。
+ * 这正是 docs/dead-code-boundaries.md 说的「只能证明没引用的一律留」。
  *
  *   node scripts/prune-dead-selectors.cjs           # 就地清理
  *   node scripts/prune-dead-selectors.cjs --check   # 只检查，CI 用
@@ -19,10 +31,48 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..');
 
 // 这些类名在仓库里没有任何元素会带上。改动前请先全仓搜索确认仍然成立。
-const DEAD_CLASSES = ['status-panel', 'status-item', 'home-btn'];
-const TARGETS = ['mobile-refactor.css', 'admin-imgtc.css'];
+const DEAD_CLASSES = [
+  // 3257348 之前的无引用类
+  'status-panel',
+  'status-item',
+  'home-btn',
+  // 3257348 迁移 index.html 到 workbench 外壳后遗留的样式
+  'storage-btn',
+  'method-btn',
+  'upload-zone',
+  'upload-methods',
+  'storage-switcher',
+  'history-item',
+  'history-file-icon',
+  'card-title',
+  'header-theme-toggle',
+  'theme-toggle-btn',
+  'compress-mode-btn',
+  'preview-stage',
+  // 注意：.nav-links 不在此列——theme-core.js 会在运行时按这个类名找元素。
+];
 
-const deadRe = new RegExp(`\\.(?:${DEAD_CLASSES.join('|')})\\b`);
+// index.css 也有同样一批死规则（workbench 接管后没人再加载它的那部分功能）。
+const TARGETS = [
+  'mobile-refactor.css',
+  'admin-imgtc.css',
+  'index.css',
+  'theme.css',
+  'gallery.css',
+  'webdav.css',
+  'preview.css',
+  'block-img.css',
+  'whitelist-on.css',
+  'admin-waterfall.css',
+  'login.css',
+  'admin.css',
+].filter((f) => fs.existsSync(path.join(ROOT, f)));
+
+// 边界必须用 (?![-\w]) 而不是 \b：\b 把连字符也当成词边界，
+// 于是 \.history-item\b 会匹配到 .history-item-overlay——两个不同的类，
+// 后者还带着自己的样式（overflow/opacity/渐变遮罩）。实测这一条会让
+// 历史记录的悬停遮罩失效。CSS 标识符里 - 属于名称的一部分。
+const deadRe = new RegExp(`\\.(?:${DEAD_CLASSES.join('|')})(?![-\\w])`);
 
 /** 把一段 CSS 切成顶层块，保留块之间的原始文本。 */
 function parseBlocks(text) {
