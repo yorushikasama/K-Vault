@@ -895,7 +895,15 @@
             if (!this.qualityPicker.visible || this.qualityPicker.loading || this.qualityPicker.error) return false;
             const task = this.qualityPicker.task;
             const variant = this.qualityPicker.variants.find((item) => item.formatId === this.qualityPicker.selected);
-            return !!task && task.status === "choosing" && !!variant && !this.isVariantDisabled(variant);
+            if (!variant || this.isVariantDisabled(variant)) return false;
+            // 队列路径（task 存在）要求任务处于可确认态；直连路径
+            // （用户从输入框提交分享链接）task 恒为 null——那是有意为之，
+            // 这条路根本不建队列项。原条件 `!!task && ...` 把 task 当成
+            // 必要条件，于是直连路径下这个按钮永远禁用：视频明明解析出了
+            // 两个清晰度、弹窗也正常显示，用户却点不动「转存」，卡在弹窗里。
+            // 所以只在 task 存在时才校验它的状态。
+            if (!task) return true;
+            return task.status === "choosing";
           },
           effectiveUploadLimit() {
             const maxBytes = this.getUploadLimit(this.storageMode).maxBytes || this.uploadConfig.maxSize;
