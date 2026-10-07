@@ -125,6 +125,20 @@ describe('pruned dead methods stay pruned', function () {
         for (const m of src.matchAll(/@(?:click|input|change|submit|keyup|keydown|focus|blur|close|cancel|paste|drop|dragover|error|contextmenu)(?:\.[\w-]+)?="([A-Za-z_$][\w$]*)/g)) {
           referenced.add(m[1]);
         }
+        // 把方法当值传递：this.$nextTick(this.syncModalEnvironment)。
+        // 这类调用不会出现在 this.foo( 里，正是它藏住了 admin.html 的
+        // syncModalEnvironment —— $nextTick(undefined) 是静默空操作，
+        // watch 看着有逻辑，实际什么都没做。
+        for (const m of src.matchAll(/this\.\$[A-Za-z]+\s*\(\s*this\.([A-Za-z_$][\w$]*)/g)) {
+          referenced.add(m[1]);
+        }
+        // 注意：这里**不**检查「this.foo = ... 但 foo 未声明」。
+        // 曾经想加这条规则去抓 showLogoutButton，但实测推翻了前提：
+        // Vue 2 给实例上的新属性赋值是存得住的（hasOwn 为 true、无警告，
+        // 只是不具响应性）。gallery.html 的 handleGlobalKeydown 正是靠这个
+        // 特性挂事件处理函数，加了那条规则只会误报。真正坏掉的是
+        // syncModalEnvironment —— 名字根本不存在，被当值传给 $nextTick，
+        // 上面那条规则才抓得到。
 
         // Vue 与 Element UI 挂在原型上的成员，以及 admin-shared.js 以 mixin
         // 形式注入的方法，都不是本页自己定义的，不算缺失。

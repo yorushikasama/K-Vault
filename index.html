@@ -1797,16 +1797,32 @@
               (item) => item.formatId === this.qualityPicker.selected,
             );
             const sourceUrl = this.qualityPicker.sourceUrl;
+            // 解析阶段就拿好文件名：标题 + 所选档位的容器后缀。
+            // 留到转存完成后再取，那时 qualityPicker 已被清空，只能退回去
+            // 猜 URL 末段（YouTube 会得出 "watch"）。
+            const fileName = this.buildMediaFileName(this.qualityPicker.title, variant);
             this.qualityPicker.visible = false;
-            await this.runMediaUpload(sourceUrl, variant || null);
+            await this.runMediaUpload(sourceUrl, variant || null, fileName);
           },
 
-          async runMediaUpload(rawUrl, variant) {
+          // 视频标题通常不含扩展名（服务端返回的是 "Me at the zoo"），
+          // 而 isImageFile / getFileIcon / 预览判定全都依赖扩展名——
+          // 没有后缀的话图标会退化成通用文件。这里补上所选档位的容器。
+          buildMediaFileName(title, variant) {
+            const raw = String(title || "").trim();
+            if (!raw) return "";
+            const ext = String((variant && variant.ext) || "").trim().replace(/^\./, "");
+            if (!ext) return raw;
+            // 标题里已经带了同样的后缀就不重复追加
+            return raw.toLowerCase().endsWith(`.${ext.toLowerCase()}`) ? raw : `${raw}.${ext}`;
+          },
+
+          async runMediaUpload(rawUrl, variant, mediaFileName) {
             this.startUrlTicker();
             try {
               const data = await this.submitMediaUpload(rawUrl, variant);
               if (!Array.isArray(data) || !data[0]?.src) throw new Error("未返回文件路径");
-              this.registerUploadedUrlFile(data[0].src, rawUrl);
+              this.registerUploadedUrlFile(data[0].src, rawUrl, mediaFileName);
               this.urlToUpload = "";
             } catch (err) {
               this.showToast("转存失败：" + err.message, "error");
@@ -1814,9 +1830,14 @@
             this.stopUrlTicker();
           },
 
-          registerUploadedUrlFile(src, sourceUrl) {
+          // 文件名优先级：解析出的视频标题 > URL 末段。
+          // URL 末段是最差的选择：分享链接常常没有文件名（YouTube 的
+          // /watch?v=... 会得出 "watch"，抖音短链只有一个短码），
+          // 而服务端其实是按视频标题存的（实测 Me_at_the_zoo.mp4）。
+          registerUploadedUrlFile(src, sourceUrl, mediaFileName) {
+            const fromUrl = String(sourceUrl || "").split("/").pop().split("?")[0];
             const fileName =
-              String(sourceUrl || "").split("/").pop().split("?")[0] || "url_file";
+              String(mediaFileName || "").trim() || fromUrl || "url_file";
             const uploadedFile = {
               name: fileName,
               fileName: fileName,

@@ -1233,6 +1233,24 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       folderPath(newValue) { localStorage.setItem('adminFolderPath', this.normalizeFolderPath(newValue)); }
     }),
     methods: Object.assign({}, window.KVAdminShared.methods, {
+      // localModalOpen 的 watch 调用这个（预览弹窗或移动端目录抽屉打开）。
+      // 它此前从未被定义，$nextTick(undefined) 是静默空操作——于是弹窗开着
+      // 还能滚背景：实测 body.style.overflow 恒为空、window.scrollY 能从 0
+      // 滚到 500，手指在预览图上滑动会把背后的文件列表带着走。
+      // 与 index.html 的做法保持一致：只在进入时记录原值，退出时还原，
+      // 不假设原值一定是空串。
+      syncModalEnvironment() {
+        const locked = this.localModalOpen;
+        if (locked && !this._modalLocked) {
+          this._modalOverflow = document.body.style.overflow;
+          document.body.style.overflow = 'hidden';
+          this._modalLocked = true;
+        } else if (!locked && this._modalLocked) {
+          document.body.style.overflow = this._modalOverflow || '';
+          this._modalLocked = false;
+        }
+      },
+
       normalizeFolderPath(value = '') {
         const raw = String(value || '').replace(/\\/g, '/').trim();
         const output = [];
