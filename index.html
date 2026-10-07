@@ -635,6 +635,31 @@
             allowUnknownHosts: false,
             loaded: false,
           },
+          // 模板里三处 @click="cancelQualityPicker" 都指向这里，但 3257348 之后
+          // 一直没实现：点「取消」会抛 TypeError，弹窗关不掉——这是「卡死」的
+          // 第二个来源（弹窗遮罩还在，下面整页都点不动）。
+          // 语义必须与弹窗里的说明一致：只取消本项解析与选择，不开始转存。
+          cancelQualityPicker() {
+            const item = this.qualityPicker.task;
+            // 先关界面，再中止请求：顺序反了会让 fetch 的 reject 打到
+            // 一个已经看不见的任务上，catch 分支又去弹 toast。
+            this.qualityPicker.visible = false;
+            this.qualityPicker.loading = false;
+            this.qualityPicker.error = "";
+            this.qualityPicker.task = null;
+            this.qualityPicker.sourceUrl = "";
+            this.qualityPicker.variants = [];
+            this.qualityPicker.selected = "";
+            this.qualityPicker.title = "";
+
+            if (item && this.isUploadTaskActive(item)) {
+              this._taskControllers.get(item.id)?.abort();
+              this.removeUploadTask(item);
+            }
+            if (!this.urlActivityCount) this.stopUrlTicker();
+            this.startUpload();
+          },
+
           // 分享链接的清晰度选择；variants 由服务端 yt-dlp 的格式清单按分辨率去重得到
           qualityPicker: {
             visible: false,
@@ -1626,7 +1651,7 @@
           },
 
           // 仅解析：拿元数据与可选清晰度，不落库
-          async fetchMediaInfo(rawUrl) {
+          async fetchMediaInfo(rawUrl, signal) {
             const response = await fetch(`${this.baseURL}/api/resolve-url`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -1635,6 +1660,9 @@
                 storageMode: this.storageMode,
               }),
               credentials: "include",
+              // 队列路径要能真的中断请求，否则「取消」只是关掉弹窗，
+              // 后端仍在解析，任务也就一直占着并发槽。
+              signal,
             });
 
             const data = await response.json();
@@ -1676,30 +1704,39 @@
           },
 
           // 打开清晰度选择；只剩一个可用档位时直接转存，省掉多余点击
-          async openQualityPicker(rawUrl) {
-            this.urlResolving = true;
-            this.startUrlTicker("解析中");
+          // 入参有两种形态，必须都支持，否则队列路径（runUploadTask 传 item+signal）
+          // 和直连路径（uploadFromUrl 传 url）会互相把对方的参数当成另一种：
+          //   openQualityPicker(url)            —— 直连，没有队列项
+          //   openQualityPicker(item, signal)   —— 队列项，需要登记 task 才能取消
+          // 判据是第一个参数是不是字符串。
+          async openQualityPicker(rawUrl, signal) {
+            const item = typeof rawUrl === "string" ? null : rawUrl;
+            const url = typeof rawUrl === "string" ? rawUrl : rawUrl?.sourceUrl;
+            if (!url) return;
+
+            this.startUrlTicker();
             this.qualityPicker.visible = true;
             this.qualityPicker.loading = true;
             this.qualityPicker.title = "";
             this.qualityPicker.variants = [];
             this.qualityPicker.selected = "";
             this.qualityPicker.maxBytes = 0;
-            this.qualityPicker.sourceUrl = rawUrl;
+            this.qualityPicker.sourceUrl = url;
+            this.qualityPicker.task = item;
+            this.qualityPicker.error = "";
+            if (item) item.status = "resolving";
 
             let info;
             try {
-              info = await this.fetchMediaInfo(rawUrl);
+              info = await this.fetchMediaInfo(url, signal);
             } catch (err) {
               this.stopUrlTicker();
               this.qualityPicker.visible = false;
               this.qualityPicker.loading = false;
-              this.urlResolving = false;
               this.showToast("解析失败：" + err.message, "error");
               return;
             }
 
-            this.urlResolving = false;
             this.stopUrlTicker();
             // 用户关闭解析窗口后，不自动发起转存。
             if (!this.qualityPicker.visible) {
@@ -1728,13 +1765,15 @@
           },
 
           // 服务端没有传输进度事件；只显示实测等待时长，不推算百分比或完成时间。
-          startUrlTicker(baseText) {
+          // urlStage 是 computed，只由 uploadingFiles 推导。原来这段在写
+          // this.urlStage（一个根本不存在的字段），等于什么都没做：等待秒数
+          // 永远停在 data() 初始化时的 clockNow，界面就一直显示「已等待 0 秒」，
+          // 看上去像冻住了。正确做法是推动 clockNow，让 computed 自己重算。
+          startUrlTicker() {
             this.stopUrlTicker();
-            const startedAt = Date.now();
-            this.urlStage = `${baseText}… 等待服务器响应，未提供传输进度。`;
+            this.clockNow = Date.now();
             this.urlStageTimer = setInterval(() => {
-              const seconds = Math.round((Date.now() - startedAt) / 1000);
-              this.urlStage = `${baseText}… 已等待 ${seconds} 秒，未提供传输进度。`;
+              this.clockNow = Date.now();
             }, 1000);
           },
 
@@ -1743,7 +1782,6 @@
               clearInterval(this.urlStageTimer);
               this.urlStageTimer = null;
             }
-            this.urlStage = "";
           },
 
           async confirmQualityAndUpload() {
@@ -1756,9 +1794,7 @@
           },
 
           async runMediaUpload(rawUrl, variant) {
-            this.urlResolving = false;
-            this.urlUploading = true;
-            this.startUrlTicker("视频转存中");
+            this.startUrlTicker();
             try {
               const data = await this.submitMediaUpload(rawUrl, variant);
               if (!Array.isArray(data) || !data[0]?.src) throw new Error("未返回文件路径");
@@ -1768,8 +1804,6 @@
               this.showToast("转存失败：" + err.message, "error");
             }
             this.stopUrlTicker();
-            this.urlUploading = false;
-            this.urlResolving = false;
           },
 
           registerUploadedUrlFile(src, sourceUrl) {
@@ -1854,8 +1888,7 @@
               return;
             }
 
-            this.urlUploading = true;
-            this.startUrlTicker("URL 转存中");
+            this.startUrlTicker();
             try {
               const data = await this.uploadPlainUrlToServer(submittedUrl);
 
@@ -1868,7 +1901,6 @@
               this.showToast("URL上传失败：" + err.message, "error");
             } finally {
               this.stopUrlTicker();
-              this.urlUploading = false;
             }
           },
 
@@ -2480,6 +2512,53 @@
             } finally {
               this._pumping = false;
             }
+          },
+
+          // runUploadTask 把非 file 的任务交给这里。3257348 引入队列时只写了
+          // 调用点，没写实现：this.uploadRemoteTask 是 undefined，调用即抛
+          // TypeError，于是任务卡在 uploading——服务端其实已经返回 200 了
+          // （nginx access 里有 POST /api/resolve-url 200），页面却一直转圈，
+          // 而且 finally 里的收尾虽然会跑，item.status 也已被置成 error，
+          // 表现为「粘贴抖音链接后界面冻住」。
+          //
+          // 两种远程任务：
+          //   kind === "media" 分享链接 → /api/resolve-url（带 upload:true）
+          //   kind === "url"   普通直链 → /api/upload-from-url
+          async uploadRemoteTask(item, signal) {
+            this.assertUploadActive(item, signal);
+            this.assertTaskPermission(item);
+            item.status = "uploading";
+            item.uploadStage = "requesting";
+            item.progress = 0;
+
+            const body = {
+              url: item.sourceUrl,
+              storageMode: this.getItemStorageMode(item),
+              folderPath: this.getItemFolderPath(item),
+            };
+            const endpoint =
+              item.kind === "media" ? "/api/resolve-url" : "/api/upload-from-url";
+            if (item.kind === "media") {
+              body.upload = true;
+              body.formatId = item.variant?.formatId || "";
+              body.needsAudio = item.variant?.needsAudio === true;
+            }
+
+            // requestJson 自带 AbortSignal 与统一的错误契约（含 v2 信封解析），
+            // 不要自己再写一份 fetch。
+            const data = await this.requestJson(
+              `${this.baseURL}${endpoint}`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+                signal,
+              },
+              item,
+            );
+
+            this.assertUploadActive(item, signal);
+            this.handleUploadSuccess(item, this.getUploadResponse(data));
           },
 
           async runUploadTask(item, signal, telegram) {
