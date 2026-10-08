@@ -80,30 +80,33 @@ html[data-theme="light"] {
   display: none !important;
 }
 
+/* Legacy dark block, folded into the single token layer further down.
+   Kept as aliases so old references (--primary, --card-bg, --shadow …) resolve
+   from --ui-*, which means one swap in one place now drives every page. */
 html[data-theme="dark"] {
   color-scheme: dark;
-  --primary-color: #9aa9ff;
-  --primary-light: #b5bdf8;
-  --primary-dark: #768cff;
-  --primary: #9aa9ff;
+  --primary-color: var(--ui-brand);
+  --primary-light: var(--ui-brand-hover);
+  --primary-dark: var(--ui-brand-active);
+  --primary: var(--ui-brand);
   --accent-color: #8d9dd8;
   --accent: #8d9dd8;
-  --bg-gradient: #0b1120;
-  --bg: #0b1120;
-  --card-bg: #0f1727;
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 1px rgba(0, 0, 0, 0.22);
-  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.34);
+  --bg-gradient: var(--ui-canvas);
+  --bg: var(--ui-canvas);
+  --card-bg: var(--ui-surface);
+  --shadow: var(--ui-elev-1);
+  --shadow-hover: var(--ui-elev-2);
 }
 
 html[data-theme="dark"] body {
-  background: #0b1120 !important;
-  color: #e8eeff !important;
+  background: var(--ui-canvas) !important;
+  color: var(--ui-ink) !important;
 }
 
 html[data-theme="dark"] #app,
 html[data-theme="dark"] .container,
 html[data-theme="dark"] .main-container {
-  color: #e8eeff;
+  color: var(--ui-ink);
 }
 
 html[data-theme="dark"] .header,
@@ -131,14 +134,14 @@ html[data-theme="dark"] .search-card .el-input__inner,
 html[data-theme="dark"] .el-input__inner,
 html[data-theme="dark"] .url-input-container input,
 html[data-theme="dark"] .batch-links {
-  background: rgba(15, 23, 39, 0.9) !important;
-  color: #e8eeff !important;
-  border-color: rgba(130, 152, 196, 0.35) !important;
+  background: var(--ui-surface) !important;
+  color: var(--ui-ink) !important;
+  border-color: var(--ui-line) !important;
 }
 html[data-theme="dark"] .stats-bar,
 html[data-theme="dark"] .guest-notice {
-  background: #141d31 !important;
-  border-color: rgba(130, 152, 196, 0.35) !important;
+  background: var(--ui-surface-raised) !important;
+  border-color: var(--ui-line) !important;
 }
 
 html[data-theme="dark"] .header-title,
@@ -153,7 +156,7 @@ html[data-theme="dark"] .image-card-name,
 html[data-theme="dark"] .preview-filename,
 html[data-theme="dark"] .el-dropdown-link,
 html[data-theme="dark"] .el-dialog__title {
-  color: #e8eeff !important;
+  color: var(--ui-ink) !important;
 }
 
 html[data-theme="dark"] .upload-hint,
@@ -167,32 +170,32 @@ html[data-theme="dark"] .footer a,
 html[data-theme="dark"] .el-form-item__label,
 html[data-theme="dark"] .el-dialog__body,
 html[data-theme="dark"] .el-message-box__message p {
-  color: #c4cde3 !important;
+  color: var(--ui-ink-secondary) !important;
 }
 
 html[data-theme="dark"] a {
-  color: #c4d4ff;
+  color: var(--ui-link);
 }
 html[data-theme="dark"] .container,
 html[data-theme="dark"] .image-card,
 html[data-theme="dark"] .el-main,
 html[data-theme="dark"] .el-header {
-  border-color: rgba(130, 152, 196, 0.35) !important;
+  border-color: var(--ui-line) !important;
 }
 
 html[data-theme="dark"] .el-button:not(.el-button--primary):not(.el-button--danger) {
-  background: rgba(33, 45, 72, 0.85) !important;
-  color: #e8eeff !important;
-  border-color: rgba(130, 152, 196, 0.4) !important;
+  background: var(--ui-surface-raised) !important;
+  color: var(--ui-ink) !important;
+  border-color: var(--ui-line-strong) !important;
 }
 
 html[data-theme="dark"] .el-button--primary {
-  background: #6f84ff !important;
+  background: var(--ui-brand) !important;
   border-color: transparent !important;
 }
 
 html[data-theme="dark"] .el-button--danger {
-  background: #d0617d !important;
+  background: var(--ui-danger) !important;
   border-color: transparent !important;
 }
 
@@ -341,8 +344,14 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
    no glassmorphism, no colored glows, a deliberate radius scale, and a
    restrained neutral elevation scale. Brand hues are unchanged. */
 :root {
-  --ui-page-bg: #fafaf8;
-  --ui-page-bg-dark: #101318;
+  /* Retired: --ui-page-bg / --ui-page-bg-dark are folded into --ui-canvas,
+     which flips with the theme on its own. Two names meant every consumer had
+     to remember which one to read — preview.css picked the light-only pair,
+     so with `background: var(--ui-page-bg) !important` on body its dark mode
+     never took effect and the page stayed light. Kept as aliases so any
+     remaining reference resolves correctly in both themes. */
+  --ui-page-bg: var(--ui-canvas);
+  --ui-page-bg-dark: var(--ui-canvas);
   --ui-surface-rgb: 255, 255, 255;
   --ui-surface-rgb-dark: 19, 24, 33;
   --ui-border-rgb: 198, 206, 218;
@@ -374,9 +383,14 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
 html[data-theme="dark"] {
   --ui-surface-rgb: var(--ui-surface-rgb-dark);
   --ui-border-rgb: var(--ui-border-rgb-dark);
-  --ui-shadow-soft: var(--shadow-1-dark);
-  --shadow: var(--shadow-1-dark);
-  --shadow-hover: var(--shadow-2-dark);
+  --ui-shadow-soft: var(--ui-elev-1);
+  --ui-shadow-soft-dark: var(--ui-elev-1);
+  --shadow-1: var(--ui-elev-1);
+  --shadow-2: var(--ui-elev-2);
+  --shadow-3: var(--ui-elev-3);
+  --shadow-1-dark: var(--ui-elev-1);
+  --shadow-2-dark: var(--ui-elev-2);
+  --shadow-3-dark: var(--ui-elev-3);
 }
 
 html,
@@ -524,14 +538,14 @@ html[data-theme="dark"] .el-message-box {
   border-color: rgba(var(--ui-border-rgb), 0.58) !important;
   background: rgba(var(--ui-surface-rgb), 1) !important;
   box-shadow: var(--shadow-1) !important;
-  color: #344054 !important;
+  color: var(--ui-ink-secondary) !important;
 }
 
 html[data-theme="dark"] .theme-floating-toggle,
 html[data-theme="dark"] .theme-auto-inline-toggle,
 html[data-theme="dark"] .theme-admin-toggle,
 html[data-theme="dark"] .gallery-theme-toggle {
-  color: #e8eeff !important;
+  color: var(--ui-ink) !important;
 }
 
 html[data-theme="dark"] .theme-floating-toggle i,
@@ -539,7 +553,7 @@ html[data-theme="dark"] .theme-auto-inline-toggle i,
 html[data-theme="dark"] .theme-admin-toggle i,
 html[data-theme="dark"] .gallery-theme-toggle i,
 html[data-theme="dark"] .gallery-theme-toggle svg.lucide {
-  color: #d0dcff !important;
+  color: var(--ui-brand) !important;
 }
 html[data-theme="dark"] .stats-bar,
 html[data-theme="dark"] .guest-notice {
@@ -547,13 +561,179 @@ html[data-theme="dark"] .guest-notice {
 }
 
 html[data-theme="dark"] .el-button--primary {
-  background: #6f84ff !important;
+  background: var(--ui-brand) !important;
   border-color: transparent !important;
 }
 
 html[data-theme="dark"] .el-button--danger {
-  background: #d0617d !important;
+  background: var(--ui-danger) !important;
   border-color: transparent !important;
+}
+
+/* ===== Design Tokens v2 — the single source of truth =====
+
+   Why this section exists
+   ----------------------
+   Before it, the design system lived in three places at once: a handful of
+   --ui-* tokens here, per-page private sets (--m-*, --wb-*, --admin-*,
+   --wf-*, --brand-*), and 530 hard-coded hex values. Every page then loaded
+   its own sheet *after* this one, so at equal specificity the page always
+   won — the global layer was structurally the weakest thing in the cascade.
+   That is why "统一" kept failing: there was no single place to change.
+
+   So this layer is authoritative. Two rules make it stick:
+
+     1. Colour, radius and shadow come from here. A page sheet may re-map a
+        token (preview overrides --ui-brand-* to teal) but must not invent a
+        parallel scale.
+     2. Dark mode is a *token swap*, not a second rule set. Every rule reads
+        the same var() in both themes; the html[data-theme="dark"] block only
+        reassigns values. That is what fixes preview.html, whose preview.css
+        contained zero data-theme="dark" rules and so did nothing on toggle.
+
+   Everything derives from --ui-brand-*, so re-theming the product means
+   editing one block rather than thirteen sheets. */
+
+:root {
+  /* -- Brand ------------------------------------------------------------ */
+  --ui-brand: #6c3ce0;
+  --ui-brand-hover: #7d4ff0;
+  --ui-brand-active: #5a2fc4;
+  --ui-brand-ink: #ffffff;
+  --ui-brand-soft: rgba(108, 60, 224, 0.1);
+  --ui-brand-soft-hover: rgba(108, 60, 224, 0.16);
+  --ui-brand-ring: rgba(108, 60, 224, 0.35);
+
+  /* -- Semantic (Element UI compatible) --------------------------------- */
+  --ui-success: #16a34a;
+  --ui-warning: #d97706;
+  --ui-danger: #dc2626;
+  --ui-info: #6b7280;
+
+  /* -- Surfaces (opaque; alpha lives in the legacy -rgb knobs) ---------- */
+  --ui-canvas: #fafaf8;
+  --ui-surface: #ffffff;
+  --ui-surface-sunken: #f2f4f7;
+  --ui-surface-raised: #ffffff;
+  --ui-surface-hover: #f4f6f9;
+  --ui-surface-active: #eceff4;
+
+  /* -- Ink -------------------------------------------------------------- */
+  --ui-ink: #101828;
+  --ui-ink-secondary: #475467;
+  --ui-ink-muted: #667085;
+  --ui-ink-inverse: #ffffff;
+
+  /* -- Lines & focus ---------------------------------------------------- */
+  --ui-line: #e4e7ec;
+  --ui-line-strong: #d0d5dd;
+  --ui-focus-ring: var(--ui-brand-ring);
+
+  /* -- Shape ------------------------------------------------------------ */
+  --ui-radius-sm: 6px;
+  --ui-radius-md: 10px;
+  --ui-radius-lg: 14px;
+  --ui-radius-pill: 9999px;
+
+  /* -- Elevation -------------------------------------------------------- */
+  --ui-elev-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
+  --ui-elev-2: 0 4px 8px -2px rgba(16, 24, 40, 0.1), 0 2px 4px -2px rgba(16, 24, 40, 0.06);
+  --ui-elev-3: 0 12px 16px -4px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.03);
+
+  /* -- Spacing ---------------------------------------------------------- */
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 20px;
+  --ui-space-6: 24px;
+  --ui-space-8: 32px;
+
+  /* -- Type ------------------------------------------------------------- */
+  --ui-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC",
+    system-ui, sans-serif;
+  --ui-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --ui-text-xs: 0.75rem;
+  --ui-text-sm: 0.8125rem;
+  --ui-text-base: 0.875rem;
+  --ui-text-md: 1rem;
+  --ui-text-lg: 1.125rem;
+  --ui-text-xl: 1.375rem;
+  --ui-leading: 1.6;
+  --ui-leading-tight: 1.35;
+
+  /* -- Motion ----------------------------------------------------------- */
+  --ui-dur-fast: 120ms;
+  --ui-dur: 200ms;
+  --ui-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark is a value swap: no rule is duplicated per theme. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --ui-brand: #9aa9ff;
+  --ui-brand-hover: #b5bdf8;
+  --ui-brand-active: #768cff;
+  --ui-brand-ink: #0b1120;
+  --ui-brand-soft: rgba(154, 169, 255, 0.14);
+  --ui-brand-soft-hover: rgba(154, 169, 255, 0.2);
+  --ui-brand-ring: rgba(154, 169, 255, 0.45);
+
+  --ui-success: #4ade80;
+  --ui-warning: #fbbf24;
+  --ui-danger: #f87171;
+  --ui-info: #9ca3af;
+
+  --ui-canvas: #0d1117;
+  --ui-surface: #161b22;
+  --ui-surface-sunken: #0b0f14;
+  --ui-surface-raised: #1c232c;
+  --ui-surface-hover: #1f2731;
+  --ui-surface-active: #262f3a;
+
+  --ui-ink: #e6edf3;
+  --ui-ink-secondary: #b1bac4;
+  --ui-ink-muted: #8b949e;
+  --ui-ink-inverse: #0d1117;
+
+  --ui-line: #30363d;
+  --ui-line-strong: #3d444d;
+  --ui-focus-ring: rgba(154, 169, 255, 0.55);
+
+  --ui-elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --ui-elev-2: 0 4px 8px -2px rgba(0, 0, 0, 0.45);
+  --ui-elev-3: 0 12px 16px -4px rgba(0, 0, 0, 0.5);
+}
+
+/* Bridge the historical names onto the new layer so the pages that still
+   read --primary-color / --card-bg / --radius-md keep working while they
+   migrate. Each is a pure alias — no page owns a value any more, and the
+   dark swap propagates for free because the alias resolves late. */
+:root {
+  --primary-color: var(--ui-brand);
+  --primary-light: var(--ui-brand-hover);
+  --primary-dark: var(--ui-brand-active);
+  --success-color: var(--ui-success);
+  --warning-color: var(--ui-warning);
+  --danger-color: var(--ui-danger);
+  --info-color: var(--ui-info);
+  --text-primary: var(--ui-ink);
+  --text-secondary: var(--ui-ink-secondary);
+  --text-muted: var(--ui-ink-muted);
+  --surface-1: var(--ui-surface);
+  --surface-3: var(--ui-surface-sunken);
+  --input-border: var(--ui-line);
+  --card-bg: var(--ui-surface);
+  --bg: var(--ui-canvas);
+  --radius-sm: var(--ui-radius-sm);
+  --radius-md: var(--ui-radius-md);
+  --radius-lg: var(--ui-radius-lg);
+  --shadow-1: var(--ui-elev-1);
+  --shadow-2: var(--ui-elev-2);
+  --shadow-3: var(--ui-elev-3);
+  --shadow: var(--ui-elev-1);
+  --shadow-hover: var(--ui-elev-2);
 }
 
 body.login-page {

@@ -9,9 +9,16 @@
   <link rel="shortcut icon" href="/favicon.ico">
   <!-- 增强预览引擎按需从 unpkg 加载：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
-  <link rel="stylesheet" href="/theme.css?v=160afbf97c">
-  <link rel="stylesheet" href="/preview.css?v=a961c7f7ce">
+  <link rel="stylesheet" href="/theme.css?v=4c2600206d">
+  <link rel="stylesheet" href="/preview.css?v=4d870c6a19">
   <link rel="stylesheet" href="/mobile-refactor.css?v=545252aefa">
+  <!-- 预览页此前是全站唯一没加载 theme-core.js 的页面。没有它就没有
+       ThemeManager，data-theme 永远是 null，于是 preview.css 里
+       html[data-theme="dark"] 的规则一条都不会命中——夜间模式在这里完全
+       失效（实测两模式 body 背景同色）。它必须同步放在 <head>：首帧前把
+       data-theme 写到 <html> 上，延后会闪一下白屏。 -->
+  <script src="/theme-core.js?v=4cb852886e"></script>
+  <script defer src="/theme-effects.js?v=7a5139b2de"></script>
 </head>
 <body>
   <div class="shell">
@@ -21,6 +28,9 @@
         <p id="subtitle">K-Vault 本地预览器</p>
       </div>
       <div class="actions">
+        <button class="btn" type="button" data-theme-toggle aria-label="切换主题">
+          <i data-lucide="moon" data-theme-icon aria-hidden="true"></i><span data-theme-label>夜间</span>
+        </button>
         <button class="btn" type="button" id="copyBtn">复制直链</button>
         <button class="btn" type="button" id="openBtn">新标签打开</button>
         <button class="btn primary" type="button" id="downloadBtn">下载文件</button>
@@ -1942,5 +1952,10 @@
       }
     })();
   </script>
+  <!-- 图标子集与渲染器放在 body 末尾（与其它页一致）：主题切换按钮的
+       月亮/太阳图标靠它渲染，放 <head> 会挡住首帧。icons.js 在
+       DOMContentLoaded 时自动扫描 data-lucide 并替换成 SVG。 -->
+  <script src="/icons-subset.js?v=a139a660aa"></script>
+  <script src="/icons.js?v=fc3fc216e0"></script>
 </body>
 </html>

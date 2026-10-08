@@ -1,10 +1,13 @@
+      /* 同样改为引用 token：原先这里钉死了亮色值，深色档再写一份覆盖，
+         两份容易走偏（--bg-gradient 亮色 #ffd7e4 实际是个粉色，与
+         --accent-color 撞了）。现在深浅都由 theme.css 的 token 决定。 */
       :root {
-        --bg-gradient: #ffd7e4;
-        --card-bg: #ffffff;
-        --shadow: var(--shadow-1);
-        --shadow-hover: var(--shadow-2);
+        --bg-gradient: var(--ui-canvas);
+        --card-bg: var(--ui-surface);
+        --shadow: var(--ui-elev-1);
+        --shadow-hover: var(--ui-elev-2);
         --warning-text-color: #b88230;
-        --border-radius: var(--radius-md);
+        --border-radius: var(--ui-radius-md);
       }
 
       html[data-theme="dark"] {

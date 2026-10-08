@@ -1,7 +1,9 @@
     :root {
-      --bg-gradient: #ffd7e4;
-      --card-bg: #ffffff;
-      --shadow: var(--shadow-1);
+      /* --bg-gradient 原本是 #ffd7e4 —— 那是强调色，写进页面底色属于
+         复制粘贴时取错了上一行。改引用 token 后，亮/暗都由 theme.css 决定。 */
+      --bg-gradient: var(--ui-canvas);
+      --card-bg: var(--ui-surface);
+      --shadow: var(--ui-elev-1);
     }
 
     * {

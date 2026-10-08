@@ -9,7 +9,7 @@
       --danger: #b42318;
       --code-bg: #101828;
       --code-text: #e6edf3;
-      --shadow: var(--shadow-1);
+      --shadow: var(--ui-elev-1);
     }
 
     * {
@@ -408,7 +408,7 @@
       --danger: #b42318;
       --code-bg: #0c1220;
       --code-text: #e7eef8;
-      --shadow: var(--shadow-1);
+      --shadow: var(--ui-elev-1);
       --accent: #f59e0b;
     }
 
@@ -416,12 +416,11 @@
       background: #eef4f7;
     }
 
-    .theme-floating-toggle,
-    .theme-auto-inline-toggle,
-    .theme-admin-toggle,
-    [data-theme-toggle] {
-      display: none !important;
-    }
+    /* 这里原本把 [data-theme-toggle] 一律 display:none，配合 preview.html
+       不加载 theme-core.js，预览页就成了全站唯一没有主题切换的地方——
+       既无法手动切换，也无法跟随其它页面已保存的主题。主题切换按钮现在
+       已加进 topbar 的 .actions，这条隐藏规则会把它藏起来（实测按钮
+       存在但宽高为 0）。主题能力既然接上了，就让按钮露出来。 */
 
     .topbar {
       min-height: 68px;
@@ -856,25 +855,57 @@
       min-height: 100vh;
     }
 
-    /* 清爽版预览工作台：少装饰、浅色底、低饱和青绿强调。 */
+    /* 清爽版预览工作台：少装饰、浅色底、低饱和青绿强调。
+       值改为引用 theme.css 的 token 层——原先这里写死十六进制，且整份文件
+       没有任何 html[data-theme="dark"] 规则，所以切换夜间模式时预览页
+       完全不变（实测 body 背景两模式都是同色）。
+       现在只覆盖品牌 token，其余全部继承；深色档由下面的 data-theme 块
+       统一处理。 */
     :root {
-      --bg: #f3faf9;
-      --panel: #ffffff;
-      --text: #102027;
-      --muted: #65777d;
-      --line: #d8e8e6;
-      --brand: #0f8f8a;
-      --brand-dark: #0a6f6b;
-      --danger: #b42318;
-      --code-bg: #102027;
-      --code-text: #e6f4f1;
-      --shadow: var(--shadow-1);
-      --accent: #7bb8ad;
+      --bg: var(--ui-canvas);
+      --panel: var(--ui-surface);
+      --text: var(--ui-ink);
+      --muted: var(--ui-ink-muted);
+      --line: var(--ui-line);
+      --brand: var(--ui-brand);
+      --brand-dark: var(--ui-brand-hover);
+      --danger: var(--ui-danger);
+      --code-bg: #101828;
+      --code-text: #e6edf3;
+      --shadow: var(--ui-elev-1);
+      --accent: var(--ui-brand-soft);
+    }
+
+    /* 预览页的品牌是青绿而非主站的紫：只改品牌这几个 token，语义色、表面、
+       文字全部沿用全局。两套主题都成立，所以放在 :root 里。 */
+    :root {
+      --ui-brand: #0f8f8a;
+      --ui-brand-hover: #0a6f6b;
+      --ui-brand-active: #085c58;
+      --ui-brand-ink: #ffffff;
+      --ui-brand-soft: rgba(15, 143, 138, 0.12);
+      --ui-brand-soft-hover: rgba(15, 143, 138, 0.2);
+      --ui-brand-ring: rgba(15, 143, 138, 0.4);
+    }
+
+    /* 夜间：只换值、不换规则。这是本文件第一处深色支持。 */
+    html[data-theme="dark"] {
+      --ui-brand: #5eead4;
+      --ui-brand-hover: #99f6e4;
+      --ui-brand-active: #2dd4bf;
+      --ui-brand-ink: #04211f;
+      --ui-brand-soft: rgba(94, 234, 212, 0.14);
+      --ui-brand-soft-hover: rgba(94, 234, 212, 0.22);
+      --ui-brand-ring: rgba(94, 234, 212, 0.5);
+
+      --code-bg: #010409;
+      --code-text: #e6edf3;
     }
 
     body,
     body.embed {
-      background: #f4fbfa;
+      background: var(--ui-canvas);
+      color: var(--ui-ink);
     }
 
     .topbar {

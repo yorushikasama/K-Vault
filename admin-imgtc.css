@@ -1,14 +1,17 @@
+/* 这些值原本在这里被钉死，等于每个页面各有一份主题定义——深色模式只能靠
+   另写一份 data-theme 规则去覆盖，漏一处就漏一处。改为全部引用 theme.css 的
+   token 层后，本文件不再拥有任何主题值：改一次，全站（含深色）一起变。 */
 :root {
-  --primary-color: #8a4bff;
-  --primary-light: #b39ddb;
-  --primary-dark: #6c3ce0;
+  --primary-color: var(--ui-brand);
+  --primary-light: var(--ui-brand-hover);
+  --primary-dark: var(--ui-brand-active);
   --accent-color: #ffd7e4;
-  --success-color: #67c23a;
-  --warning-color: #e6a23c;
-  --danger-color: #f56c6c;
-  --bg-gradient: #ffd7e4;
-  --card-bg: rgba(255, 255, 255, 0.88);
-  --shadow: var(--shadow-1);
+  --success-color: var(--ui-success);
+  --warning-color: var(--ui-warning);
+  --danger-color: var(--ui-danger);
+  --bg-gradient: var(--ui-canvas);
+  --card-bg: var(--ui-surface);
+  --shadow: var(--ui-elev-1);
   --transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 

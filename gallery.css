@@ -1,12 +1,18 @@
     :root {
-      --primary: #8a4bff;
-      --primary-light: #b39ddb;
-      --primary-dark: #6c3ce0;
+      /* --bg 原本是 #ffd7e4 —— 那是上面 --accent 的值，复制粘贴时错位了。
+         它被下方 body { background: var(--bg) } 消费，语义上是页面底色，
+         写成强调色粉色属于明显的笔误。theme.css 现在用
+         background: var(--ui-canvas) !important 接管了 body 背景，所以这个
+         错误一直没被看见；但 :root 里的错值仍会误导后来者，也可能被未来的
+         规则读到。这里删掉，让 --bg 继承 theme.css 的别名（指向 --ui-canvas），
+         深浅两套都由 token 层负责。 */
+      --primary: var(--ui-brand);
+      --primary-light: var(--ui-brand-hover);
+      --primary-dark: var(--ui-brand-active);
       --accent: #ffd7e4;
-      --bg: #ffd7e4;
-      --card-bg: #ffffff;
-      --shadow: var(--shadow-1);
-      --shadow-hover: var(--shadow-2);
+      --card-bg: var(--ui-surface);
+      --shadow: var(--ui-elev-1);
+      --shadow-hover: var(--ui-elev-2);
       --transition: all 0.2s ease-out;
     }
 

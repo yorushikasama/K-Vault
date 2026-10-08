@@ -15,8 +15,48 @@ describe('theme script split', function () {
   const root = path.resolve(__dirname, '..');
   const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
   const pages = fs.readdirSync(root).filter((f) => f.endsWith('.html'));
-  // preview.html 从来不加载主题脚本（它自带一套独立样式）。
-  const themedPages = pages.filter((p) => read(p).includes('theme-core.js'));
+  // 曾经这里把 preview.html 排除在外，理由是「它自带一套独立样式」——
+  // 而那个假设恰恰就是 bug 本身。preview.html 是全站唯一没加载
+  // theme-core.js 的页面：没有 ThemeManager 就没人写 data-theme，
+  // 于是它 CSS 里 html[data-theme="dark"] 的规则一条都命中不了，
+  // 夜间模式整体失效（实测两模式 body 背景同色）。它明明加载了
+  // theme.css，却不理会那份样式表，本身就自相矛盾。
+  // 现在每个页面都必须接入主题系统。
+  const themedPages = pages;
+
+  it('every page that loads theme.css also loads theme-core.js', function () {
+    for (const page of pages) {
+      const src = read(page);
+      if (!/href="[^"]*theme\.css/.test(src)) continue;
+      assert.match(src, /src="\/theme-core\.js/,
+        `${page} 加载了 theme.css 却没有 theme-core.js —— 夜间模式在该页完全失效`);
+    }
+  });
+
+  it('every page can reach the theme switcher', function () {
+    // 不要求页面上有显式按钮：theme-core.js 的 ensureAutoToggle 会在没有
+    // [data-theme-toggle] 时注入一个浮动按钮，7 个页面靠的就是这条路径
+    // （实测 10 页都能点到并切换）。这里只守住前提——必须加载 core，
+    // 否则注入逻辑不存在，暗色模式在该页彻底失效。
+    for (const page of pages) {
+      const src = read(page);
+      assert.match(src, /src="\/theme-core\.js/,
+        `${page} 没有加载 theme-core.js，既没有主题切换也没有暗色模式`);
+    }
+  });
+
+  it('does not hide the theme switcher with a blanket selector', function () {
+    // preview.css 曾有 `[data-theme-toggle] { display:none !important }`，
+    // 按钮被注入又被藏起来——按钮存在但宽高为 0，点不到。这种「注入了但
+    // 看不见」的状态比没注入更难发现，所以在这里钉住。
+    for (const sheet of fs.readdirSync(root).filter((f) => f.endsWith('.css'))) {
+      assert.doesNotMatch(
+        read(sheet),
+        /\[data-theme-toggle\]\s*\{[^}]*display\s*:\s*none/i,
+        `${sheet} 把 [data-theme-toggle] 整个隐藏了，用户将无法切换主题`
+      );
+    }
+  });
 
   it('replaced the monolithic theme.js', function () {
     assert.ok(!fs.existsSync(path.join(root, 'theme.js')), 'theme.js 应已被两个拆分文件取代');
