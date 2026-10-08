@@ -641,6 +641,13 @@
   function applyCompatibilityVars(next, darkMode) {
     var opacity = clampNumber(next.cardOpacity, 0, 100) / 100;
     var blur = Math.round(clampNumber(next.cardBlur, 0, 32));
+
+    // 壁纸已经退到背景里（.ui-bg-image-layer 被压到 12% 可见度），
+    // 卡片就不该再透——壁纸透进卡片等于回到磨砂玻璃的老路：
+    // 每块玻璃是一堵信息墙，深色壁纸上投影又消失，层级全靠色彩撑。
+    // 所以把下限提到 1.0：卡片一律实心，壁纸只在卡片之间的空隙里露面。
+    opacity = Math.max(1.0, opacity);
+
     var transparentCards = opacity <= 0.001;
     var useBackdropFilter = blur > 0 && !transparentCards;
     var surfaceAlpha = transparentCards
