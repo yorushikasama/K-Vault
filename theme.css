@@ -436,29 +436,32 @@ html[data-theme="dark"] body {
   backface-visibility: hidden;
   /* 壁纸是氛围，不是内容。它原本铺满整个页面，让表单和卡片必须靠半透明
      磨砂玻璃才能读出文字——叠在图案上每块玻璃都是一堵信息墙。
-     现在把它压到 12% 的可见度：画面还在，但退到背景底色之下，
+     现在把它压到 8% 的可见度：画面还在，但退到背景底色之下，
      不再和内容争夺注意力。 */
-  opacity: 0.12;
+  opacity: 0.08;
 }
 
 /* 壁纸上的中性蒙版：进一步把图案的色彩拉向页面底色，
-   让状态色（报错红、加载紫）仍然清晰可辨，不被插画自身的红/紫干扰。 */
+   让状态色（报错红、加载紫）仍然清晰可辨，不被插画自身的红/紫干扰。
+   85% 而不是 78%：上一轮 12% + 78% 的组合仍然让整张图偏亮，
+   亮色模式下尤其明显——背景几乎纯白，对比度反而不如没有壁纸。 */
 .ui-bg-image-layer::after {
   content: "";
   position: absolute;
   inset: 0;
   background: var(--ui-canvas);
-  opacity: 0.78;
+  opacity: 0.85;
   pointer-events: none;
 }
 
 html[data-theme="dark"] .ui-bg-image-layer {
-  /* 深色模式下壁纸本身就更暗，降低蒙版强度避免整体糊成一团 */
-  opacity: 0.16;
+  /* 深色模式下壁纸本身就更暗，蒙版再压一层反而会让对比度不足，
+     所以维持更高的可见度、更轻的蒙版 */
+  opacity: 0.14;
 }
 
 html[data-theme="dark"] .ui-bg-image-layer::after {
-  opacity: 0.72;
+  opacity: 0.68;
 }
 
 .ui-bg-canvas-layer {
