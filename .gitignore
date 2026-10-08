@@ -13,3 +13,13 @@ test-login.json
 
 # 一次性验证脚本和截图的工作目录，不进仓库
 .tmp-build/
+
+# 临时验证目录：CDP 审计脚本 + 它们各自的 Chrome profile。
+# 用 `git add -A` 时容易被一并扫进去——profile 里有 Chrome 自己的
+# craw_window.css 之类文件，看着像项目资源。
+.tmp-audit/
+.tmp-analyze/
+.probe/
+*.chrome-profile/
+.chrome-*/
+.pb-chrome/
