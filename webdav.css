@@ -34,9 +34,9 @@
       }
 
       .page {
-        max-width: 1360px;
+        max-width: var(--ui-width-content);
         margin: 0 auto;
-        padding: 20px;
+        padding: var(--ui-page-pad);
       }
 
       .header {
@@ -121,6 +121,10 @@
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 14px;
+        /* 每张卡按自身内容定高。默认的 stretch 会把同一行的卡片拉成等高，
+           而「WebDAV 状态」这类内容少的卡片就被撑出一大片空白——
+           看起来像占位符，而不是内容。 */
+        align-items: start;
       }
 
       .toolbar-row {

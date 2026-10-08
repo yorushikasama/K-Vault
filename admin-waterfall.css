@@ -34,9 +34,9 @@
     }
 
     .page {
-      max-width: 1460px;
+      max-width: var(--ui-width-wide);
       margin: 0 auto;
-      padding: 16px;
+      padding: var(--ui-page-pad);
     }
 
     .header {

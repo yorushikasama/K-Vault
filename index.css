@@ -72,9 +72,9 @@
       }
 
       #app {
-        max-width: 1400px;
+        max-width: var(--ui-width-content);
         margin: 0 auto;
-        padding: 20px;
+        padding: var(--ui-page-pad);
       }
 
       /* 头部导航 */

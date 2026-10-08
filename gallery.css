@@ -25,10 +25,13 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
     }
 
+    /* 宽度与留白引用 theme.css 的版面 token：原先各页自己写死
+       （gallery 1600 / index 1400 / webdav 1360 / waterfall 1460），
+       页面之间跳转时内容区会横向错位。 */
     #app { 
-      max-width: 1600px; 
+      max-width: var(--ui-width-wide); 
       margin: 0 auto; 
-      padding: 20px;
+      padding: var(--ui-page-pad);
     }
 
     /* 头部 */

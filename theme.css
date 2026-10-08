@@ -434,30 +434,26 @@ html[data-theme="dark"] body {
   background-attachment: scroll;
   transform: translateZ(0);
   backface-visibility: hidden;
-  /* 壁纸是氛围，不是内容。它原本铺满整个页面，让表单和卡片必须靠半透明
-     磨砂玻璃才能读出文字——叠在图案上每块玻璃都是一堵信息墙。
-     现在把它压到 8% 的可见度：画面还在，但退到背景底色之下，
-     不再和内容争夺注意力。 */
-  opacity: 0.08;
+  /* 8% + 85% 在亮色下几乎不可见——浅色壁纸被压进同色底，
+     等于没壁纸。调到 14% + 68%：画面能认出来，又不会抢戏。 */
+  opacity: 0.14;
 }
 
 /* 壁纸上的中性蒙版：进一步把图案的色彩拉向页面底色，
-   让状态色（报错红、加载紫）仍然清晰可辨，不被插画自身的红/紫干扰。
-   85% 而不是 78%：上一轮 12% + 78% 的组合仍然让整张图偏亮，
-   亮色模式下尤其明显——背景几乎纯白，对比度反而不如没有壁纸。 */
+   让状态色（报错红、加载紫）仍然清晰可辨，不被插画自身的红/紫干扰。 */
 .ui-bg-image-layer::after {
   content: "";
   position: absolute;
   inset: 0;
   background: var(--ui-canvas);
-  opacity: 0.85;
+  opacity: 0.68;
   pointer-events: none;
 }
 
 html[data-theme="dark"] .ui-bg-image-layer {
   /* 深色模式下壁纸本身就更暗，蒙版再压一层反而会让对比度不足，
      所以维持更高的可见度、更轻的蒙版 */
-  opacity: 0.14;
+  opacity: 0.18;
 }
 
 html[data-theme="dark"] .ui-bg-image-layer::after {
@@ -694,6 +690,26 @@ html[data-theme="dark"] .el-button--danger {
   --ui-dur-fast: 120ms;
   --ui-dur: 200ms;
   --ui-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* -- Layout -----------------------------------------------------------
+     内容宽度原先各页自定，从 900px 到 1600px 都有（admin 900、webdav 980、
+     index 1400、waterfall 1460、gallery 1600）。页面之间跳转时内容区会
+     横向错位，看起来像几个不相关的站点拼在一起。收敛成三档，按内容密度选：
+
+       --ui-width-prose   阅读型单列（登录、提示页、窄表单）
+       --ui-width-content 常规工作区（文件、图库、预览、WebDAV）
+       --ui-width-wide    密集网格（瀑布流、需要铺满的大列表）
+
+     各页的 max-width 一律引用这三档，不再写字面量。 */
+  --ui-width-prose: 480px;
+  --ui-width-content: 1280px;
+  --ui-width-wide: 1600px;
+
+  /* 页面纵向节奏：容器留白与区块间距共用同一组值，
+     避免有的页面顶到边、有的页面留一大片。 */
+  --ui-page-pad: 16px;
+  --ui-stack-gap: 16px;
+  --ui-block-gap: 12px;
 }
 
 /* Dark is a value swap: no rule is duplicated per theme. */
