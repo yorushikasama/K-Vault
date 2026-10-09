@@ -3,6 +3,7 @@ const path = require('node:path');
 const assert = require('node:assert');
 const { isPrivateHost } = require('../server/lib/utils/ssrf-shared');
 const { createApp } = require('../server/app');
+const { removeTmpDir } = require('./helpers/sweep-test-dirs');
 
 describe('SSRF shared host classification', function () {
   const privateTargets = [
@@ -87,6 +88,7 @@ describe('API v1 import SSRF protection (Docker)', function () {
     for (const [key, value] of Object.entries(originalEnv)) {
       process.env[key] = value;
     }
+    removeTmpDir(tmpDir);
   });
 
   const blockedUrls = [

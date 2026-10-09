@@ -3,6 +3,7 @@ const path = require('node:path');
 const assert = require('node:assert');
 const crypto = require('node:crypto');
 const { createApp } = require('../server/app');
+const { removeTmpDir } = require('./helpers/sweep-test-dirs');
 const { initDatabase } = require('../server/db');
 const { loadConfig } = require('../server/lib/config');
 const { FileRepository } = require('../server/lib/repos/file-repo');
@@ -42,6 +43,7 @@ describe('API v1 token policies, idempotency and dedup (Docker)', function () {
     for (const [key, value] of Object.entries(originalEnv)) {
       process.env[key] = value;
     }
+    removeTmpDir(tmpDir);
   });
 
   async function createToken(policies) {

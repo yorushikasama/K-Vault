@@ -2,6 +2,7 @@ const assert = require('assert');
 const fs = require('node:fs');
 const path = require('node:path');
 const { createContainer } = require('../server/lib/container');
+const { removeTmpDir } = require('./helpers/sweep-test-dirs');
 
 describe('Storage bootstrap backfill', function () {
   this.timeout(10000);
@@ -11,6 +12,10 @@ describe('Storage bootstrap backfill', function () {
 
   before(function () {
     fs.mkdirSync(tmpRoot, { recursive: true });
+  });
+
+  after(function () {
+    removeTmpDir(tmpRoot);
   });
 
   it('backfills github/huggingface profiles into existing telegram-only db', function () {

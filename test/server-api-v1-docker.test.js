@@ -2,6 +2,7 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
 const { createApp } = require('../server/app');
+const { removeTmpDir } = require('./helpers/sweep-test-dirs');
 const { initDatabase } = require('../server/db');
 const { loadConfig } = require('../server/lib/config');
 const { FileRepository } = require('../server/lib/repos/file-repo');
@@ -35,6 +36,7 @@ describe('Docker runtime API v1 parity', function () {
     for (const [key, value] of Object.entries(originalEnv)) {
       process.env[key] = value;
     }
+    removeTmpDir(tmpDir);
   });
 
   async function expectStatus(response, status) {

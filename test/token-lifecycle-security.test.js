@@ -3,16 +3,22 @@ const path = require('node:path');
 const assert = require('node:assert');
 const { initDatabase } = require('../server/db');
 const { ApiTokenRepository, parseExpiryInput } = require('../server/lib/repos/api-token-repo');
+const { removeTmpDir } = require('./helpers/sweep-test-dirs');
 
 describe('API token lifecycle security (Docker repo)', function () {
   let db;
   let repo;
+  let tmpDir;
 
   beforeEach(function () {
-    const tmpDir = path.join(__dirname, '..', 'data', `tmp-token-life-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    tmpDir = path.join(__dirname, '..', 'data', `tmp-token-life-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
     fs.mkdirSync(tmpDir, { recursive: true });
     db = initDatabase(path.join(tmpDir, 'token-life.db'));
     repo = new ApiTokenRepository(db);
+  });
+
+  afterEach(function () {
+    removeTmpDir(tmpDir);
   });
 
   function createToken(overrides = {}) {

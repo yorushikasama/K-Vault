@@ -10,6 +10,7 @@ docker-node.*.log
 cookies.txt
 test-login.json
 .wrangler-pages-test/
+.wrangler-local/
 
 # 一次性验证脚本和截图的工作目录，不进仓库
 .tmp-build/

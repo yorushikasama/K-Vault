@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert');
 const { createApp } = require('../server/app');
+const { removeTmpDir } = require('./helpers/sweep-test-dirs');
 
 describe('API v1 CORS allow-list (Docker)', function () {
   const originalEnv = { ...process.env };
@@ -32,6 +33,7 @@ describe('API v1 CORS allow-list (Docker)', function () {
     for (const [key, value] of Object.entries(originalEnv)) {
       process.env[key] = value;
     }
+    removeTmpDir(tmpDir);
   });
 
   it('answers OPTIONS preflight with 204 and no ACAO for unknown origins', async function () {

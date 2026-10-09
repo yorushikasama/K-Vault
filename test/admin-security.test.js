@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert');
 const { createApp } = require('../server/app');
+const { removeTmpDir } = require('./helpers/sweep-test-dirs');
 
 describe('Admin API fail-closed security (Docker)', function () {
   const originalEnv = { ...process.env };
@@ -31,6 +32,7 @@ describe('Admin API fail-closed security (Docker)', function () {
     for (const [key, value] of Object.entries(originalEnv)) {
       process.env[key] = value;
     }
+    removeTmpDir(tmpDir);
   });
 
   const adminRoutes = [

@@ -2,6 +2,7 @@ const assert = require('assert');
 const fs = require('node:fs');
 const path = require('node:path');
 const { createApp } = require('../server/app');
+const { removeTmpDir } = require('./helpers/sweep-test-dirs');
 
 describe('Server status storage semantics', function () {
   this.timeout(10000);
@@ -60,8 +61,10 @@ describe('Server status storage semantics', function () {
 
     global.fetch = originalFetch;
 
-    // Some SQLite handles can still be held briefly by the runtime container.
-    // Keep temp files to avoid flaky EBUSY on Windows CI/dev boxes.
+    // A SQLite handle may still be held for a tick, so this can lose the race
+    // against Windows' file locking — the helper absorbs that instead of
+    // failing an otherwise-passing test.
+    removeTmpDir(tmpDir);
   });
 
   it('keeps enabled=true when storage is configured but connection fails', async function () {
