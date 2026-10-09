@@ -83,43 +83,16 @@
       justify-content: flex-end;
     }
 
-    .btn {
-      appearance: none;
-      border: 1px solid var(--line);
-      /* 原先写死 #fff：夜间模式下白底配浅色文字，对比度只有 1.2:1，
-         按钮几乎读不出来。改用面板色，随主题一起翻。 */
-      background: var(--panel);
-      color: var(--text);
-      min-height: 36px;
-      padding: 7px 12px;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      white-space: nowrap;
+    /* 按钮视觉定义已统一到 ui-buttons.css。
+
+       本页原先自带一套 .btn / .btn.primary —— 与统一层的类名撞了。
+       两套同名规则里，通用层负责外观（配色、尺寸、圆角、悬停、焦点环），
+       页面只保留自己的布局：这一页的按钮排在一行工具栏里，不撑满宽度。 */
+    .actions .btn {
+      flex: 0 0 auto;
     }
 
-    .btn:hover {
-      border-color: #b8c2cc;
-      background: #f8fafc;
-    }
-
-    .btn.primary {
-      background: var(--brand);
-      /* 品牌实心按钮上的文字用 --ui-brand-ink：它随主题翻转（亮色下白字、
-         夜间青绿底配深字）。写死 #fff 会在夜间变成浅底浅字。 */
-      color: var(--ui-brand-ink);
-      border-color: var(--brand);
-    }
-
-    .btn.primary:hover {
-      background: var(--brand-dark);
-      border-color: var(--brand-dark);
-    }
-
+    /* 文件面板下方的次要动作区，窄屏时按钮各占一行。 */
     .file-panel {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
@@ -436,12 +409,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-    }
-
-    .btn {
-      border-radius: var(--radius-sm);
-      font-weight: 650;
-      box-shadow: none;
     }
 
     .file-panel {
@@ -916,21 +883,6 @@
       background: var(--ui-surface);
     }
 
-    .btn {
-      border-radius: var(--radius-sm);
-      box-shadow: none;
-    }
-
-    .btn.primary {
-      background: var(--brand);
-      border-color: var(--brand);
-    }
-
-    .btn.primary:hover {
-      background: var(--brand-dark);
-      border-color: var(--brand-dark);
-    }
-
     .file-panel,
     .viewer,
     .markdown-page,
@@ -1118,8 +1070,8 @@
         justify-content: stretch;
       }
 
-      .btn {
-        flex: 1;
+      .actions .btn {
+        flex: 1 1 auto;
         min-width: 0;
       }
 

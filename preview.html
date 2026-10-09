@@ -10,8 +10,9 @@
   <!-- 增强预览引擎按需从 unpkg 加载：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="stylesheet" href="/theme.css?v=24806de3e0">
-  <link rel="stylesheet" href="/preview.css?v=8078913955">
-  <link rel="stylesheet" href="/mobile-refactor.css?v=8cb9750098">
+  <link rel="stylesheet" href="/ui-buttons.css?v=1b5c5edaa7">
+  <link rel="stylesheet" href="/preview.css?v=a986de1f08">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=7817ee9155">
   <!-- 预览页此前是全站唯一没加载 theme-core.js 的页面。没有它就没有
        ThemeManager，data-theme 永远是 null，于是 preview.css 里
        html[data-theme="dark"] 的规则一条都不会命中——夜间模式在这里完全
@@ -28,12 +29,12 @@
         <p id="subtitle">K-Vault 本地预览器</p>
       </div>
       <div class="actions">
-        <button class="btn" type="button" data-theme-toggle aria-label="切换主题">
+        <button class="btn btn-ghost" type="button" data-theme-toggle aria-label="切换主题">
           <i data-lucide="moon" data-theme-icon aria-hidden="true"></i><span data-theme-label>夜间</span>
         </button>
-        <button class="btn" type="button" id="copyBtn">复制直链</button>
-        <button class="btn" type="button" id="openBtn">新标签打开</button>
-        <button class="btn primary" type="button" id="downloadBtn">下载文件</button>
+        <button class="btn btn-ghost" type="button" id="copyBtn">复制直链</button>
+        <button class="btn btn-ghost" type="button" id="openBtn">新标签打开</button>
+        <button class="btn btn-primary" type="button" id="downloadBtn">下载文件</button>
       </div>
     </header>
 

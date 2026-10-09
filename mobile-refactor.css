@@ -533,7 +533,9 @@ html[data-theme="dark"] {
     margin-bottom: 16px !important;
   }
 
-  body > .container:not(#app) .back-btn {
+  /* block-img / whitelist-on 两个提示页的返回按钮：窄屏占满整行。
+     这两页已改用统一层的 .btn，所以选择器跟着换成 .btn。 */
+  body > .container:not(#app) .btn {
     width: 100%;
     justify-content: center;
     margin-bottom: 16px !important;
@@ -1024,7 +1026,6 @@ html[data-theme="dark"] .el-image__placeholder {
      再在这里加一条 !important 只是重复。下面留下的都还没迁移，
      等各页换用 .btn 后逐条删掉即可。 */
   .nav-btn,
-  .back-btn,
   .action-btn,
   .upload-btn,
   .load-btn,
