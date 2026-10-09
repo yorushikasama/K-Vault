@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createApp } = require('../server/app');
 const { removeTmpDir } = require('./helpers/sweep-test-dirs');
+const { makeScratchDir } = require('./helpers/scratch-dir');
 
 describe('Server status storage semantics', function () {
   this.timeout(10000);
@@ -12,7 +13,7 @@ describe('Server status storage semantics', function () {
   let tmpDir;
 
   beforeEach(function () {
-    tmpDir = path.join(__dirname, '..', 'data', `tmp-status-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    tmpDir = makeScratchDir('status');
     fs.mkdirSync(tmpDir, { recursive: true });
 
     process.env.CONFIG_ENCRYPTION_KEY = 'status_test_key_123456';

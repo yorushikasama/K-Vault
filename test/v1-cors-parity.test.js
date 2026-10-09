@@ -3,13 +3,14 @@ const path = require('node:path');
 const assert = require('node:assert');
 const { createApp } = require('../server/app');
 const { removeTmpDir } = require('./helpers/sweep-test-dirs');
+const { makeScratchDir } = require('./helpers/scratch-dir');
 
 describe('API v1 CORS allow-list (Docker)', function () {
   const originalEnv = { ...process.env };
   let tmpDir;
 
   beforeEach(function () {
-    tmpDir = path.join(__dirname, '..', 'data', `tmp-cors-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    tmpDir = makeScratchDir('cors');
     fs.mkdirSync(tmpDir, { recursive: true });
 
     process.env.CONFIG_ENCRYPTION_KEY = 'cors_key_123456';

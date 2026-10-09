@@ -4,6 +4,7 @@ const assert = require('node:assert');
 const crypto = require('node:crypto');
 const { createApp } = require('../server/app');
 const { removeTmpDir } = require('./helpers/sweep-test-dirs');
+const { makeScratchDir } = require('./helpers/scratch-dir');
 const { initDatabase } = require('../server/db');
 const { loadConfig } = require('../server/lib/config');
 const { FileRepository } = require('../server/lib/repos/file-repo');
@@ -16,7 +17,7 @@ describe('API v1 token policies, idempotency and dedup (Docker)', function () {
   let authHeader;
 
   beforeEach(function () {
-    tmpDir = path.join(__dirname, '..', 'data', `tmp-policy-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    tmpDir = makeScratchDir('policy');
     fs.mkdirSync(tmpDir, { recursive: true });
 
     process.env.CONFIG_ENCRYPTION_KEY = 'policy_key_123456';

@@ -4,6 +4,7 @@ const assert = require('node:assert');
 const { initDatabase } = require('../server/db');
 const { ApiTokenRepository, parseExpiryInput } = require('../server/lib/repos/api-token-repo');
 const { removeTmpDir } = require('./helpers/sweep-test-dirs');
+const { makeScratchDir } = require('./helpers/scratch-dir');
 
 describe('API token lifecycle security (Docker repo)', function () {
   let db;
@@ -11,7 +12,7 @@ describe('API token lifecycle security (Docker repo)', function () {
   let tmpDir;
 
   beforeEach(function () {
-    tmpDir = path.join(__dirname, '..', 'data', `tmp-token-life-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    tmpDir = makeScratchDir('token-life');
     fs.mkdirSync(tmpDir, { recursive: true });
     db = initDatabase(path.join(tmpDir, 'token-life.db'));
     repo = new ApiTokenRepository(db);

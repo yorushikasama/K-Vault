@@ -4,6 +4,7 @@ const assert = require('node:assert');
 const { isPrivateHost } = require('../server/lib/utils/ssrf-shared');
 const { createApp } = require('../server/app');
 const { removeTmpDir } = require('./helpers/sweep-test-dirs');
+const { makeScratchDir } = require('./helpers/scratch-dir');
 
 describe('SSRF shared host classification', function () {
   const privateTargets = [
@@ -53,7 +54,7 @@ describe('API v1 import SSRF protection (Docker)', function () {
   let token;
 
   beforeEach(async function () {
-    tmpDir = path.join(__dirname, '..', 'data', `tmp-import-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    tmpDir = makeScratchDir('import');
     fs.mkdirSync(tmpDir, { recursive: true });
 
     process.env.CONFIG_ENCRYPTION_KEY = 'import_key_123456';

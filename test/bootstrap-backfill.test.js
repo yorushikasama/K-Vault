@@ -3,11 +3,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createContainer } = require('../server/lib/container');
 const { removeTmpDir } = require('./helpers/sweep-test-dirs');
+const { makeScratchDir } = require('./helpers/scratch-dir');
 
 describe('Storage bootstrap backfill', function () {
   this.timeout(10000);
 
-  const tmpRoot = path.join(__dirname, '..', 'data', `tmp-bootstrap-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  const tmpRoot = makeScratchDir('bootstrap');
   const dbPath = path.join(tmpRoot, 'backfill.db');
 
   before(function () {
