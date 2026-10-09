@@ -3,7 +3,6 @@ node_modules/
 .wrangler/*
 data/*
 tmpclaude*
-server/node_modules/*
 .env
 docker-node.*.log
 cookies.txt
@@ -11,6 +10,11 @@ test-login.json
 .wrangler-pages-test/
 .wrangler-local/
 .test-scratch/
+
+# 本机运维笔记与一次性排查脚本（服务器凭据、部署记录、CDP 探针）。
+# 每个开发者机器上都不一样，也不该进仓库 —— 用 `git add -A` 时尤其危险。
+.workbuddy/
+.zcode/
 
 # 一次性验证脚本和截图的工作目录，不进仓库
 .tmp-build/
