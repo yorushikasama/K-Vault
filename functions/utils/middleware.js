@@ -8,14 +8,12 @@ export async function errorHandling(context) {
     let remoteSampleRate = 0.001;
     try {
       const sampleRate = await fetchSampleRate(context)
-      console.log("sampleRate", sampleRate);
       //check if the sample rate is not null
       if (sampleRate) {
         remoteSampleRate = sampleRate;
       }
     } catch (e) { console.log(e) }
     const sampleRate = env.sampleRate || remoteSampleRate;
-    console.log("sampleRate", sampleRate);
     return sentryPlugin({
       dsn: "https://219f636ac7bde5edab2c3e16885cb535@o4507041519108096.ingest.us.sentry.io/4507541492727808",
       tracesSampleRate: sampleRate,
@@ -91,12 +89,35 @@ export async function traceData(context, span, op, name) {
   }
 }
 
+// 采样率信号文件是「装饰性」配置，不该拖慢真正的请求。实测本地开发时它
+// 单次往返能到 180s（境外域名 + 国内网络），而每个请求都要等它。
+// 而且 /api/* 会先后经过 functions/_middleware.js 与 functions/api/_middleware.js，
+// errorHandling 被调用两次，等于每个请求要等两趟。
+// 两层防护：module 作用域缓存（成功 5 分钟、失败 1 分钟内不重试）+ 显式超时。
+let cachedSampleRate = undefined;
+let cachedSampleRateAt = 0;
+const SAMPLE_RATE_TTL_MS = 5 * 60 * 1000;
+const SAMPLE_RATE_FAILURE_TTL_MS = 60 * 1000;
+const SAMPLE_RATE_TIMEOUT_MS = 1500;
+
 async function fetchSampleRate(context) {
   const data = context.data
   if (data.telemetry) {
-    const url = "https://frozen-sentinel.pages.dev/signal/sampleRate.json";
-    const response = await fetch(url);
-    const json = await response.json();
-    return json.rate;
+    const now = Date.now();
+    // 失败也要缓存：否则超时后每个请求都重新等满 1.5s，翻倍叠加在响应时间上。
+    const ttl = cachedSampleRate ? SAMPLE_RATE_TTL_MS : SAMPLE_RATE_FAILURE_TTL_MS;
+    if (cachedSampleRate !== undefined && now - cachedSampleRateAt < ttl) {
+      return cachedSampleRate;
+    }
+    try {
+      const url = "https://frozen-sentinel.pages.dev/signal/sampleRate.json";
+      const response = await fetch(url, { signal: AbortSignal.timeout(SAMPLE_RATE_TIMEOUT_MS) });
+      const json = await response.json();
+      cachedSampleRate = json.rate ?? null;
+    } catch (e) {
+      cachedSampleRate = null;
+    }
+    cachedSampleRateAt = Date.now();
+    return cachedSampleRate;
   }
 }
