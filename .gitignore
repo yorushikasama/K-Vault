@@ -1,6 +1,5 @@
-node_modules/*
-.pnpm-store/*
-!node_modules/.mf/*
+node_modules/
+.pnpm-store/
 .wrangler/*
 data/*
 tmpclaude*
@@ -11,6 +10,7 @@ cookies.txt
 test-login.json
 .wrangler-pages-test/
 .wrangler-local/
+.test-scratch/
 
 # 一次性验证脚本和截图的工作目录，不进仓库
 .tmp-build/
