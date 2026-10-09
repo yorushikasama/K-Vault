@@ -928,7 +928,7 @@ body {
 
 body {
   font-family: "IBM Plex Sans", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  background: #f8fafc;
+  background: var(--ui-canvas);
   color: var(--admin-ink);
 }
 

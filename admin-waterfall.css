@@ -23,14 +23,12 @@
     body {
       margin: 0;
       min-height: 100vh;
-      background: #eef6ff;
-      color: #1f2937;
+      /* 底色/文字接 --ui-* 权威 token。本页原先写死 #eef6ff（偏蓝），并在其下
+         再补一条夜间硬编码底色，两套值互相覆盖；theme.css 的 body 规则用
+         !important 兜住了实际渲染，但留着这两条死值，下一个人会以为改它有用。 */
+      background: var(--ui-canvas);
+      color: var(--ui-ink);
       font-family: "Manrope", "Noto Sans SC", "PingFang SC", "Segoe UI", sans-serif;
-    }
-
-    html[data-theme="dark"] body {
-      color: #e7eeff;
-      background: #0a1222;
     }
 
     .page {

@@ -11,18 +11,21 @@
       }
 
       html[data-theme="dark"] {
-        --bg-gradient: #111a2d;
-        --card-bg: #0f1727;
+        /* 夜间色板原先在这里另写一份（底色 #111a2d、卡片 #0f1727、
+           surface-1/2/3 各一套），和 theme.css 的 --ui-* 权威层各说各话：
+           两处深色底色不一样，从首页跳到 webdav 会看到底色跳一下。
+           现在夜间只留"首页特有"的语义变量，底色与面板一律走权威层。 */
+        --card-bg: var(--ui-surface);
         --shadow: var(--shadow-1-dark);
         --shadow-hover: var(--shadow-2-dark);
-        --text-primary: #e8eeff;
-        --text-secondary: #c4cde3;
-        --text-muted: #90a0bf;
-        --surface-1: #141d31;
-        --surface-2: rgba(20, 29, 49, 0.82);
-        --surface-3: #1b2740;
-        --surface-border: rgba(130, 152, 196, 0.32);
-        --input-border: rgba(130, 152, 196, 0.45);
+        --text-primary: var(--ui-ink);
+        --text-secondary: var(--ui-ink-secondary);
+        --text-muted: var(--ui-ink-muted);
+        --surface-1: var(--ui-surface-sunken);
+        --surface-2: var(--ui-surface);
+        --surface-3: var(--ui-surface-raised);
+        --surface-border: var(--ui-line);
+        --input-border: var(--ui-line-strong);
         --warning-text-color: #e8be73;
       }
 

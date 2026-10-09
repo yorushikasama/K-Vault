@@ -141,3 +141,130 @@ describe('theme script split', function () {
     }
   });
 });
+
+/**
+ * 背景与底色必须由一处说了算。
+ *
+ * 之前"背景图只在部分页面生效"看着像逐页缺配置，实际是两件事叠加：
+ *   1) 壁纸层每页都注入了，但 theme.css 把图层压到 0.14 再叠一层 0.68 底色蒙版，
+ *      真正上屏只剩约 4.5% —— 所有页面都"看不见"，于是被误读成某些页没接。
+ *   2) preview / webdav / admin-waterfall 各自在 :root 里另起了一套底色与文字
+ *      token，和 theme.css 的 --ui-* 权威层并行。同一语义两个名字，改主题只改
+ *      得动一半，这才是"没有统一管理"真正的成因。
+ * 下面两条把可见度下限和"禁止各页另起底色"钉住。
+ */
+describe('background + base color are centrally managed', function () {
+  const root = path.resolve(__dirname, '..');
+  const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
+  const sheets = fs.readdirSync(root).filter((f) => f.endsWith('.css'));
+  const theme = read('theme.css');
+
+  it('keeps wallpaper strength in tokens, not per-rule magic numbers', function () {
+    // 壁纸强度是两个值的乘积：图层 opacity × 蒙版 opacity。上屏的是乘积，
+    // 改任何一个都会改动观感，所以两者必须是 token 而不是散落的字面量。
+    assert.match(theme, /--ui-wall-opacity\s*:/, '缺少壁纸可见度 token');
+    assert.match(theme, /--ui-wall-mask\s*:/, '缺少壁纸蒙版 token');
+
+    const layer = /\.ui-bg-image-layer\s*\{[^}]*\}/.exec(theme);
+    assert.ok(layer, '找不到 .ui-bg-image-layer 规则');
+    assert.match(layer[0], /opacity:\s*var\(--ui-wall-opacity\)/,
+      '壁纸图层没有引用 --ui-wall-opacity，可见度又散回字面量了');
+
+    const mask = /\.ui-bg-image-layer::after\s*\{[^}]*\}/.exec(theme);
+    assert.ok(mask, '找不到 .ui-bg-image-layer::after 规则');
+    assert.match(mask[0], /opacity:\s*var\(--ui-wall-mask\)/,
+      '壁纸蒙版没有引用 --ui-wall-mask');
+  });
+
+  it('keeps the wallpaper above the visibility floor in both themes', function () {
+    // 实测阈值：低于 ~10% 时浅色壁纸被压进同色底，等于没壁纸（这正是本次
+    // "有些页面没有背景图"的观感来源）。这里解析 token 并守住乘积下限。
+    const tokens = {};
+    const re = /--(ui-wall-(?:opacity|mask))\s*:\s*([\d.]+)\s*;/g;
+    let m;
+    while ((m = re.exec(theme))) tokens[m[1]] = Number(m[2]);
+    assert.ok(tokens['ui-wall-opacity'] && tokens['ui-wall-mask'],
+      `壁纸 token 缺失: ${JSON.stringify(tokens)}`);
+
+    const product = tokens['ui-wall-opacity'] * tokens['ui-wall-mask'];
+    assert.ok(product >= 0.1,
+      `壁纸有效可见度 ${product.toFixed(3)} 低于 0.1 下限，等于没有背景图`);
+  });
+
+  it('pages do not declare their own base color or body background', function () {
+    // 各页可以在 :root 里放自己的私有 token（预览器的代码块配色、
+    // webdav 的 --wf-* 等），但"页面底色"和"body 背景"只有一个来源：
+    // theme.css 的 --ui-canvas。任何页面写死底色或另起一套 --bg/--bg-gradient，
+    // 就会和权威层打架，且不会跟随 UI 面板的全局改动。
+    for (const sheet of sheets) {
+      if (sheet === 'theme.css') continue;
+      const src = read(sheet);
+
+      // 只认真正的字面量颜色：`var(...)` / `none` 都放行 —— 它们本来就在
+      // 权威层里（--ui-canvas）。上一版正则把 var(--bg-gradient) 也判成硬编码，
+      // 那不是缺陷，是规则写错了。
+      assert.doesNotMatch(
+        src,
+        /^\s*body\s*\{[^}]*\bbackground(?:-color)?\s*:\s*(?!none\b|var\(|inherit\b)[^;}]*#/gim,
+        `${sheet} 在 body 上写死了背景色 —— 底色应统一由 theme.css 的 --ui-canvas 提供`
+      );
+      assert.doesNotMatch(
+        src,
+        /--bg\s*:\s*#[0-9a-f]{3,8}\s*;/i,
+        `${sheet} 自带 --bg 颜色值，应引用 var(--ui-canvas)`
+      );
+      assert.doesNotMatch(
+        src,
+        /--bg-gradient\s*:\s*#[0-9a-f]{3,8}\s*;/i,
+        `${sheet} 自带 --bg-gradient 颜色值，应引用 var(--ui-canvas)`
+      );
+    }
+  });
+
+  it('only theme.css positions the wallpaper layer', function () {
+    // 图层由 theme-effects.js 无条件注入，任何页面都不会缺失。真正要守住的是
+    // 层叠关系：壁纸 z-index 必须为 0，靠 body > #app 等容器的 z-index:5
+    // 让内容浮在它上面。页面样式表若自行改写 z-index，内容要么被壁纸盖住、
+    // 要么反过来把壁纸盖掉 —— 这类问题只在特定页面出现，很难联想到壁纸。
+    for (const sheet of sheets) {
+      assert.doesNotMatch(
+        read(sheet),
+        /\.ui-bg-image-layer\s*\{[^}]*display\s*:\s*none/i,
+        `${sheet} 把壁纸图层隐藏了`
+      );
+      if (sheet === 'theme.css') continue;
+      assert.doesNotMatch(
+        read(sheet),
+        /\.ui-bg-image-layer\s*\{/,
+        `${sheet} 不该重新定义壁纸图层的层级（z-index/opacity），这属于 theme.css`
+      );
+    }
+    assert.match(theme, /\.ui-bg-image-layer\s*\{[^}]*z-index\s*:\s*0\s*;/,
+      '壁纸图层必须显式保持 z-index: 0');
+  });
+
+  it('solid brand/danger buttons use the theme-aware ink token', function () {
+    // 实测踩到的坑：实心按钮上的文字写死 #fff，而夜间品牌色是浅青绿
+    // (#5eead4)，白字压上去只有 1.2:1，整个按钮读不出来。品牌底色配的
+    // 文字色应当是 --ui-brand-ink（随主题翻转：亮色白字、夜间深字）。
+    // 这里只守住"品牌底 + 白字"这一种组合，别的地方用白字是合理的。
+    for (const sheet of sheets) {
+      const src = read(sheet);
+      const brandBgs = [
+        /background\s*:\s*var\(--brand\)\s*;/g,
+        /background\s*:\s*var\(--primary\)\s*;/g,
+      ];
+      for (const re of brandBgs) {
+        let m;
+        while ((m = re.exec(src))) {
+          const rule = src.slice(m.index, src.indexOf('}', m.index) + 1);
+          assert.doesNotMatch(
+            rule,
+            /color\s*:\s*(#fff\b|#ffffff\b|white\b)/i,
+            `${sheet} 品牌色实心按钮上写死了白色文字，夜间会变成浅底浅字 —— 用 var(--ui-brand-ink)`
+          );
+        }
+      }
+    }
+  });
+});

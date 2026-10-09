@@ -1,15 +1,22 @@
+    /* 本页曾经自带一整套 :root 底色/文字/线条 token，而且写了三份：
+       --bg #f4f6f8 → #f5f7fb，外加 body { background: #eef4f7 }。
+       它们和 theme.css 的 --ui-* 权威层并行存在，同一份语义两个名字 ——
+       改主题只改得动一半，预览页于是成了全站唯一底色偏冷的孤岛，
+       且哪一份生效取决于 CSS 加载顺序。现在统一到下方那一份 :root。 */
     :root {
-      --bg: #f4f6f8;
-      --panel: #ffffff;
-      --text: #17212b;
-      --muted: #667085;
-      --line: #dde3ea;
-      --brand: #2563eb;
-      --brand-dark: #1d4ed8;
-      --danger: #b42318;
+      --bg: var(--ui-canvas);
+      --panel: var(--ui-surface);
+      --text: var(--ui-ink);
+      --muted: var(--ui-ink-muted);
+      --line: var(--ui-line);
+      --brand: var(--ui-brand);
+      --brand-dark: var(--ui-brand-active);
+      --danger: var(--ui-danger);
       --code-bg: #101828;
       --code-text: #e6edf3;
       --shadow: var(--ui-elev-1);
+      /* 放映台底色：嵌入模式专用，不随主题翻转 */
+      --ui-stage: #070b12;
     }
 
     * {
@@ -79,7 +86,9 @@
     .btn {
       appearance: none;
       border: 1px solid var(--line);
-      background: #fff;
+      /* 原先写死 #fff：夜间模式下白底配浅色文字，对比度只有 1.2:1，
+         按钮几乎读不出来。改用面板色，随主题一起翻。 */
+      background: var(--panel);
       color: var(--text);
       min-height: 36px;
       padding: 7px 12px;
@@ -100,7 +109,9 @@
 
     .btn.primary {
       background: var(--brand);
-      color: #fff;
+      /* 品牌实心按钮上的文字用 --ui-brand-ink：它随主题翻转（亮色下白字、
+         夜间青绿底配深字）。写死 #fff 会在夜间变成浅底浅字。 */
+      color: var(--ui-brand-ink);
       border-color: var(--brand);
     }
 
@@ -363,10 +374,6 @@
       }
     }
 
-    body.embed {
-      background: #070b12;
-    }
-
     body.embed .topbar,
     body.embed .file-panel {
       display: none;
@@ -397,23 +404,15 @@
       min-height: 100vh;
     }
 
+    /* 预览器自己的私有 token（代码块配色），底色/文字/线条一律引用全局权威层。 */
     :root {
-      --bg: #f5f7fb;
-      --panel: #fbfcff;
-      --text: #111827;
-      --muted: #667085;
-      --line: #d8e0ea;
-      --brand: #0f766e;
-      --brand-dark: #115e59;
-      --danger: #b42318;
       --code-bg: #0c1220;
       --code-text: #e7eef8;
-      --shadow: var(--ui-elev-1);
       --accent: #f59e0b;
     }
 
     body {
-      background: #eef4f7;
+      background: var(--ui-canvas);
     }
 
     /* 这里原本把 [data-theme-toggle] 一律 display:none，配合 preview.html
@@ -458,7 +457,7 @@
 
     .viewer {
       border-radius: var(--radius-md);
-      background: #ffffff;
+      background: var(--ui-surface);
       box-shadow: var(--shadow-1);
     }
 
@@ -833,10 +832,6 @@
       z-index: 1;
     }
 
-    body.embed {
-      background: #070b12;
-    }
-
     body.embed .viewer {
       background: #080d16;
     }
@@ -902,16 +897,23 @@
       --code-text: #e6edf3;
     }
 
-    body,
-    body.embed {
+    body {
       background: var(--ui-canvas);
       color: var(--ui-ink);
+    }
+
+    /* 嵌入模式（?embed=1）是给 iframe 用的暗色放映台：隐藏顶栏、媒体铺满，
+       四周留黑边。原先 body.embed 有两处 #070b12（都在本段之前），
+       却被下面这条 body, body.embed 一起盖成页面底色 —— 亮色主题下
+       视频四周会露出浅色边框。放映台是预览器私有语义，用自己的 token。 */
+    body.embed {
+      background: var(--ui-stage);
     }
 
     .topbar {
       min-height: 64px;
       border-bottom-color: rgba(15, 143, 138, 0.16);
-      background: #ffffff;
+      background: var(--ui-surface);
     }
 
     .btn {

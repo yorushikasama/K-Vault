@@ -3,7 +3,11 @@
         --wf-border: rgba(255, 255, 255, 0.58);
         --wf-shadow: var(--shadow-2);
         --wf-shadow-soft: var(--shadow-1);
+        /* 同一个紫兼任"文字色"和"实心按钮底色"时必然有一头不达标：
+           做文字够亮，做按钮底色压白字只有 3.4:1。所以拆成两档 ——
+           -solid 专供实心按钮（更深，配白字），前者用于文字与描边。 */
         --wf-primary: #8a4bff;
+        --wf-primary-solid: #6d28d9;
         --wf-primary-soft: rgba(138, 75, 255, 0.13);
       }
 
@@ -13,6 +17,7 @@
         --wf-shadow: var(--shadow-2-dark);
         --wf-shadow-soft: var(--shadow-1-dark);
         --wf-primary: #9aa9ff;
+        --wf-primary-solid: #4f46e5;
         --wf-primary-soft: rgba(154, 169, 255, 0.2);
       }
 
@@ -23,15 +28,16 @@
       body {
         margin: 0;
         min-height: 100vh;
-        background: #fafaf8;
-        color: #1f2937;
+        /* 底色与文字都接 --ui-* 权威 token。这一页原先写死 #fafaf8 / #1f2937，
+           并在下面再补一条 html[data-theme="dark"] body 硬编码深色值 ——
+           管理员在 UI 面板改全局底色时它不跟随，于是两套底色各页面各行其是。 */
+        background: var(--ui-canvas);
+        color: var(--ui-ink);
         font-family: "Manrope", "Noto Sans SC", "PingFang SC", "Segoe UI", sans-serif;
       }
 
-      html[data-theme="dark"] body {
-        color: #e7eeff;
-        background: #101318;
-      }
+      /* body 的底色/文字已由 --ui-canvas / --ui-ink 随主题翻转，
+         这里不再需要单独为夜间模式硬编码一份。 */
 
       .page {
         max-width: var(--ui-width-content);
@@ -214,7 +220,8 @@
 
       .card-sub {
         margin-top: 4px;
-        color: #77819a;
+        /* 原先 #77819a 压在白底上只有 3.9:1，低于 AA。改用全局次级文字色。 */
+        color: var(--ui-ink-secondary);
         font-size: 0.86rem;
         line-height: 1.45;
       }
@@ -446,7 +453,9 @@
       }
 
       .btn-primary {
-        background: #8a4bff;
+        /* 白字压在 #8a4bff 上只有约 3.4:1，低于 WCAG AA 的 4.5:1。
+           底色改用 --wf-primary-solid（更深一档），白字才够读。 */
+        background: var(--wf-primary-solid);
         border-color: transparent;
         color: #fff;
       }
@@ -456,7 +465,9 @@
       }
 
       .btn-danger {
-        background: #f56c6c;
+        /* 原先 #f56c6c 配白字只有 2.9:1。改用语义危险色的深色档，
+           与全站 --ui-danger 保持同源。 */
+        background: var(--ui-danger-strong);
         border-color: transparent;
         color: #fff;
       }
@@ -631,7 +642,7 @@
       .result-empty {
         padding: 20px 16px;
         text-align: center;
-        color: #7a8399;
+        color: var(--ui-ink-muted);
         border: 1px dashed var(--wf-border);
         border-radius: 12px;
       }

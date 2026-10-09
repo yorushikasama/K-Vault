@@ -367,6 +367,17 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
   --radius-md: 10px;
   --radius-lg: 14px;
 
+  /* Wallpaper strength. These two multiply: the layer shows the picture at
+     --ui-wall-opacity, then a canvas-colored scrim washes it back down. The
+     product is what actually reaches the screen — 0.26 * 0.46 ≈ 0.12, i.e. the
+     picture is recognizably there instead of the 4.5% residue the old
+     0.14 + 0.68 pair produced (which is why "the wallpaper is missing" read
+     as a per-page bug when in fact it was a global visibility floor).
+     Scrim stays lighter in dark mode: the picture is already dim there, so a
+     heavier wash would push contrast under the AA floor. */
+  --ui-wall-opacity: 0.26;
+  --ui-wall-mask: 0.46;
+
   /* Neutral elevation scale (no colored glows) */
   --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
   --shadow-2: 0 4px 12px rgba(15, 23, 42, 0.08);
@@ -391,6 +402,8 @@ html[data-theme="dark"] {
   --shadow-1-dark: var(--ui-elev-1);
   --shadow-2-dark: var(--ui-elev-2);
   --shadow-3-dark: var(--ui-elev-3);
+  --ui-wall-opacity: 0.3;
+  --ui-wall-mask: 0.42;
 }
 
 html,
@@ -434,9 +447,7 @@ html[data-theme="dark"] body {
   background-attachment: scroll;
   transform: translateZ(0);
   backface-visibility: hidden;
-  /* 8% + 85% 在亮色下几乎不可见——浅色壁纸被压进同色底，
-     等于没壁纸。调到 14% + 68%：画面能认出来，又不会抢戏。 */
-  opacity: 0.14;
+  opacity: var(--ui-wall-opacity);
 }
 
 /* 壁纸上的中性蒙版：进一步把图案的色彩拉向页面底色，
@@ -446,18 +457,8 @@ html[data-theme="dark"] body {
   position: absolute;
   inset: 0;
   background: var(--ui-canvas);
-  opacity: 0.68;
+  opacity: var(--ui-wall-mask);
   pointer-events: none;
-}
-
-html[data-theme="dark"] .ui-bg-image-layer {
-  /* 深色模式下壁纸本身就更暗，蒙版再压一层反而会让对比度不足，
-     所以维持更高的可见度、更轻的蒙版 */
-  opacity: 0.18;
-}
-
-html[data-theme="dark"] .ui-bg-image-layer::after {
-  opacity: 0.68;
 }
 
 .ui-bg-canvas-layer {
@@ -633,6 +634,10 @@ html[data-theme="dark"] .el-button--danger {
   --ui-warning: #d97706;
   --ui-danger: #dc2626;
   --ui-info: #6b7280;
+  /* 白字实心按钮专用：--ui-danger 是给图标/文字用的亮色，压白字只有 3.3:1。
+     按钮底色必须更深，这个 -strong 档就是为此存在的。 */
+  --ui-danger-strong: #b91c1c;
+  --ui-success-strong: #15803d;
 
   /* -- Surfaces (opaque; alpha lives in the legacy -rgb knobs) ---------- */
   --ui-canvas: #fafaf8;
@@ -728,6 +733,8 @@ html[data-theme="dark"] {
   --ui-warning: #fbbf24;
   --ui-danger: #f87171;
   --ui-info: #9ca3af;
+  --ui-danger-strong: #ef4444;
+  --ui-success-strong: #16a34a;
 
   --ui-canvas: #0d1117;
   --ui-surface: #161b22;

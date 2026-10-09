@@ -145,7 +145,7 @@
 
     .nav-btn.active {
       background: var(--primary);
-      color: white;
+      color: var(--ui-brand-ink);
       border-color: var(--primary);
     }
 
@@ -198,7 +198,7 @@
     }
 
     .format-btn:hover { background: rgba(138, 75, 255, 0.1); }
-    .format-btn.active { background: var(--primary); color: white; }
+    .format-btn.active { background: var(--primary); color: var(--ui-brand-ink); }
 
     /* 图片网格 */
     .image-grid {
@@ -285,7 +285,7 @@
 
     .card-btn:hover {
       background: var(--primary);
-      color: white;
+      color: var(--ui-brand-ink);
     }
 
     .card-btn.delete:hover { background: #f56c6c; }
@@ -311,7 +311,7 @@
 
     .image-card-checkbox.checked {
       background: var(--primary);
-      color: white;
+      color: var(--ui-brand-ink);
     }
 
     /* 批量操作栏 */
@@ -349,10 +349,12 @@
       gap: 6px;
     }
 
-    .batch-btn.primary { background: var(--primary); color: white; }
-    .batch-btn.success { background: #67c23a; color: white; }
-    .batch-btn.danger { background: #f56c6c; color: white; }
-    .batch-btn.default { background: rgba(255,255,255,0.2); color: white; }
+    /* 品牌/语义实心按钮上的文字一律用 token：--ui-brand-ink 随主题翻转，
+       success/danger 用各自的 -strong 档（亮色档压白字只有 2.9:1）。 */
+    .batch-btn.primary { background: var(--primary); color: var(--ui-brand-ink); }
+    .batch-btn.success { background: var(--ui-success-strong); color: #fff; }
+    .batch-btn.danger { background: var(--ui-danger-strong); color: #fff; }
+    .batch-btn.default { background: rgba(255,255,255,0.2); color: var(--ui-ink); }
 
     .batch-btn:hover { filter: brightness(1.1); }
 
@@ -454,17 +456,18 @@
     }
 
     .page-btn:hover { background: var(--accent); }
-    .page-btn.active { background: var(--primary); color: white; }
+    .page-btn.active { background: var(--primary); color: var(--ui-brand-ink); }
     .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* 空状态 */
     .empty-state {
       text-align: center;
       padding: 80px 20px;
-      color: #999;
+      /* 原先 #999 压在近白底色上只有 2.7:1，低于 AA 的 4.5:1。 */
+      color: var(--ui-ink-muted);
     }
 
-    .empty-state i { font-size: 4em; margin-bottom: 20px; color: #ddd; }
+    .empty-state i { font-size: 4em; margin-bottom: 20px; color: var(--ui-line-strong); }
 
     /* 加载状态 */
     .loading-state {

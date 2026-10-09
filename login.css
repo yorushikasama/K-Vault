@@ -192,7 +192,7 @@
       background: var(--primary-color);
       border: none;
       border-radius: var(--radius-sm);
-      color: white;
+      color: var(--ui-brand-ink);
       font-size: 1.1em;
       font-weight: 600;
       cursor: pointer;

@@ -650,70 +650,28 @@
 
     var transparentCards = opacity <= 0.001;
     var useBackdropFilter = blur > 0 && !transparentCards;
-    var surfaceAlpha = transparentCards
-      ? 0
-      : darkMode
-        ? Math.max(0.5, Math.min(0.94, opacity))
-        : Math.max(0.28, Math.min(0.98, opacity));
-    var surface1Alpha = transparentCards
-      ? 0
-      : darkMode
-        ? Math.min(0.98, surfaceAlpha + 0.08)
-        : Math.min(0.99, surfaceAlpha + 0.07);
-    var surface2Alpha = transparentCards
-      ? 0
-      : darkMode
-        ? Math.max(0.44, surfaceAlpha - 0.05)
-        : Math.max(0.44, surfaceAlpha - 0.08);
-    var surface3Alpha = transparentCards
-      ? 0
-      : darkMode
-        ? Math.max(0.36, surfaceAlpha - 0.1)
-        : Math.max(0.34, surfaceAlpha - 0.17);
-    var inputBorder = darkMode
-      ? "rgba(122, 140, 168, 0.5)"
-      : "rgba(214, 220, 228, 0.9)";
-    var border = darkMode
-      ? "rgba(92, 105, 126, 0.46)"
-      : "rgba(198, 206, 218, 0.52)";
-    var cardBg = darkMode
-      ? "rgba(19, 24, 33, " + surfaceAlpha.toFixed(2) + ")"
-      : "rgba(255, 255, 255, " + surfaceAlpha.toFixed(2) + ")";
-    var surface1 = darkMode
-      ? "rgba(24, 31, 42, " + surface1Alpha.toFixed(2) + ")"
-      : "rgba(255, 255, 255, " + surface1Alpha.toFixed(2) + ")";
-    var surface2 = darkMode
-      ? "rgba(24, 31, 42, " + surface2Alpha.toFixed(2) + ")"
-      : "rgba(255, 255, 255, " + surface2Alpha.toFixed(2) + ")";
-    var surface3 = darkMode
-      ? "rgba(30, 38, 51, " + surface3Alpha.toFixed(2) + ")"
-      : "rgba(245, 246, 248, " + surface3Alpha.toFixed(2) + ")";
-    var shadow = transparentCards
-      ? "none"
-      : darkMode
-        ? "0 12px 32px rgba(0, 0, 0, 0.34)"
-        : "0 10px 30px rgba(15, 23, 42, 0.09)";
-    var shadowHover = transparentCards
-      ? "none"
-      : darkMode
-        ? "0 18px 38px rgba(0, 0, 0, 0.42)"
-        : "0 16px 34px rgba(15, 23, 42, 0.14)";
-    var wfShadow = transparentCards
-      ? "none"
-      : darkMode
-        ? "0 14px 34px rgba(0, 0, 0, 0.38)"
-        : "0 10px 28px rgba(20, 32, 55, 0.12)";
-    var wfShadowSoft = transparentCards
-      ? "none"
-      : darkMode
-        ? "0 10px 24px rgba(0, 0, 0, 0.3)"
-        : "0 6px 18px rgba(20, 32, 55, 0.1)";
-    var uiShadowSoft = transparentCards
-      ? "none"
-      : "0 10px 30px rgba(15, 23, 42, 0.09)";
-    var uiShadowSoftDark = transparentCards
-      ? "none"
-      : "0 14px 32px rgba(0, 0, 0, 0.34)";
+    // 这些表面色 theme.css 的 --ui-* 权威层已经按主题定义好了。
+// 原先这里在 JS 里又算了一遍（深色下算出 rgb(19,24,33)，而权威层是
+// #0d1117），然后用内联样式写在 <html> 上 —— 内联优先级高于 :root，
+// 于是同一个语义有两套值，且 CSS 那套永远不生效。这正是"样式没有统一
+// 管理"的最后一处漏点：改主题.css 改不动这里。
+// 现在改为引用权威层，只保留 JS 独有的产物（透明度旋钮本身）。
+var transparentCards = opacity <= 0.001;
+var useBackdropFilter = blur > 0 && !transparentCards;
+var surfaceAlpha = transparentCards ? 0 : clampNumber(next.cardOpacity, 0, 100) / 100;
+var cardBg = "var(--ui-surface)";
+var surface1 = "var(--ui-surface-sunken)";
+var surface2 = "var(--ui-surface)";
+var surface3 = "var(--ui-surface-raised)";
+var border = "var(--ui-line)";
+var inputBorder = "var(--ui-line-strong)";
+var shadow = "var(--ui-elev-2)";
+var shadowHover = "var(--ui-elev-3)";
+var wfShadow = "var(--ui-elev-2)";
+var wfShadowSoft = "var(--ui-elev-1)";
+var uiShadowSoft = "var(--ui-elev-2)";
+var uiShadowSoftDark = "var(--ui-elev-2)";
+void darkMode;
 
     if (transparentCards) {
       root.setAttribute("data-ui-transparent-cards", "true");
@@ -721,8 +679,13 @@
       root.removeAttribute("data-ui-transparent-cards");
     }
 
-    root.style.setProperty("--ui-page-bg", next.baseColor);
-    root.style.setProperty("--ui-page-bg-dark", "#101318");
+// 页面底色只有一个概念、一个名字。原先这里只写 --ui-page-bg，而壁纸蒙版
+// 读的是 --ui-canvas：管理员在 UI 面板里改了 baseColor，body 会变，
+// 蒙版却不跟着变，最后蒙版用浅色压住一张已经偏色的背景 —— 全局看着发灰。
+// 两个名字并存是"样式没有统一管理"的根源，这里收敛到 --ui-canvas。
+root.style.setProperty("--ui-canvas", next.baseColor);
+root.style.setProperty("--ui-page-bg", next.baseColor);
+root.style.setProperty("--ui-page-bg-dark", "#101318");
     root.style.setProperty("--ui-card-opacity", surfaceAlpha.toFixed(2));
     root.style.setProperty("--ui-card-blur", blur + "px");
     root.style.setProperty(
