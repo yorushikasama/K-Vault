@@ -1025,6 +1025,9 @@ html[data-theme="dark"] .el-image__placeholder {
      file-choose-btn、btn 本身）—— ui-buttons.css 自带 44px 触摸下限，
      再在这里加一条 !important 只是重复。下面留下的都还没迁移，
      等各页换用 .btn 后逐条删掉即可。 */
+  /* .workspace-brand / .workspace-nav a / .workspace-tool 也移除了：
+     它们是应用外壳（app-shell.css）的一部分，那份文件自带 44px 下限，
+     而这里用 !important 会和它打架——同一条规则两个来源，改一处必漏一处。 */
   .nav-btn,
   .action-btn,
   .upload-btn,
@@ -1032,9 +1035,6 @@ html[data-theme="dark"] .el-image__placeholder {
   .theme-floating-toggle,
   .theme-admin-toggle,
   .gallery-theme-toggle,
-  .workspace-brand,
-  .workspace-nav a,
-  .workspace-tool,
   .format-btn,
   .btn-prev,
   .btn-next,
@@ -1057,14 +1057,13 @@ html[data-theme="dark"] .el-image__placeholder {
   }
 
   /* 图标型按钮（只有图标、没有文字）还要保证宽度，否则是个 44×30 的瘦条。
-     主题切换按钮与品牌链接同理：它们是纯图标或小 logo，宽度只有 30px 左右。 */
-  .workspace-tool-icon,
+     主题切换按钮与品牌链接同理：它们是纯图标或小 logo，宽度只有 30px 左右。
+     工作区的图标按钮与品牌链接已由 app-shell.css 负责，不列在这里。 */
   .btn-prev,
   .btn-next,
   .theme-admin-toggle,
   .theme-floating-toggle,
-  .gallery-theme-toggle,
-  .workspace-brand {
+  .gallery-theme-toggle {
     min-width: 44px !important;
   }
 

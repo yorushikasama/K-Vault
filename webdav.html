@@ -8,36 +8,49 @@
     <link rel="apple-touch-icon" href="/logo.png" />
     <link rel="shortcut icon" href="/favicon.ico" />
     <link rel="stylesheet" href="/theme.css?v=24806de3e0" />
-    <script src="/theme-core.js?v=4cb852886e"></script>
+    <script src="/theme-core.js?v=6a9f70f021"></script>
     <script defer src="/theme-effects.js?v=9dbb416bad"></script>
     <link rel="stylesheet" href="/ui-buttons.css?v=1b5c5edaa7" />
-    <link rel="stylesheet" href="/webdav.css?v=dd00c572a7">
-    <link rel="stylesheet" href="/mobile-refactor.css?v=7817ee9155" />
+    <!-- 应用外壳（顶栏）四个分区共用，因此排在页面私有样式之前。 -->
+    <link rel="stylesheet" href="/app-shell.css?v=140b992d46">
+    <link rel="stylesheet" href="/webdav.css?v=b652aae59a">
+    <link rel="stylesheet" href="/mobile-refactor.css?v=6b498cb154" />
   </head>
   <body>
+    <!-- 应用外壳顶栏：与上传 / 文件 / 图库三页逐字相同。
+         此前这里是另一套 .header（标题「WebDAV 上传中心」+
+         首页/图片浏览/管理后台/WebDAV 四个按钮），导航项文字与别页不同，
+         点进来像换了个站。
+
+         放在 .page 外面：那个容器带宽带上限与内边距，顶栏嵌进去会被压成
+         内容同宽、并且离视口顶端 16px（实测），与其它三页的全宽贴顶不一致。 -->
+    <header class="workspace-header">
+      <a class="workspace-brand" href="./" aria-label="K-Vault 上传首页">
+        <img src="/logo.png" alt="" width="32" height="32">
+        <span>K-Vault</span>
+      </a>
+      <nav class="workspace-nav" aria-label="全局导航">
+        <a href="./">上传</a>
+        <a href="./admin.html">文件</a>
+        <a href="./gallery.html">图库</a>
+        <a href="./webdav.html" aria-current="page">WebDAV</a>
+      </nav>
+      <div class="workspace-tools">
+        <button type="button" class="workspace-tool" data-theme-toggle aria-label="切换主题">
+          <i data-lucide="moon" data-theme-icon></i>
+          <span data-theme-label>夜间</span>
+        </button>
+        <button type="button" class="workspace-tool" id="logoutBtn">
+          <i data-lucide="log-out"></i><span>退出</span>
+        </button>
+      </div>
+    </header>
+
     <main class="page">
-      <header class="header">
-        <h1 class="header-title">
-          <img
-            src="/logo.png"
-            alt="K-Vault Logo"
-            class="header-logo"
-            loading="eager"
-            onerror="this.onerror=null;this.src='/favicon.ico';"
-          />
-          <span>WebDAV 上传中心</span>
-        </h1>
-        <div class="header-actions">
-          <a class="btn btn-sm btn-ghost" href="./"><i data-lucide="house"></i><span>首页</span></a>
-          <a class="btn btn-sm btn-ghost" href="./gallery.html"><i data-lucide="images"></i><span>图片浏览</span></a>
-          <a class="btn btn-sm btn-ghost" href="./admin.html"><i data-lucide="folder-tree"></i><span>管理后台</span></a>
-          <a class="btn btn-sm btn-primary" href="./webdav.html" aria-current="page"><i data-lucide="hard-drive"></i><span>WebDAV</span></a>
-          <button type="button" class="btn btn-sm btn-ghost" data-theme-toggle aria-label="切换主题">
-            <i data-lucide="moon" data-theme-icon></i>
-            <span data-theme-label>夜间</span>
-          </button>
-        </div>
-      </header>
+      <div class="page-heading">
+        <h1>WebDAV 上传中心</h1>
+        <p>填写目录后上传文件，或从链接导入；完成后复制生成的直链。</p>
+      </div>
 
       <section class="layout">
         <article class="toolbar-row">
@@ -178,6 +191,7 @@
         var refreshStatusBtn = document.getElementById("refreshStatusBtn");
         var clearResultBtn = document.getElementById("clearResultBtn");
         var copyAllBtn = document.getElementById("copyAllBtn");
+        var logoutBtn = document.getElementById("logoutBtn");
         var resultLinks = [];
         var fallbackSelectedFiles = [];
 
@@ -503,6 +517,16 @@
         }
 
         folderPathInput.addEventListener("input", updateFolderPreview);
+
+        // 退出登录：与其它三个分区一致。即使请求失败也放行，避免把用户困在
+        // 已登出的页面上。
+        if (logoutBtn) {
+          logoutBtn.addEventListener("click", function () {
+            fetch("./api/auth/logout", { method: "POST", credentials: "include" })
+              .catch(function () { /* 忽略：下面照样跳转 */ })
+              .then(function () { window.location.href = "./login.html"; });
+          });
+        }
 
         clearQueueBtn.addEventListener("click", function (event) {
           event.preventDefault();

@@ -42,20 +42,26 @@ describe('mobile layout contract', function () {
     });
   });
 
-  describe('the workbench header has mobile rules', function () {
-    // 首页改用 workbench.css 后漏了这套规则（admin.html 靠 mobile-refactor.css 兜住），
-    // 结果首页头部在 900px 以下溢出。
-    const css = read('workbench.css');
+  describe('the app shell header has mobile rules', function () {
+    // 顶栏从 workbench.css 抽到 app-shell.css 之后（它现在是四个分区共用的
+    // 应用外壳：上传 / 文件 / 图库 / WebDAV），这套规则随之搬家。
+    // 断言跟着移到新文件，但要求不变：窄屏必须换行 + 导航可横向滚动，
+    // 否则 390px 视口会把导航推出屏幕。
+    const css = read('app-shell.css');
 
     it('lets the header wrap on narrow screens', function () {
       const block = /@media \(max-width: 900px\)[\s\S]*?\n\}/.exec(css);
-      assert.ok(block, 'workbench.css 没有 900px 媒体查询');
-      assert.match(block[0], /\.kv-workbench \.workspace-header\s*\{[^}]*flex-wrap:\s*wrap/, '页头在窄屏没有允许换行，会把导航挤出视口');
+      assert.ok(block, 'app-shell.css 没有 900px 媒体查询');
+      assert.match(
+        block[0],
+        /header\.workspace-header\s*\{[^}]*flex-wrap:\s*wrap/,
+        '页头在窄屏没有允许换行，会把导航挤出视口'
+      );
     });
 
     it('makes the nav scrollable rather than overflowing', function () {
       const block = /@media \(max-width: 900px\)[\s\S]*?\n\}/.exec(css);
-      assert.match(block[0], /\.kv-workbench \.workspace-nav\s*\{[^}]*overflow-x:\s*auto/, '导航没有横向滚动兜底');
+      assert.match(block[0], /\.workspace-nav\s*\{[^}]*overflow-x:\s*auto/, '导航没有横向滚动兜底');
     });
   });
 
@@ -91,11 +97,14 @@ describe('mobile layout contract', function () {
       assert.ok(Number(touch[1]) >= 480, `触摸目标断点是 ${touch[1]}px，太小——平板竖屏（768）也会用触摸`);
     });
 
-    it('workbench defines its own targets since index.html skips mobile-refactor', function () {
+    it('the app shell carries its own touch targets for the pages that skip mobile-refactor', function () {
+      // index.html 不加载 mobile-refactor.css（避免两处规则重复），
+      // 所以它用到的页头元素必须自己带 44px 下限。顶栏现在由四个分区共用，
+      // 这份规则随之落在 app-shell.css —— 任一分区都不会漏。
       const html = read('index.html');
       assert.doesNotMatch(html, /mobile-refactor\.css/, 'index.html 现在加载了 mobile-refactor.css，两处规则会重复');
-      const css = read('workbench.css');
-      assert.match(css, /\.kv-workbench :is\(\.btn[\s\S]{0,120}min-height:\s*44px/, 'workbench.css 缺少触摸目标规则');
+      const css = read('app-shell.css');
+      assert.match(css, /\.workspace-nav a,[\s\S]{0,80}\.workspace-tool\s*\{[\s\S]{0,80}min-height:\s*44px/, 'app-shell.css 缺少页头的触摸目标规则');
     });
   });
 

@@ -11,21 +11,24 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://js.sentry-cdn.com" crossorigin>
   <link rel="stylesheet" href="/theme.css?v=24806de3e0">
-  <script src="/theme-core.js?v=4cb852886e"></script>
+  <script src="/theme-core.js?v=6a9f70f021"></script>
   <script defer src="/theme-effects.js?v=9dbb416bad"></script>
+  <!-- 应用外壳（顶栏）四个分区共用，因此排在页面私有样式之前：
+       上传/文件/图库/WebDAV 的顶栏必须逐字一样，页面样式只负责内容区。 -->
+  <link rel="stylesheet" href="/app-shell.css?v=140b992d46">
   <!-- Import CSS -->
   <link rel="stylesheet" href="./admin-imgtc.css?v=3cfcf78f74">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css" integrity="sha384-ZUOUQ+hNJ+DV4HfNwHNFq4PcclqayiUDpCMsWD1lOpUQZ/go0ofwD/GLaYdzOcdx" crossorigin="anonymous" referrerpolicy="no-referrer">
   <!-- Sentry loader 故意不加 SRI：这个脚本内容随项目配置变化（采样率、集成项），钉死哈希会在后台改配置时把它整个拦掉。 -->
   <script src="https://js.sentry-cdn.com/219f636ac7bde5edab2c3e16885cb535.min.js" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="/mobile-refactor.css?v=7817ee9155">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=6b498cb154">
   <link rel="stylesheet" href="/admin.css?v=7c0fa8c03b">
-  <link rel="stylesheet" href="/workbench.css?v=df8958a1e0">
+  <link rel="stylesheet" href="/workbench.css?v=3584260e22">
 </head>
 <body class="kv-workbench kv-files">
   <div id="app" v-cloak>
     <el-container direction="vertical" class="files-shell">
-      <header class="workspace-header header-content" :inert="folderDrawerOpen && isMobileViewport ? '' : null">
+      <header class="workspace-header" :inert="folderDrawerOpen && isMobileViewport ? '' : null">
         <a class="workspace-brand" href="./" @click.prevent="goHome" aria-label="K-Vault 上传首页">
           <img src="/logo.png" alt="" width="32" height="32">
           <span>K-Vault</span>
@@ -36,7 +39,7 @@
           <a href="./gallery.html">图库</a>
           <a href="./webdav.html">WebDAV</a>
         </nav>
-        <div class="workspace-tools actions">
+        <div class="workspace-tools">
           <el-dropdown @command="handleWebsite" trigger="click">
             <button type="button" class="workspace-tool"><kv-icon name="external-link"></kv-icon><span>快捷入口</span><kv-icon name="chevron-down"></kv-icon></button>
             <el-dropdown-menu slot="dropdown" class="files-menu">
@@ -1519,7 +1522,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
           return;
         }
 
-        const header = (this.$el && this.$el.querySelector('.header-content')) || document.querySelector('.header-content');
+        const header = (this.$el && this.$el.querySelector('.workspace-header')) || document.querySelector('.workspace-header');
         if (!header) return;
 
         const rect = header.getBoundingClientRect();
@@ -1536,7 +1539,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         if (typeof ResizeObserver !== 'function') return;
         this.unobserveMobileNavHeight();
 
-        const header = (this.$el && this.$el.querySelector('.header-content')) || document.querySelector('.header-content');
+        const header = (this.$el && this.$el.querySelector('.workspace-header')) || document.querySelector('.workspace-header');
         if (!header) return;
 
         this.headerResizeObserver = new ResizeObserver(() => {
@@ -2945,7 +2948,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         };
         // 获取容器尺寸
         const content = document.querySelector('.disk-content') || document.querySelector('.content');
-        const header = document.querySelector('.header-content');
+        const header = document.querySelector('.workspace-header');
         const width = content?.clientWidth || config.defaultWidth;
         const height = window.innerHeight - (header?.offsetHeight || config.defaultHeaderHeight);
         // 计算行列数

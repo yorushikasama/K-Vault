@@ -41,23 +41,10 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
 .kv-workbench a:hover { text-decoration: underline; text-underline-offset: 4px; }
 .kv-workbench :is(button, a, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--wb-accent-ink); outline-offset: 3px; }
 .kv-workbench .kv-icon { display: inline-block; width: 18px; height: 18px; flex-shrink: 0; vertical-align: -.2em; }
-.kv-workbench .workspace-header {
-  display: flex; align-items: center; gap: 28px; position: sticky; top: 0; left: auto; right: auto;
-  width: 100%; height: auto; min-height: 68px; padding: 12px 28px; margin: 0; z-index: 100;
-  background: var(--wb-surface) !important; border: 0 !important; border-bottom: 1px solid var(--wb-border) !important;
-  border-radius: 0 !important; box-shadow: none !important; backdrop-filter: none; will-change: auto;
-}
-.kv-workbench .workspace-brand { display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; color: var(--wb-ink); font-size: 1.125rem; font-weight: 650; }
-.kv-workbench .workspace-brand img { width: 30px; height: 30px; border-radius: var(--radius-sm); }
-.kv-workbench .workspace-nav { display: flex; align-items: center; gap: 4px; }
-.kv-workbench .workspace-nav a { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px 14px; border-radius: var(--radius-sm); color: var(--wb-muted); font-weight: 500; white-space: nowrap; }
-.kv-workbench .workspace-nav a[aria-current] { background: var(--wb-accent-soft); color: var(--wb-accent-ink); font-weight: 600; }
-.kv-workbench .workspace-tools { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-left: auto; min-width: 0; }
-.kv-workbench .workspace-tool { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 8px 10px; color: var(--wb-muted); background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm); white-space: nowrap; line-height: 1.3; }
-.kv-workbench .workspace-tool:hover, .kv-workbench .workspace-nav a:hover { background: var(--wb-subtle); color: var(--wb-ink); text-decoration: none; }
-.kv-workbench .workspace-tool-icon { width: 40px; padding: 8px; }
-.kv-workbench .header-content .actions :is(i, svg.lucide) { margin: 0; width: 18px; height: 18px; color: inherit; font-size: 18px; transform: none; transition: none; }
-.kv-workbench .workspace-tool > .kv-icon:last-child:not(:first-child) { width: 14px; height: 14px; }
+/* 页头（.workspace-header / .workspace-nav / .workspace-tool / .workspace-brand）
+   已移到 app-shell.css —— 它是四个分区共用的应用外壳，不该只在带 .kv-workbench
+   的页面生效。图库页与 WebDAV 页此前因为 body 上没有这个类，各自长了一套
+   顶栏，导航项文字都不一样。现在顶栏只有 app-shell.css 那一份定义。 */
 .kv-workbench .upload-sr-only, .kv-workbench .files-search-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .kv-workbench .upload-skip-link { position: fixed; top: 8px; left: 12px; z-index: 12000; transform: translateY(-160%); background: var(--wb-surface); color: var(--wb-ink); border: 1px solid var(--wb-border); padding: 10px 16px; }
 .kv-workbench .upload-skip-link:focus { transform: none; }
@@ -181,17 +168,8 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
   .kv-workbench .upload-dialog { width: 100%; max-height: 92dvh; padding: 18px 16px; }
   .kv-workbench .upload-dialog-actions .btn { flex: 1 1 auto; min-height: 44px; }
 
-  /* 页头在窄屏放不下：品牌 107 + 导航 268 + 工具 75 ≈ 450px，加上两侧
-     28px 内边距和 28px 间隙，390px 视口横向溢出 68px（导航被推出屏幕）。
-     桌面端的 nowrap + 大 padding 是为宽屏留白设计的，窄屏要允许换行。
-     admin.html 的页头早有这套处理（它加载 mobile-refactor.css），
-     首页改用 workbench.css 后漏了，这里补齐。 */
-  .kv-workbench .workspace-header {
-    flex-wrap: wrap;
-    gap: 8px 12px;
-    padding: 10px 14px;
-    row-gap: 6px;
-  }
+  /* 页头的窄屏处理（换行、导航横向滚动、触摸下限）在 app-shell.css ——
+     那是四个页面共用的外壳，规则随之搬过去了。 */
 
   /* 窄屏正文留白收一收：桌面端 28px 侧边距在 320–430px 上吃掉近 1/5 宽度，
      内容区被压得太窄。与页头用同一组数值，视觉上对齐。 */
@@ -200,17 +178,9 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
   .kv-workbench .upload-section-heading { margin-bottom: 12px; }
 
   /* 触摸目标统一抬到 44px（WCAG 2.5.5 / Apple HIG 的下限）。
-     .btn 的高度由 ui-buttons.css 负责；这条覆盖的是首页特有、不是 .btn 的
-     可点元素 —— 导航链接、工作区工具、存储选项。首页不加载
-     mobile-refactor.css，所以这些得在这里收口。 */
-  .kv-workbench :is(.btn, .workspace-nav a, .workspace-tool, .upload-storage-option) {
-    min-height: 44px;
-  }
-  /* 只含图标的按钮还要保证宽度，否则是个 44×30 的瘦条 */
-  .kv-workbench .workspace-tool-icon { min-width: 44px; }
-  /* 品牌 logo 链接：logo 本身 30×30，链接的可点区也就只有那么大。
-     抬到 44px 见方，手指才点得准。 */
-  .kv-workbench .workspace-brand { min-height: 44px; min-width: 44px; }
+     .btn 与页头元素（.workspace-nav a / .workspace-tool / .workspace-brand）
+     的高度由 ui-buttons.css 与 app-shell.css 负责；这条只覆盖首页特有、
+     不是 .btn 的可点元素。 */
   /* <summary> 是"选择已有目录"的可点行，桌面端 40px，手机上补齐 */
   .kv-workbench summary { min-height: 44px; }
 
@@ -258,43 +228,6 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
   }
   .kv-workbench .upload-field-row > input { grid-column: 1 / -1; width: 100%; min-height: 44px; }
   .kv-workbench .upload-field-row > .btn { min-height: 44px; justify-content: center; }
-
-  /* 导航单独占一行并允许横向滚动：比换行更整齐，链接多时也不会把页头
-     撑得过高。scrollbar 隐藏是刻意的——移动端横向滚动条会很显眼，
-     而用户能从内容被截断的边缘看出可以滑。 */
-  .kv-workbench .workspace-nav {
-    order: 3;
-    flex: 1 1 100%;
-    gap: 2px;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-  }
-  .kv-workbench .workspace-nav::-webkit-scrollbar { display: none; }
-
-  /* 触摸目标抬到 44px（WCAG 2.5.5 / Apple HIG 的下限），
-     桌面端的 40px 是给鼠标的。 */
-  .kv-workbench .workspace-nav a,
-  .kv-workbench .workspace-tool { min-height: 44px; }
-  .kv-workbench .workspace-tool-icon { width: 44px; }
-  .kv-workbench .workspace-nav a { padding: 8px 12px; }
-
-  /* 工具区靠右，品牌靠左，二者共用第一行 */
-  .kv-workbench .workspace-tools { margin-left: auto; }
-}
-
-@media (max-width: 480px) {
-  /* 极窄屏（320–430）保留 logo 但收起文字品牌名：省下约 62px，
-     让导航和工具不用挤成两行文字。logo 本身已能表达品牌。 */
-  .kv-workbench .workspace-brand span { display: none; }
-  .kv-workbench .workspace-brand { gap: 0; }
-
-  .kv-workbench .workspace-header { padding: 8px 12px; }
-
-  /* 主题按钮只留图标：文字标签（夜间/亮色）在 430px 以下会挤占导航空间，
-     图标本身含义明确，且 aria-label 已经提供了可访问名称。 */
-  .kv-workbench .workspace-tool > span { display: none; }
-  .kv-workbench .workspace-tool { padding: 8px 10px; width: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

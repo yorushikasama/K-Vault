@@ -115,6 +115,16 @@
   }
 
   function ensureAutoToggle() {
+    // 页面声明「主题入口由我自己管」时不再注入。必须在最前面判断：
+    // 下面的外壳分支按 .workspace-header 命中，晚判断就会先注入一个、
+    // 页面自己那个又还在，结果是两个按钮。
+    // 目前四个分区页都直接把按钮写在外壳里（有 data-theme-toggle 标记，
+    // 由上一个判断拦下），这个开关留着给「按钮由框架渲染、拿不到标记」的
+    // 页面用——index.html 曾经就是这种形态。
+    if (document.body && document.body.dataset.disableThemeToggle === "true") {
+      return;
+    }
+
     if (document.querySelector("[data-theme-toggle]")) return;
 
     var navLinks = document.querySelector(".header .nav-links");
@@ -125,15 +135,22 @@
       return;
     }
 
+    // 应用外壳（上传 / 文件 / 图库 / WebDAV）共用的工具区。页面自带按钮时
+    // 上面就已经返回了，走到这里说明这一页没有，把按钮注入到与其它分区
+    // 相同的位置，四个页面的顶栏才是同一个样子。
+    var shellTools = document.querySelector(".workspace-header .workspace-tools");
+    if (shellTools) {
+      var shellBtn = createToggleButton("workspace-tool");
+      shellTools.insertBefore(shellBtn, shellTools.firstChild);
+      bindToggle(shellBtn);
+      return;
+    }
+
     var adminActions = document.querySelector(".header-content .actions");
     if (adminActions) {
       var adminBtn = createToggleButton("theme-admin-toggle");
       adminActions.insertBefore(adminBtn, adminActions.firstChild);
       bindToggle(adminBtn);
-      return;
-    }
-
-    if (document.body && document.body.dataset.disableThemeToggle === "true") {
       return;
     }
 

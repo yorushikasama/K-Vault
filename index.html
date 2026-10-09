@@ -10,13 +10,16 @@
   <!-- Vue 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="/theme.css?v=24806de3e0">
-  <script src="/theme-core.js?v=4cb852886e"></script>
+  <script src="/theme-core.js?v=6a9f70f021"></script>
   <script defer src="/theme-effects.js?v=9dbb416bad"></script>
     <link rel="stylesheet" href="/ui-buttons.css?v=1b5c5edaa7">
+    <!-- 应用外壳（顶栏）四个分区共用，因此排在页面私有样式之前：
+         上传/文件/图库/WebDAV 的顶栏必须逐字一样，页面样式只负责内容区。 -->
+    <link rel="stylesheet" href="/app-shell.css?v=140b992d46">
     <link rel="stylesheet" href="/index.css?v=157487c412">
-    <link rel="stylesheet" href="/workbench.css?v=df8958a1e0">
+    <link rel="stylesheet" href="/workbench.css?v=3584260e22">
   </head>
-  <body class="kv-workbench kv-upload" data-disable-theme-toggle="true">
+  <body class="kv-workbench kv-upload">
     <div id="app" v-cloak>
       <div ref="uploadSurface" class="upload-surface">
       <a class="upload-skip-link" href="#upload-main">跳到上传工作区</a>
@@ -32,10 +35,12 @@
           <a href="./webdav.html" v-if="!isGuest">WebDAV</a>
         </nav>
         <div class="workspace-tools">
-          <button type="button" class="workspace-tool" @click="toggleTheme"
-            :aria-label="theme === 'dark' ? '切换到亮色模式' : '切换到夜间模式'">
-            <kv-icon :name="theme === 'dark' ? 'sun' : 'moon'"></kv-icon>
-            <span>{{ theme === 'dark' ? '亮色' : '夜间' }}</span>
+          <!-- 主题按钮用 data-theme-toggle，由 theme-core.js 绑定并维护图标与文案，
+               与文件 / 图库 / WebDAV 三页共用同一段标记。此前它是 Vue 自己的按钮
+               （@click + 内联图标/文字），外观一样但机制不同，四页无法逐字对照。 -->
+          <button type="button" class="workspace-tool" data-theme-toggle aria-label="切换主题">
+            <i data-lucide="moon" data-theme-icon></i>
+            <span data-theme-label>夜间</span>
           </button>
           <button type="button" class="workspace-tool" @click="handleLogout" v-if="isAuthenticated">
             <kv-icon name="log-out"></kv-icon><span>退出</span>
@@ -597,7 +602,6 @@
         el: "#app",
         data: {
           baseURL: document.location.origin,
-          theme: document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light",
           storageStatusLoading: false,
           storageStatusVerified: false,
           authStatusVerified: false,
@@ -1129,22 +1133,6 @@
                 ? previous : this.$refs.uploadMain;
               target?.focus?.();
             }
-          },
-
-          syncTheme() {
-            this.theme = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
-          },
-
-          toggleTheme() {
-            if (window.ThemeManager) {
-              window.ThemeManager.toggleTheme();
-            } else {
-              const next = this.theme === "dark" ? "light" : "dark";
-              document.documentElement.setAttribute("data-theme", next);
-              document.documentElement.style.colorScheme = next;
-              try { localStorage.setItem("themeMode", next); } catch (e) {}
-            }
-            this.syncTheme();
           },
 
           toggleUrlInput() {

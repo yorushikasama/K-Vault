@@ -12,13 +12,13 @@
   <link rel="stylesheet" href="/theme.css?v=24806de3e0">
   <link rel="stylesheet" href="/ui-buttons.css?v=1b5c5edaa7">
   <link rel="stylesheet" href="/preview.css?v=a986de1f08">
-  <link rel="stylesheet" href="/mobile-refactor.css?v=7817ee9155">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=6b498cb154">
   <!-- 预览页此前是全站唯一没加载 theme-core.js 的页面。没有它就没有
        ThemeManager，data-theme 永远是 null，于是 preview.css 里
        html[data-theme="dark"] 的规则一条都不会命中——夜间模式在这里完全
        失效（实测两模式 body 背景同色）。它必须同步放在 <head>：首帧前把
        data-theme 写到 <html> 上，延后会闪一下白屏。 -->
-  <script src="/theme-core.js?v=4cb852886e"></script>
+  <script src="/theme-core.js?v=6a9f70f021"></script>
   <script defer src="/theme-effects.js?v=9dbb416bad"></script>
 </head>
 <body>

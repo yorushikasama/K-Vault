@@ -1,0 +1,247 @@
+/* ===========================================================================
+   统一应用外壳（顶栏）
+   ---------------------------------------------------------------------------
+   为什么单独一个文件：这四个页面（上传 / 文件 / 图库 / WebDAV）是一个应用的四个
+   分区，用户期望切换分区只是换内容，不是「换一个网站」。此前顶栏定义在
+   workbench.css 里、并且作用域限定在 .kv-workbench 下，只有上传页和文件页
+   带这个类；图库页与 WebDAV 页各自长了一套顶栏——导航项的文字都不一样
+   （图库页写「上传 / 管理 / 首页」，WebDAV 页写「首页 / 图片浏览 / 管理后台」），
+   没有「文件」入口，图库页甚至没有 WebDAV 入口。点进去就像跳到了别处。
+   现在顶栏只有这一份定义，四个页面共用同一段标记与同一套样式。
+
+   取值全部引用 theme.css 的 --ui-* token，因此夜间模式与管理员在 UI 面板
+   改的配色自动跟随，本文件不需要任何 html[data-theme="dark"] 覆盖块。
+
+   标记（四个页面逐字相同，只改 aria-current 的位置）：
+     <header class="workspace-header">
+       <a class="workspace-brand" href="./">…</a>
+       <nav class="workspace-nav" aria-label="全局导航">…</nav>
+       <div class="workspace-tools">…</div>
+     </header>
+
+   注意选择器写成 header.workspace-header（而不是 .workspace-header）：
+   admin.html 同时加载 admin-imgtc.css，那里面有一批给「旧浮动页头」写的
+   .header-content 规则（position: fixed / border-radius / 白底 / hover）。
+   同优先级时后加载的会赢，所以这里提高一档优先级，让外壳的定义说了算。
+   ========================================================================= */
+
+header.workspace-header {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  /* sticky + 贴满宽度：顶栏是应用外框，不跟着内容区一起居中收窄。
+     left/right 显式写 auto，是为了压掉 admin 遗留的浮动定位。 */
+  position: sticky;
+  top: 0;
+  left: auto;
+  right: auto;
+  width: 100%;
+  height: auto;
+  min-height: 68px;
+  padding: 12px 28px !important;
+  margin: 0;
+  z-index: 100;
+  box-sizing: border-box;
+  background: var(--ui-surface) !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--ui-line-strong) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  /* 品牌名、导航、工具按钮都按这一档字号排，四个页面因此长得一样。
+     各页 body 的字体栈不同（图库用 system 栈、WebDAV 用 Manrope），
+     顶栏作为共用组件不能跟着飘。 */
+  font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ui-ink);
+}
+
+.workspace-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  color: var(--ui-ink);
+  font-size: 1.125rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.workspace-brand img {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--ui-radius-sm);
+}
+
+.workspace-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.workspace-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: var(--ui-radius-sm);
+  color: var(--ui-ink-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+/* 当前分区。四个页面统一用品牌色，不再按页换色——顶栏是外壳，
+   换色会让「同一个应用」的感觉打折。页内的分区色（文件页的青色）不受影响。 */
+.workspace-nav a[aria-current] {
+  background: var(--ui-brand-soft);
+  color: var(--ui-brand);
+  font-weight: 600;
+}
+
+.workspace-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-left: auto;
+  min-width: 0;
+}
+
+.workspace-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 8px 10px;
+  color: var(--ui-ink-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-sm);
+  font: inherit;
+  white-space: nowrap;
+  line-height: 1.3;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.workspace-nav a:hover,
+.workspace-tool:hover {
+  background: var(--ui-surface-hover);
+  color: var(--ui-ink);
+  text-decoration: none;
+}
+
+.workspace-tool-icon {
+  width: 40px;
+  padding: 8px;
+}
+
+/* 图标尺寸收口。admin-imgtc.css 在没有 !important 的情况下给
+   .header-content .actions svg.lucide 设了 clamp 字号与 #333 颜色；
+   这里靠 .workspace-tools 这一档把优先级提到它上面，否则夜间模式下
+   页头图标会被压成深色（看不清）。 */
+header.workspace-header .workspace-tools :is(i, svg.lucide),
+header.workspace-header .workspace-brand :is(i, svg.lucide),
+header.workspace-header .workspace-nav :is(i, svg.lucide) {
+  margin: 0;
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  color: inherit;
+  transform: none;
+}
+
+/* 带下拉箭头的工具按钮：末尾那个箭头小一档，不跟主图标同宽。 */
+.workspace-tools .workspace-tool > .kv-icon:last-child:not(:first-child) {
+  width: 14px;
+  height: 14px;
+}
+
+/* --- 窄屏 ---------------------------------------------------------------- */
+
+/* 900px：品牌 107 + 导航 268 + 工具 75 ≈ 450px，加上两侧内边距与间隙，
+   390px 视口横向溢出（导航被推出屏幕）。桌面端的 nowrap + 大 padding
+   是为宽屏留白设计的，窄屏允许换行，导航单独占一行并可横向滚动。 */
+@media (max-width: 900px) {
+  header.workspace-header {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    row-gap: 6px;
+    padding: 10px 14px !important;
+  }
+
+  .workspace-nav {
+    order: 3;
+    flex: 1 1 100%;
+    gap: 2px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .workspace-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 触摸目标抬到 44px（WCAG 2.5.5 / Apple HIG 的下限）。 */
+  .workspace-nav a,
+  .workspace-tool {
+    min-height: 44px;
+  }
+
+  .workspace-nav a {
+    padding: 8px 12px;
+  }
+
+  .workspace-tool-icon {
+    width: 44px;
+  }
+
+  .workspace-brand {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .workspace-tools {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  header.workspace-header {
+    padding: 8px 12px !important;
+  }
+
+  /* 极窄屏保留 logo 但收起文字品牌名：省下约 62px，让导航和工具不用挤成两行。
+     logo 本身已能表达品牌。 */
+  .workspace-brand span {
+    display: none;
+  }
+
+  .workspace-brand {
+    gap: 0;
+  }
+
+  /* 工具按钮只留图标：文字标签在 430px 以下会挤占导航空间，
+     图标本身含义明确，且各按钮都有 aria-label/title 提供可访问名称。 */
+  .workspace-tool > span {
+    display: none;
+  }
+
+  .workspace-tool {
+    padding: 8px 10px;
+    width: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-nav a,
+  .workspace-tool {
+    transition: none;
+  }
+}

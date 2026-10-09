@@ -10,37 +10,52 @@
   <!-- Vue 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="/theme.css?v=24806de3e0">
-  <script src="/theme-core.js?v=4cb852886e"></script>
+  <script src="/theme-core.js?v=6a9f70f021"></script>
   <script defer src="/theme-effects.js?v=9dbb416bad"></script>
   <link rel="stylesheet" href="/ui-buttons.css?v=1b5c5edaa7">
-  <link rel="stylesheet" href="/gallery.css?v=e9d3845981">
-  <link rel="stylesheet" href="/mobile-refactor.css?v=7817ee9155">
+  <!-- 应用外壳（顶栏）四个分区共用，因此排在页面私有样式之前。 -->
+  <link rel="stylesheet" href="/app-shell.css?v=140b992d46">
+  <link rel="stylesheet" href="/gallery.css?v=2236ac66db">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=6b498cb154">
 </head>
 <body>
-  <div id="app" v-cloak>
-    <!-- 头部 -->
-    <div class="header">
-      <div class="header-title">
-        <i data-lucide="images"></i>
-        <span>图片浏览器</span>
-      </div>
-      <div class="header-search">
-        <input type="text" v-model="searchQuery" placeholder="搜索文件名..." @input="handleSearch">
-      </div>
-      <div class="header-actions">
-        <a href="./" class="btn btn-sm btn-ghost"><i data-lucide="cloud-upload"></i><span>上传</span></a>
-        <a href="./admin.html" class="btn btn-sm btn-ghost"><i data-lucide="layout-grid"></i><span>管理</span></a>
-        <a href="./" class="btn btn-sm btn-ghost"><i data-lucide="house"></i><span>首页</span></a>
-        <button type="button" class="btn btn-sm btn-ghost" data-theme-toggle aria-label="切换主题">
-          <i data-lucide="moon" data-theme-icon></i>
-          <span data-theme-label>夜间</span>
-        </button>
-      </div>
-    </div>
+  <!-- 应用外壳顶栏：与上传 / 文件 / WebDAV 三页逐字相同。
+       此前这里是另一套 .header（标题「图片浏览器」+ 上传/管理/首页 + 页面级
+       主题按钮），点进来像换了个站。现在只有分区内容不同，外壳一致。
 
+       放在 #app 外面：顶栏是全宽的应用外框，而 #app 是带宽度的内容容器，
+       嵌进去会被压成和内容同宽。主题按钮用 data-theme-toggle，由
+       theme-core.js 绑定并维护图标/文案（与 webdav 页同一机制）。 -->
+  <header class="workspace-header">
+    <a class="workspace-brand" href="./" aria-label="K-Vault 上传首页">
+      <img src="/logo.png" alt="" width="32" height="32">
+      <span>K-Vault</span>
+    </a>
+    <nav class="workspace-nav" aria-label="全局导航">
+      <a href="./">上传</a>
+      <a href="./admin.html">文件</a>
+      <a href="./gallery.html" aria-current="page">图库</a>
+      <a href="./webdav.html">WebDAV</a>
+    </nav>
+    <div class="workspace-tools">
+      <button type="button" class="workspace-tool" data-theme-toggle aria-label="切换主题">
+        <i data-lucide="moon" data-theme-icon></i>
+        <span data-theme-label>夜间</span>
+      </button>
+      <button type="button" class="workspace-tool" id="logoutBtn">
+        <i data-lucide="log-out"></i><span>退出</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="app" v-cloak>
     <!-- 工具栏 -->
     <div class="toolbar">
       <div class="toolbar-left">
+        <label class="files-search-label" for="gallery-search">搜索文件</label>
+        <div class="header-search">
+          <input id="gallery-search" type="text" v-model="searchQuery" placeholder="搜索文件名..." @input="handleSearch">
+        </div>
         <span class="stat-badge"><i data-lucide="images"></i> 总数<strong>{{ totalCount }}</strong></span>
         <span class="stat-badge"><i data-lucide="square-check"></i> 已选<strong>{{ selectedCount }}</strong></span>
         <button class="btn btn-sm btn-ghost" @click="selectAll">
@@ -193,6 +208,18 @@
   <script src="/icons.js?v=fc3fc216e0"></script>
   <script>
     const LOCAL_PREVIEW_PAGE = '/preview.html';
+
+    // 顶栏的退出按钮。这段在 new Vue 之前，与 Vue 实例无关——
+    // 外壳由 theme-core.js 维护，页面脚本只补它管不到的那个动作。
+    (function () {
+      var logoutBtn = document.getElementById('logoutBtn');
+      if (!logoutBtn) return;
+      logoutBtn.addEventListener('click', function () {
+        fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+          .catch(function () { /* 忽略：下面照样跳转，别把用户困在已登出的页面 */ })
+          .then(function () { window.location.href = '/login.html'; });
+      });
+    })();
 
     new Vue({
       el: '#app',

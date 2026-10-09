@@ -45,58 +45,28 @@
         padding: var(--ui-page-pad);
       }
 
-      .header {
-        position: sticky;
-        top: 20px;
-        z-index: 50;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 16px 24px;
-        border-radius: var(--radius-lg);
-        background: var(--wf-surface);
-        border: 1px solid var(--wf-border);
-        box-shadow: var(--shadow-2);
-        margin-bottom: 16px;
+      /* 页头（.header / .header-title / .header-actions / .header-logo）已删除：
+         顶栏由 app-shell.css 提供，四个分区共用同一段标记。
+         这一页原本自带一套（标题「WebDAV 上传中心」+ 首页/图片浏览/管理后台/WebDAV），
+         导航项文字与其它页不同，切换时像跳到了别处。 */
+
+      /* 页内标题。此前页面标题挂在顶栏上，顶栏统一后标题归内容区。 */
+      .page-heading {
+        margin-bottom: 18px;
       }
 
-      .header-title {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-family: "Sora", "Manrope", "Noto Sans SC", sans-serif;
-        font-size: 1.38rem;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-        color: inherit;
+      .page-heading h1 {
+        font-size: 1.5rem;
+        font-weight: 650;
+        letter-spacing: -0.01em;
         margin: 0;
       }
 
-            .header-title i,
-      .header-title svg.lucide {
-        color: var(--wf-primary);
+      .page-heading p {
+        margin: 6px 0 0;
+        color: var(--ui-ink-secondary);
+        font-size: 0.9rem;
       }
-
-      .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-      }
-
-      .header-logo {
-        width: 30px;
-        height: 30px;
-        border-radius: 8px;
-        object-fit: cover;
-        background: rgba(255, 255, 255, 0.92);
-      }
-
-      /* 头部导航按钮此前在这里定义（.action-link / .action-btn），
-         现已换用 ui-buttons.css 的 .btn。这里只保留导航容器与激活态的
-         排版，激活态靠 .btn-primary 表达。 */
 
       .layout {
         display: grid;
@@ -599,32 +569,7 @@
           padding: 10px;
         }
 
-        .header {
-          top: 8px;
-          padding: 10px 12px;
-          flex-wrap: wrap;
-        }
-
-        .header-title {
-          width: 100%;
-          font-size: 1rem;
-        }
-
-        .header-actions {
-          width: 100%;
-          justify-content: flex-start;
-          overflow-x: auto;
-          scrollbar-width: none;
-        }
-
-        .header-actions::-webkit-scrollbar {
-          display: none;
-        }
-
-        /* 窄屏下导航横向滚动，按钮不参与收缩，否则会被压成窄条。 */
-        .header-actions .btn {
-          flex: 0 0 auto;
-        }
+        /* 顶栏的窄屏处理在 app-shell.css（四个分区共用），这里不用再管。 */
 
         .toolbar-row {
           flex-direction: column;
