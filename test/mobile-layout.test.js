@@ -95,7 +95,7 @@ describe('mobile layout contract', function () {
       const html = read('index.html');
       assert.doesNotMatch(html, /mobile-refactor\.css/, 'index.html 现在加载了 mobile-refactor.css，两处规则会重复');
       const css = read('workbench.css');
-      assert.match(css, /\.kv-workbench :is\(\.upload-btn[\s\S]{0,120}min-height:\s*44px/, 'workbench.css 缺少触摸目标规则');
+      assert.match(css, /\.kv-workbench :is\(\.btn[\s\S]{0,120}min-height:\s*44px/, 'workbench.css 缺少触摸目标规则');
     });
   });
 

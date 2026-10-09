@@ -56,17 +56,11 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
 .kv-workbench .upload-skip-link:focus { transform: none; }
 .kv-workbench :is(.upload-muted, .upload-file-meta) { color: var(--wb-muted); font-size: .8125rem; line-height: 1.6; }
 .kv-workbench :is(.upload-error, .upload-notice-error, .files-error) { color: var(--wb-danger); }
-.kv-workbench .upload-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; padding: 8px 12px; border: 1px solid var(--wb-border); border-radius: var(--radius-sm); background: var(--wb-surface); color: var(--wb-ink); line-height: 1.4; font-weight: 500; }
-.kv-workbench .upload-btn:hover:not(:disabled) { border-color: var(--wb-accent); background: var(--wb-subtle); }
-.kv-workbench .upload-btn-primary { background: var(--wb-accent); color: var(--wb-on-accent); border-color: var(--wb-accent); }
-.kv-workbench .upload-btn-primary:hover:not(:disabled) { background: var(--wb-accent); filter: brightness(.94); }
-.kv-workbench .upload-btn.is-selected { background: var(--wb-accent-soft); color: var(--wb-accent-ink); border-color: var(--wb-accent); }
-.kv-workbench .upload-btn-danger { color: var(--wb-danger); border-color: var(--wb-danger); }
-.kv-workbench .upload-btn:disabled { opacity: .5; }
+/* 按钮的视觉定义已统一到 ui-buttons.css。这里只留下首页特有的约束：
+   列表里的按钮要能截断长文件名，以及文案型按钮（带下划线、无边框）——
+   后者视觉上是链接而非按钮，所以不进统一层。 */
 .kv-workbench :is(.upload-text-btn, .upload-text-link, .files-reset) { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 6px 4px; border: 0; background: transparent; color: var(--wb-accent-ink); font-size: .8125rem; text-align: left; }
 .kv-workbench :is(.upload-text-btn, .files-reset):hover { text-decoration: underline; text-underline-offset: 4px; }
-.kv-workbench .upload-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 8px; border: 1px solid transparent; border-radius: var(--radius-sm); color: var(--wb-muted); background: transparent; }
-.kv-workbench .upload-icon-btn:hover { background: var(--wb-subtle); color: var(--wb-accent-ink); }
 .kv-workbench input[type="checkbox"], .kv-workbench input[type="radio"] { width: 17px; height: 17px; accent-color: var(--wb-accent); flex-shrink: 0; }
 .kv-workbench :is(input[type="text"], input[type="number"], select, textarea) { min-width: 0; border: 1px solid var(--wb-border); border-radius: var(--radius-sm); padding: 9px 12px; background: var(--wb-surface); color: var(--wb-ink); }
 .kv-workbench input::placeholder, .kv-workbench textarea::placeholder { color: var(--wb-muted); opacity: 1; }
@@ -92,8 +86,8 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
 .kv-workbench .upload-folder-field > p { margin-top: 6px; }
 .kv-workbench .upload-folder-browser { margin-top: 8px; }
 .kv-workbench .upload-folder-list { display: flex; flex-wrap: wrap; gap: 8px; max-height: 200px; overflow-y: auto; margin-bottom: 10px; }
-.kv-workbench .upload-folder-list .upload-btn { max-width: 100%; }
-.kv-workbench .upload-folder-list .upload-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kv-workbench .upload-folder-list .btn { max-width: 100%; }
+.kv-workbench .upload-folder-list .btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kv-workbench .upload-folder-create { margin-top: 12px; padding: 16px; background: var(--wb-subtle); border-radius: var(--radius-sm); }
 .kv-workbench .upload-limit { display: flex; gap: 8px 24px; align-items: center; flex-wrap: wrap; background: var(--wb-subtle); padding: 12px 16px; border-radius: var(--radius-sm); margin-top: 16px; }
 .kv-workbench .upload-limit dl { display: flex; gap: 12px; align-items: baseline; }
@@ -112,8 +106,6 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
 .kv-workbench .upload-advanced-body { display: grid; gap: 14px; padding: 8px 0 18px; }
 .kv-workbench .compress-controls { display: grid; gap: 16px; }
 .kv-workbench .compress-format-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-.kv-workbench .compress-format-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; border: 1px solid var(--wb-border); background: var(--wb-surface); color: var(--wb-ink); padding: 8px 12px; border-radius: var(--radius-sm); transform: none; box-shadow: none; }
-.kv-workbench .compress-format-btn.active { background: var(--wb-accent-soft); color: var(--wb-accent-ink); border-color: var(--wb-accent); }
 .kv-workbench .compress-settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .kv-workbench .compress-control { display: flex; align-items: stretch; flex-direction: column; gap: 6px; }
 .kv-workbench .compress-control input { width: 100%; accent-color: var(--wb-accent); }
@@ -180,7 +172,7 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
 @media (max-width: 900px) {
   .kv-workbench .upload-modal-overlay { padding: 12px; align-items: flex-end; }
   .kv-workbench .upload-dialog { width: 100%; max-height: 92dvh; padding: 18px 16px; }
-  .kv-workbench .upload-dialog-actions .upload-btn { flex: 1 1 auto; min-height: 44px; }
+  .kv-workbench .upload-dialog-actions .btn { flex: 1 1 auto; min-height: 44px; }
 
   /* 页头在窄屏放不下：品牌 107 + 导航 268 + 工具 75 ≈ 450px，加上两侧
      28px 内边距和 28px 间隙，390px 视口横向溢出 68px（导航被推出屏幕）。
@@ -201,10 +193,10 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
   .kv-workbench .upload-section-heading { margin-bottom: 12px; }
 
   /* 触摸目标统一抬到 44px（WCAG 2.5.5 / Apple HIG 的下限）。
-     首页不加载 mobile-refactor.css（那份规则放在那里统一约束其余 9 页），
-     所以这里要自己写一份，否则页面上所有按钮都停留在桌面端的 38px。
-     只调 min-height 与必要处的 min-width，不改 padding/字号，避免改布局。 */
-  .kv-workbench :is(.upload-btn, .workspace-nav a, .workspace-tool, .upload-storage-option) {
+     .btn 的高度由 ui-buttons.css 负责；这条覆盖的是首页特有、不是 .btn 的
+     可点元素 —— 导航链接、工作区工具、存储选项。首页不加载
+     mobile-refactor.css，所以这些得在这里收口。 */
+  .kv-workbench :is(.btn, .workspace-nav a, .workspace-tool, .upload-storage-option) {
     min-height: 44px;
   }
   /* 只含图标的按钮还要保证宽度，否则是个 44×30 的瘦条 */
@@ -258,7 +250,7 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .kv-workbench .upload-field-row > input { grid-column: 1 / -1; width: 100%; min-height: 44px; }
-  .kv-workbench .upload-field-row > .upload-btn { min-height: 44px; justify-content: center; }
+  .kv-workbench .upload-field-row > .btn { min-height: 44px; justify-content: center; }
 
   /* 导航单独占一行并允许横向滚动：比换行更整齐，链接多时也不会把页头
      撑得过高。scrollbar 隐藏是刻意的——移动端横向滚动条会很显眼，
@@ -327,7 +319,7 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
   background: rgba(180, 52, 52, .08); color: var(--wb-danger);
 }
 .kv-files .files-error-banner p { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.kv-files .files-error-banner .upload-btn { border-color: var(--wb-danger); color: var(--wb-danger); background: transparent; }
+.kv-files .files-error-banner .btn { border-color: var(--wb-danger); color: var(--wb-danger); background: transparent; }
 
 /* 搜索与筛选：明确标注仅作用于已加载文件。
    层级原则：主操作（搜索框 + 存储切换）一行，次要筛选器（类型/状态/排序）

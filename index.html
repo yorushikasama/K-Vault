@@ -12,8 +12,9 @@
   <link rel="stylesheet" href="/theme.css?v=74c7ad38da">
   <script src="/theme-core.js?v=4cb852886e"></script>
   <script defer src="/theme-effects.js?v=9dbb416bad"></script>
+    <link rel="stylesheet" href="/ui-buttons.css?v=1b5c5edaa7">
     <link rel="stylesheet" href="/index.css?v=157487c412">
-    <link rel="stylesheet" href="/workbench.css?v=c2b9e27113">
+    <link rel="stylesheet" href="/workbench.css?v=f307dacbd4">
   </head>
   <body class="kv-workbench kv-upload" data-disable-theme-toggle="true">
     <div id="app" v-cloak>
@@ -53,7 +54,7 @@
         </div>
         <div class="upload-notice upload-notice-error" v-if="authError" role="alert">
           <p>{{ authError }}</p>
-          <button class="upload-btn" type="button" :disabled="authChecking" @click="refreshUploadLimits">重新检查身份</button>
+          <button class="btn" type="button" :disabled="authChecking" @click="refreshUploadLimits">重新检查身份</button>
         </div>
         <p class="upload-notice" v-if="!authChecking && !storageStatusLoading && storageStatusError" role="status">{{ storageStatusError }}</p>
 
@@ -84,8 +85,8 @@
                 placeholder="留空为根目录，例如：项目A/一月"
                 aria-describedby="upload-folder-help" @change="handleFolderPathInput"
                 @blur="persistFolderPath">
-              <button class="upload-btn" type="button" @click="clearFolderPath">根目录</button>
-              <button class="upload-btn" type="button" v-if="!isGuest"
+              <button class="btn" type="button" @click="clearFolderPath">根目录</button>
+              <button class="btn" type="button" v-if="!isGuest"
                 :disabled="authChecking" @click="openUploadFolderCreator">
                 <kv-icon name="folder-plus"></kv-icon>新建目录
               </button>
@@ -97,11 +98,11 @@
           <details class="upload-folder-browser" v-if="!isGuest">
             <summary>选择已有目录</summary>
             <div class="upload-folder-list" :aria-busy="uploadFoldersLoading">
-              <button class="upload-btn" type="button" :aria-pressed="!folderPath"
+              <button class="btn" type="button" :aria-pressed="!folderPath"
                 :class="{ 'is-selected': !folderPath }" @click="selectUploadFolder('')">
                 <kv-icon name="house"></kv-icon>根目录
               </button>
-              <button class="upload-btn" type="button" v-for="folder in uploadFolderOptions"
+              <button class="btn" type="button" v-for="folder in uploadFolderOptions"
                 :key="folder.path" :aria-pressed="folder.path === folderPath"
                 :class="{ 'is-selected': folder.path === folderPath }" :title="folder.path"
                 @click="selectUploadFolder(folder.path)">
@@ -110,7 +111,7 @@
               </button>
             </div>
             <div class="upload-inline-actions">
-              <button class="upload-btn" type="button" :disabled="uploadFoldersLoading || authChecking"
+              <button class="btn" type="button" :disabled="uploadFoldersLoading || authChecking"
                 @click="fetchUploadFolders(true)">
                 <kv-icon name="rotate-cw" :class="{ 'upload-spin': uploadFoldersLoading }"></kv-icon>
                 {{ uploadFoldersLoading ? '读取中' : '刷新目录' }}
@@ -124,10 +125,10 @@
             <div class="upload-field-row">
               <input id="upload-new-folder" ref="newFolderInput" type="text" v-model="newUploadFolderPath"
                 placeholder="例如：项目A/二月" :disabled="uploadFolderCreating" required>
-              <button class="upload-btn" type="submit" :disabled="uploadFolderCreating">
+              <button class="btn" type="submit" :disabled="uploadFolderCreating">
                 {{ uploadFolderCreating ? '创建中' : '创建并选中' }}
               </button>
-              <button class="upload-btn" type="button" :disabled="uploadFolderCreating"
+              <button class="btn" type="button" :disabled="uploadFolderCreating"
                 @click="cancelUploadFolderCreator">取消</button>
             </div>
           </form>
@@ -138,7 +139,7 @@
               <dd>{{ currentUploadLimitLabel }}</dd>
             </dl>
             <p>{{ currentUploadLimitNote }}</p>
-            <button v-if="!storageStatusLoading && !hasVerifiedUploadLimit" class="upload-text-btn"
+            <button v-if="!storageStatusLoading && !hasVerifiedUploadLimit" class="btn btn-quiet"
               type="button" @click="checkStorageTarget(false)">重新读取限制</button>
           </div>
         </section>
@@ -155,7 +156,7 @@
               <h3>将文件拖到这里</h3>
               <p>支持多文件，也可使用 Ctrl / Cmd + V 粘贴图片或文件。</p>
             </div>
-            <button class="upload-btn upload-btn-primary" type="button" :disabled="!canAddUploads"
+            <button class="btn btn-primary" type="button" :disabled="!canAddUploads"
               @click="triggerUpload"><kv-icon name="plus" aria-hidden="true"></kv-icon>选择文件</button>
             <input ref="fileInput" type="file" multiple hidden @change="handleFileSelect">
           </div>
@@ -170,13 +171,13 @@
             </summary>
             <div class="upload-advanced-body">
               <div class="upload-segmented" role="group" aria-label="图片上传处理方式">
-                <button class="upload-btn" type="button" :aria-pressed="imageUploadDecision === 'original'"
+                <button class="btn" type="button" :aria-pressed="imageUploadDecision === 'original'"
                   :class="{ 'is-selected': imageUploadDecision === 'original' }"
                   @click="setImageUploadDecision('original')">原图</button>
-                <button class="upload-btn" type="button" :aria-pressed="imageUploadDecision === 'optimized'"
+                <button class="btn" type="button" :aria-pressed="imageUploadDecision === 'optimized'"
                   :class="{ 'is-selected': imageUploadDecision === 'optimized' }"
                   @click="setImageUploadDecision('optimized')">压缩转换</button>
-                <button class="upload-btn" type="button" :aria-pressed="imageUploadDecision === 'ask'"
+                <button class="btn" type="button" :aria-pressed="imageUploadDecision === 'ask'"
                   :class="{ 'is-selected': imageUploadDecision === 'ask' }"
                   @click="setImageUploadDecision('ask')">每次询问</button>
               </div>
@@ -187,7 +188,7 @@
               </label>
               <div class="compress-controls" v-if="imageCompress.enabled || imageUploadDecision === 'optimized'">
                 <div class="compress-format-grid" role="group" aria-label="输出格式">
-                  <button class="compress-format-btn" type="button" v-for="format in imageCompressFormats"
+                  <button class="btn btn-sm" type="button" v-for="format in imageCompressFormats"
                     :key="format.value" :class="{ active: imageCompress.format === format.value }"
                     :aria-pressed="imageCompress.format === format.value" :disabled="!isFormatSupported(format.value)"
                     @click="selectCompressFormat(format.value)"
@@ -220,10 +221,10 @@
           </details>
 
           <div class="upload-inline-actions upload-source-actions">
-            <button class="upload-btn" type="button" :disabled="!canAddUploads || clipboardReading" @click="pasteFromClipboard">
+            <button class="btn" type="button" :disabled="!canAddUploads || clipboardReading" @click="pasteFromClipboard">
               <kv-icon name="clipboard" aria-hidden="true"></kv-icon>{{ clipboardReading ? '读取剪贴板中' : '粘贴上传' }}
             </button>
-            <button class="upload-btn" type="button" :aria-expanded="showUrlInput" aria-controls="upload-url-form"
+            <button class="btn" type="button" :aria-expanded="showUrlInput" aria-controls="upload-url-form"
               @click="toggleUrlInput"><kv-icon name="link" aria-hidden="true"></kv-icon>从 URL 转存</button>
           </div>
           <form id="upload-url-form" class="upload-url-form" v-if="showUrlInput" @submit.prevent="uploadFromUrl">
@@ -232,7 +233,7 @@
               <input id="upload-url" ref="urlInput" type="text" inputmode="url" autocomplete="url"
                 v-model="urlToUpload" :disabled="urlSubmitting" aria-describedby="upload-url-help"
                 :placeholder="mediaResolve.available ? '粘贴 HTTP(S) 直链或视频分享文案' : '粘贴 HTTP(S) 文件直链'">
-              <button class="upload-btn upload-btn-primary" type="submit"
+              <button class="btn btn-primary" type="submit"
                 :disabled="!canAddUploads || urlSubmitting || !urlToUpload.trim()">
                 {{ urlSubmitting ? '添加中' : '加入转存队列' }}
               </button>
@@ -260,9 +261,9 @@
             <div class="upload-subsection-heading">
               <h3>上传队列 <span class="upload-count">{{ uploadingFiles.length }}</span></h3>
               <div class="upload-inline-actions">
-                <button class="upload-btn" type="button" v-if="failedCount" @click="retryAllFailed">
+                <button class="btn" type="button" v-if="failedCount" @click="retryAllFailed">
                   <kv-icon name="rotate-cw" aria-hidden="true"></kv-icon>重试失败项（{{ failedCount }}）</button>
-                <button class="upload-btn" type="button" @click="clearUploadQueue" aria-describedby="upload-queue-help">清理队列</button>
+                <button class="btn" type="button" @click="clearUploadQueue" aria-describedby="upload-queue-help">清理队列</button>
               </div>
             </div>
             <p id="upload-queue-help" class="upload-muted">每项沿用添加时的目标、目录和压缩设置，重试不变。清理只移除未开始或已结束的项，不取消进行中的上传。</p>
@@ -285,7 +286,7 @@
                   <kv-icon v-else-if="file.status === 'error'" name="circle-x" aria-hidden="true"></kv-icon>
                   <span>{{ getUploadTaskStatus(file) }}</span>
                 </div>
-                <button v-if="file.status === 'error'" class="upload-btn" type="button" @click="retryUpload(file)"
+                <button v-if="file.status === 'error'" class="btn" type="button" @click="retryUpload(file)"
                   :aria-label="'重试上传 ' + file.name">重试</button>
               </li>
             </ul>
@@ -295,16 +296,16 @@
             <div class="upload-subsection-heading">
               <h3>上传结果 <span class="upload-count">{{ uploadedFiles.length }}</span></h3>
               <div class="upload-inline-actions">
-                <button class="upload-btn" type="button" @click="selectAll">{{ isAllSelected ? '取消全选' : '全选' }}</button>
-                <button class="upload-btn upload-btn-primary" type="button" @click="copySelectedLinks" :disabled="!selectedCount">复制选中（{{ selectedCount }}）</button>
-                <button class="upload-btn" type="button" @click="copyAllLinks">复制全部</button>
-                <button class="upload-text-btn" type="button" @click="clearResults">清空结果</button>
+                <button class="btn" type="button" @click="selectAll">{{ isAllSelected ? '取消全选' : '全选' }}</button>
+                <button class="btn btn-primary" type="button" @click="copySelectedLinks" :disabled="!selectedCount">复制选中（{{ selectedCount }}）</button>
+                <button class="btn" type="button" @click="copyAllLinks">复制全部</button>
+                <button class="btn btn-quiet" type="button" @click="clearResults">清空结果</button>
               </div>
             </div>
             <p class="upload-muted">结果仅属于当前页面；移除或清空结果不会删除服务器文件，也不会清空本地历史。</p>
             <div class="upload-format-picker" role="group" aria-label="复制链接格式">
               <span class="upload-muted">链接格式</span>
-              <button class="upload-btn" type="button" v-for="format in linkFormats" :key="format.value"
+              <button class="btn" type="button" v-for="format in linkFormats" :key="format.value"
                 :class="{ 'is-selected': linkFormat === format.value }" :aria-pressed="linkFormat === format.value"
                 @click="linkFormat = format.value">{{ format.label }}</button>
             </div>
@@ -325,13 +326,13 @@
                     :aria-label="'复制 ' + getDisplayName(file) + ' 的链接'">{{ formatLink(file) }}</button>
                 </div>
                 <div class="upload-row-actions">
-                  <button class="upload-icon-btn" type="button" @click="copyLink(file)" title="复制链接" :aria-label="'复制 ' + getDisplayName(file) + ' 的链接'">
+                  <button class="btn btn-icon" type="button" @click="copyLink(file)" title="复制链接" :aria-label="'复制 ' + getDisplayName(file) + ' 的链接'">
                     <kv-icon name="copy" aria-hidden="true"></kv-icon></button>
-                  <button class="upload-icon-btn" type="button" @click="downloadFile(file)" title="下载" :aria-label="'下载 ' + getDisplayName(file)">
+                  <button class="btn btn-icon" type="button" @click="downloadFile(file)" title="下载" :aria-label="'下载 ' + getDisplayName(file)">
                     <kv-icon name="download" aria-hidden="true"></kv-icon></button>
-                  <button class="upload-icon-btn" type="button" @click="openPreview(file)" title="预览" :aria-label="'预览 ' + getDisplayName(file)">
+                  <button class="btn btn-icon" type="button" @click="openPreview(file)" title="预览" :aria-label="'预览 ' + getDisplayName(file)">
                     <kv-icon name="eye" aria-hidden="true"></kv-icon></button>
-                  <button class="upload-icon-btn" type="button" @click="removeFromResults(index)" title="从结果移除，不删除文件" :aria-label="'从结果移除 ' + getDisplayName(file)">
+                  <button class="btn btn-icon" type="button" @click="removeFromResults(index)" title="从结果移除，不删除文件" :aria-label="'从结果移除 ' + getDisplayName(file)">
                     <kv-icon name="x" aria-hidden="true"></kv-icon></button>
                 </div>
               </li>
@@ -353,14 +354,14 @@
             <span>其他 {{ historyStats.others }}</span><span>已知大小 {{ formatSize(historyStats.totalSize) }}</span>
           </div>
           <div class="upload-inline-actions">
-            <button class="upload-btn" type="button" @click="selectAllHistory">{{ isAllHistorySelected ? '取消全选' : '全选' }}</button>
-            <button class="upload-btn" type="button" @click="copySelectedHistoryLinks" :disabled="!selectedHistoryCount">复制选中（{{ selectedHistoryCount }}）</button>
+            <button class="btn" type="button" @click="selectAllHistory">{{ isAllHistorySelected ? '取消全选' : '全选' }}</button>
+            <button class="btn" type="button" @click="copySelectedHistoryLinks" :disabled="!selectedHistoryCount">复制选中（{{ selectedHistoryCount }}）</button>
             <label class="upload-history-format" for="history-link-format">复制格式
               <select id="history-link-format" v-model="linkFormat">
                 <option v-for="format in linkFormats" :key="format.value" :value="format.value">{{ format.label }}</option>
               </select>
             </label>
-            <button class="upload-text-btn" type="button" @click="clearHistory">清空本地历史</button>
+            <button class="btn btn-quiet" type="button" @click="clearHistory">清空本地历史</button>
           </div>
           <ul class="upload-history-list">
             <li class="upload-history-row" v-for="(item, index) in uploadHistory" :key="item.id" :class="{ 'is-selected': item.selected }">
@@ -378,11 +379,11 @@
                 <span class="upload-file-meta">{{ item.size ? formatSize(item.size) : '大小未记录' }}</span>
               </div>
               <div class="upload-row-actions">
-                <button class="upload-icon-btn" type="button" @click="copyLink(item)" title="复制链接" :aria-label="'复制 ' + getDisplayName(item) + ' 的链接'">
+                <button class="btn btn-icon" type="button" @click="copyLink(item)" title="复制链接" :aria-label="'复制 ' + getDisplayName(item) + ' 的链接'">
                   <kv-icon name="copy" aria-hidden="true"></kv-icon></button>
-                <button class="upload-icon-btn" type="button" @click="openPreview(item)" title="预览" :aria-label="'预览 ' + getDisplayName(item)">
+                <button class="btn btn-icon" type="button" @click="openPreview(item)" title="预览" :aria-label="'预览 ' + getDisplayName(item)">
                   <kv-icon name="eye" aria-hidden="true"></kv-icon></button>
-                <button class="upload-icon-btn" type="button" @click="removeFromHistory(index)" title="仅移除本地记录" :aria-label="'移除本地记录 ' + getDisplayName(item)">
+                <button class="btn btn-icon" type="button" @click="removeFromHistory(index)" title="仅移除本地记录" :aria-label="'移除本地记录 ' + getDisplayName(item)">
                   <kv-icon name="x" aria-hidden="true"></kv-icon></button>
               </div>
             </li>
@@ -390,7 +391,7 @@
         </section>
         <p class="upload-local-note" v-else>本地上传历史仅保存在此浏览器，清理浏览器数据后不会保留。</p>
         <p class="upload-notice upload-notice-error" v-if="historySaveError" role="alert">{{ historySaveError }}</p>
-        <button v-if="historyReadBlocked && !uploadHistory.length" class="upload-text-btn" type="button" @click="clearHistory">清空损坏的本地历史</button>
+        <button v-if="historyReadBlocked && !uploadHistory.length" class="btn btn-quiet" type="button" @click="clearHistory">清空损坏的本地历史</button>
       </main>
       </div>
 
@@ -399,7 +400,7 @@
           aria-labelledby="quality-title" aria-describedby="quality-help" tabindex="-1" :aria-busy="qualityPicker.loading">
           <div class="upload-dialog-heading">
             <h2 id="quality-title">选择视频清晰度</h2>
-            <button class="upload-icon-btn" type="button" data-dialog-focus aria-label="取消视频解析与选择" @click="cancelQualityPicker">
+            <button class="btn btn-icon" type="button" data-dialog-focus aria-label="取消视频解析与选择" @click="cancelQualityPicker">
               <kv-icon name="x" aria-hidden="true"></kv-icon>
             </button>
           </div>
@@ -420,8 +421,8 @@
             <p class="upload-muted">本次校验上限：{{ qualityPicker.maxBytes ? formatSize(qualityPicker.maxBytes) : '服务端未提供' }}。</p>
           </template>
           <div class="upload-dialog-actions">
-            <button class="upload-btn" type="button" @click="cancelQualityPicker">取消，不转存</button>
-            <button class="upload-btn upload-btn-primary" type="button" :disabled="qualityPicker.loading || !canConfirmQuality" @click="confirmQualityAndUpload">转存所选清晰度</button>
+            <button class="btn" type="button" @click="cancelQualityPicker">取消，不转存</button>
+            <button class="btn btn-primary" type="button" :disabled="qualityPicker.loading || !canConfirmQuality" @click="confirmQualityAndUpload">转存所选清晰度</button>
           </div>
         </section>
       </div>
@@ -432,8 +433,8 @@
           <p id="history-clear-help">只清除此浏览器中的记录（包括损坏的旧数据），不会删除服务器文件或当前上传结果。此操作不可撤销。</p>
           <p v-if="historySaveError" class="upload-error" role="alert">{{ historySaveError }}</p>
           <div class="upload-dialog-actions">
-            <button class="upload-btn" type="button" data-dialog-focus @click="historyConfirmOpen = false">保留历史</button>
-            <button class="upload-btn upload-btn-danger" type="button" @click="confirmClearHistory">清空本地历史</button>
+            <button class="btn" type="button" data-dialog-focus @click="historyConfirmOpen = false">保留历史</button>
+            <button class="btn btn-danger" type="button" @click="confirmClearHistory">清空本地历史</button>
           </div>
         </section>
       </div>
@@ -473,13 +474,13 @@
           <span class="preview-filename">{{ previewData.fileName }}</span>
           <div class="preview-btns">
             <button
-              class="preview-btn preview-btn-primary"
+              class="btn btn-sm btn-primary"
               @click="copyPreviewLink"
             >
               <i data-lucide="copy"></i> 复制直链
             </button>
             <button
-              class="preview-btn preview-btn-default"
+              class="btn btn-sm btn-ghost"
               @click="downloadPreviewFile"
             >
               <i data-lucide="download"></i> 下载
@@ -493,7 +494,7 @@
           aria-labelledby="compress-confirm-title" aria-describedby="compress-confirm-help" tabindex="-1">
           <div class="upload-dialog-heading">
             <h2 id="compress-confirm-title">上传前确认图片处理方式</h2>
-            <button class="upload-icon-btn" type="button" data-dialog-focus aria-label="取消本批文件上传" @click="cancelPendingUpload">
+            <button class="btn btn-icon" type="button" data-dialog-focus aria-label="取消本批文件上传" @click="cancelPendingUpload">
               <kv-icon name="x" aria-hidden="true"></kv-icon>
             </button>
           </div>
@@ -505,14 +506,14 @@
             <div><dt>原始总大小</dt><dd>{{ formatSize(pendingUploadStats.totalSize) }}</dd></div>
           </dl>
           <div class="compress-mode-grid" role="group" aria-label="本批图片处理方式">
-            <button class="upload-btn" type="button" :class="{ 'is-selected': pendingCompressionChoice === 'original' }"
+            <button class="btn" type="button" :class="{ 'is-selected': pendingCompressionChoice === 'original' }"
               :aria-pressed="pendingCompressionChoice === 'original'" @click="setPendingCompressionMode('original')">直接上传原图</button>
-            <button class="upload-btn" type="button" :class="{ 'is-selected': pendingCompressionChoice === 'compress' }"
+            <button class="btn" type="button" :class="{ 'is-selected': pendingCompressionChoice === 'compress' }"
               :aria-pressed="pendingCompressionChoice === 'compress'" @click="setPendingCompressionMode('compress')">压缩/转换后上传</button>
           </div>
           <div class="compress-controls" v-if="pendingCompressionChoice === 'compress'">
             <div class="compress-format-grid" role="group" aria-label="本批输出格式">
-              <button class="compress-format-btn" type="button" v-for="format in imageCompressFormats" :key="format.value"
+              <button class="btn btn-sm" type="button" v-for="format in imageCompressFormats" :key="format.value"
                 :class="{ active: pendingUploadBatch.imageOptions.format === format.value }" :aria-pressed="pendingUploadBatch.imageOptions.format === format.value"
                 :disabled="!isFormatSupported(format.value)" @click="pendingUploadBatch.imageOptions.format = format.value">
                 <kv-icon :name="format.icon" aria-hidden="true"></kv-icon>{{ format.label }}<small v-if="!isFormatSupported(format.value)">不支持</small>
@@ -533,8 +534,8 @@
             <label class="compress-checkbox"><input type="checkbox" v-model="pendingUploadBatch.imageOptions.keepOriginalWhenLarger">压缩后体积更大时保留原图</label>
           </div>
           <div class="upload-dialog-actions">
-            <button class="upload-btn" type="button" @click="cancelPendingUpload">取消</button>
-            <button class="upload-btn upload-btn-primary" type="button" @click="confirmPendingUpload">{{ pendingCompressionChoice === 'compress' ? '压缩后上传' : '上传原图' }}</button>
+            <button class="btn" type="button" @click="cancelPendingUpload">取消</button>
+            <button class="btn btn-primary" type="button" @click="confirmPendingUpload">{{ pendingCompressionChoice === 'compress' ? '压缩后上传' : '上传原图' }}</button>
           </div>
         </section>
       </div>
