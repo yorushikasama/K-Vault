@@ -183,6 +183,58 @@ html[data-theme="dark"] .el-header {
   border-color: var(--ui-line) !important;
 }
 
+/* Element UI 的按钮配色对齐到全站 token。
+   ---------------------------------------------------------------------------
+   组件库自带一套蓝色主题（primary 是 #409EFF），跟 K-Vault 的紫/青完全无关。
+   此前只有下面那组 html[data-theme="dark"] 规则做过对齐，于是亮色模式下
+   后台的 Element 按钮仍是组件库蓝，而同一页的原生按钮已经是站点色 ——
+   一个页面两种主色，这就是后台看起来「按钮跟别处不一样」的直接原因。
+
+   这里把亮色补齐，规则形状与暗色那组保持一致（同样是 !important，
+   因为要压过组件库自身的选择器权重）。
+
+   只改配色，不动尺寸、圆角与间距：Element 的按钮高度由 padding 与
+   line-height 撑开，改这些会连带打乱后台的行内布局。
+   Element 每次升级都可能调整内部选择器，所以这组规则只覆盖颜色类，
+   不碰 .el-button__inner 之类的内部结构。
+
+   亮色这组必须带 html:not([data-theme="dark"]) 限定。否则它与下面那组
+   同为 !important、权重相同，而后写的这条更靠前会赢 —— 结果就是夜间模式
+   下按钮仍是白底深字，只有页脚那些用原生变量的元素才翻转过去。 */
+html:not([data-theme="dark"]) .el-button:not(.el-button--primary):not(.el-button--danger):not(.el-button--text) {
+  background: var(--ui-surface-raised) !important;
+  color: var(--ui-ink) !important;
+  border-color: var(--ui-line-strong) !important;
+}
+
+html:not([data-theme="dark"]) .el-button:not(.el-button--primary):not(.el-button--danger):not(.el-button--text):hover {
+  background: var(--ui-surface-hover) !important;
+  color: var(--ui-brand) !important;
+  border-color: var(--ui-brand-ring) !important;
+}
+
+html:not([data-theme="dark"]) .el-button--primary {
+  background: var(--ui-brand) !important;
+  border-color: var(--ui-brand) !important;
+  color: var(--ui-brand-ink) !important;
+}
+
+html:not([data-theme="dark"]) .el-button--primary:hover {
+  background: var(--ui-brand-hover) !important;
+  border-color: var(--ui-brand-hover) !important;
+}
+
+html:not([data-theme="dark"]) .el-button--danger {
+  background: var(--ui-danger-strong) !important;
+  border-color: var(--ui-danger-strong) !important;
+  color: #fff !important;
+}
+
+html:not([data-theme="dark"]) .el-button--danger:hover {
+  background: var(--ui-danger) !important;
+  border-color: var(--ui-danger) !important;
+}
+
 html[data-theme="dark"] .el-button:not(.el-button--primary):not(.el-button--danger) {
   background: var(--ui-surface-raised) !important;
   color: var(--ui-ink) !important;

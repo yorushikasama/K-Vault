@@ -1,26 +1,33 @@
-/* 首版工作台：仅作用于新版上传与文件页，保留旧入口的样式。 */
+/* 首版工作台：仅作用于新版上传与文件页，保留旧入口的样式。
+   ---------------------------------------------------------------------------
+   中性色（surface / subtle / border / ink / muted / danger / success）全部
+   接到 theme.css 的 --ui-* token，不再各自硬编码。此前这九个值在这套里
+   写一份、在 --ui-* 里又写一份，两边会各自漂移；而 dark 块也要跟着
+   再抄一遍。改成别名后，主题切换与管理员在 UI 面板改的配色都自动生效。
+
+   两个 accent 故意保持独立取值，它们是本页的设计区分而非重复：
+   上传页用站点主色，文件页用青色（.kv-files 覆盖）——同一个后台里
+   「上传」和「文件」两区一眼能分开。 */
 .kv-workbench {
   --wb-surface: rgb(var(--ui-surface-rgb));
-  --wb-subtle: #f2f4f7;
-  --wb-border: #d7dce4;
-  --wb-ink: #2f3243;
-  --wb-muted: #555d72;
-  --wb-accent: #8a4bff;
-  --wb-accent-ink: #6c3ce0;
-  --wb-accent-soft: #f3edff;
-  --wb-on-accent: #fff;
-  --wb-danger: #b43434;
-  --wb-success: #346b22;
+  --wb-subtle: var(--ui-surface-sunken);
+  --wb-border: var(--ui-line-strong);
+  --wb-ink: var(--ui-ink);
+  --wb-muted: var(--ui-ink-secondary);
+  --wb-accent: var(--ui-brand);
+  --wb-accent-ink: var(--ui-brand);
+  --wb-accent-soft: var(--ui-brand-soft);
+  --wb-on-accent: var(--ui-brand-ink);
+  --wb-danger: var(--ui-danger-strong);
+  --wb-success: var(--ui-success-strong);
   margin: 0; padding: 0; color: var(--wb-ink);
   font: 14px/1.6 system-ui, -apple-system, "Segoe UI", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif;
 }
+/* 文件页的青色 accent。--ui-* 里没有对应语义，所以保留显式取值，
+   但暗色档写在这里的一处，不再散落到下面那个块里。 */
 .kv-workbench.kv-files { --wb-accent: #0f766e; --wb-accent-ink: #0f766e; --wb-accent-soft: #e8f4f2; }
-html[data-theme="dark"] .kv-workbench {
-  --wb-subtle: #1b2433; --wb-border: #46536b; --wb-ink: #e8eeff; --wb-muted: #b9c4dc;
-  --wb-accent: #9aa9ff; --wb-accent-ink: #b5bdf8; --wb-accent-soft: #252b47;
-  --wb-on-accent: #101318; --wb-danger: #ffacac; --wb-success: #b0d98f;
-}
-html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-accent-ink: #85d7d1; --wb-accent-soft: #17332f; --wb-on-accent: #fff; }
+/* 中性色已由 --ui-* 自动适配暗色，这里只剩文件页的青色需要在暗色下换档。 */
+html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-accent-ink: #85d7d1; --wb-accent-soft: #17332f; }
 .kv-workbench *, .kv-workbench *::before, .kv-workbench *::after { box-sizing: border-box; }
 .kv-workbench #app { width: 100%; max-width: none; margin: 0; padding: 0 !important; }
 .kv-workbench h1, .kv-workbench h2, .kv-workbench h3, .kv-workbench p, .kv-workbench dl { margin: 0; }

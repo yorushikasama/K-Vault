@@ -284,7 +284,7 @@
       color: #555;
     }
     .folder-crumb {
-      color: #6c3ce0;
+      color: var(--ui-brand);
       cursor: pointer;
       user-select: none;
     }
@@ -1018,7 +1018,7 @@
     .kv-files .preview-modal .preview-close { min-width: 44px; min-height: 44px; }
     .kv-files .el-image-viewer__btn[role="button"]:focus-visible,
     .kv-files .folder-sidebar button:focus-visible,
-    .kv-files .preview-modal button:focus-visible { outline: 2px solid var(--primary-color, #409eff); outline-offset: 3px; }
+    .kv-files .preview-modal button:focus-visible { outline: 2px solid var(--ui-focus-ring); outline-offset: 3px; }
     @media (max-width: 900px) {
       .kv-files #files-folders.is-drawer-open { display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; width: min(88vw, 360px); max-width: 100%; max-height: 100dvh; margin: 0; z-index: 1999; overflow: auto; overscroll-behavior: contain; box-sizing: border-box; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); background: var(--bg-color, #fff); }
       .kv-files #files-folders .folder-tree { flex: 1; min-height: 0; overflow: auto; }
