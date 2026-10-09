@@ -12,8 +12,9 @@
   <link rel="stylesheet" href="/theme.css?v=74c7ad38da">
   <script src="/theme-core.js?v=4cb852886e"></script>
   <script defer src="/theme-effects.js?v=9dbb416bad"></script>
-  <link rel="stylesheet" href="/gallery.css?v=ea807cb011">
-  <link rel="stylesheet" href="/mobile-refactor.css?v=545252aefa">
+  <link rel="stylesheet" href="/ui-buttons.css?v=1b5c5edaa7">
+  <link rel="stylesheet" href="/gallery.css?v=e9d3845981">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=8cb9750098">
 </head>
 <body>
   <div id="app" v-cloak>
@@ -27,10 +28,10 @@
         <input type="text" v-model="searchQuery" placeholder="搜索文件名..." @input="handleSearch">
       </div>
       <div class="header-actions">
-        <a href="./" class="nav-btn"><i data-lucide="cloud-upload"></i> 上传</a>
-        <a href="./admin.html" class="nav-btn"><i data-lucide="layout-grid"></i> 管理</a>
-        <a href="./" class="nav-btn"><i data-lucide="house"></i> 首页</a>
-        <button type="button" class="nav-btn gallery-theme-toggle" data-theme-toggle aria-label="切换主题">
+        <a href="./" class="btn btn-sm btn-ghost"><i data-lucide="cloud-upload"></i><span>上传</span></a>
+        <a href="./admin.html" class="btn btn-sm btn-ghost"><i data-lucide="layout-grid"></i><span>管理</span></a>
+        <a href="./" class="btn btn-sm btn-ghost"><i data-lucide="house"></i><span>首页</span></a>
+        <button type="button" class="btn btn-sm btn-ghost" data-theme-toggle aria-label="切换主题">
           <i data-lucide="moon" data-theme-icon></i>
           <span data-theme-label>夜间</span>
         </button>
@@ -42,22 +43,22 @@
       <div class="toolbar-left">
         <span class="stat-badge"><i data-lucide="images"></i> 总数<strong>{{ totalCount }}</strong></span>
         <span class="stat-badge"><i data-lucide="square-check"></i> 已选<strong>{{ selectedCount }}</strong></span>
-        <button class="nav-btn" @click="selectAll">
+        <button class="btn btn-sm btn-ghost" @click="selectAll">
           <i :class="isAllSelected ? 'square' : 'square-check'"></i>
-          {{ isAllSelected ? '取消全选' : '全选' }}
+          <span>{{ isAllSelected ? '取消全选' : '全选' }}</span>
         </button>
-        <button class="nav-btn" @click="loadMore" v-if="hasMore" :disabled="loading">
+        <button class="btn btn-sm btn-ghost" @click="loadMore" v-if="hasMore" :disabled="loading">
           <i data-lucide="refresh-cw" :class="{ 'spin': loading }"></i>
-          加载更多
+          <span>加载更多</span>
         </button>
       </div>
       <div class="toolbar-right">
-        <span style="font-size: 0.85em; color: #666;">链接格式:</span>
-        <div class="format-selector">
-          <button class="format-btn" :class="{ active: linkFormat === 'url' }" @click="linkFormat = 'url'">URL</button>
-          <button class="format-btn" :class="{ active: linkFormat === 'markdown' }" @click="linkFormat = 'markdown'">MD</button>
-          <button class="format-btn" :class="{ active: linkFormat === 'html' }" @click="linkFormat = 'html'">HTML</button>
-          <button class="format-btn" :class="{ active: linkFormat === 'bbcode' }" @click="linkFormat = 'bbcode'">BB</button>
+        <span class="format-label">链接格式</span>
+        <div class="segmented" role="group" aria-label="链接格式">
+          <button class="btn" :aria-pressed="linkFormat === 'url' ? 'true' : 'false'" @click="linkFormat = 'url'">URL</button>
+          <button class="btn" :aria-pressed="linkFormat === 'markdown' ? 'true' : 'false'" @click="linkFormat = 'markdown'">MD</button>
+          <button class="btn" :aria-pressed="linkFormat === 'html' ? 'true' : 'false'" @click="linkFormat = 'html'">HTML</button>
+          <button class="btn" :aria-pressed="linkFormat === 'bbcode' ? 'true' : 'false'" @click="linkFormat = 'bbcode'">BB</button>
         </div>
       </div>
     </div>
@@ -81,16 +82,16 @@
         <div class="image-card-overlay">
           <div class="image-card-name">{{ img.metadata?.fileName || img.name }}</div>
           <div class="image-card-actions">
-            <button class="card-btn" @click.stop="copyLink(img)" title="复制链接">
+            <button class="btn btn-sm btn-icon" @click.stop="copyLink(img)" title="复制链接" aria-label="复制链接">
               <i data-lucide="copy"></i>
             </button>
-            <button class="card-btn" @click.stop="previewImage(img)" title="预览">
+            <button class="btn btn-sm btn-icon" @click.stop="previewImage(img)" title="预览" aria-label="预览">
               <i data-lucide="expand"></i>
             </button>
-            <button class="card-btn" @click.stop="downloadImage(img)" title="下载">
+            <button class="btn btn-sm btn-icon" @click.stop="downloadImage(img)" title="下载" aria-label="下载">
               <i data-lucide="download"></i>
             </button>
-            <button class="card-btn delete" @click.stop="deleteImage(img, index)" title="删除">
+            <button class="btn btn-sm btn-icon" @click.stop="deleteImage(img, index)" title="删除" aria-label="删除">
               <i data-lucide="trash"></i>
             </button>
           </div>
@@ -109,28 +110,28 @@
       <i data-lucide="inbox"></i>
       <div style="font-size: 1.2em; margin-bottom: 8px;">没有找到图片</div>
       <div>{{ searchQuery ? '尝试其他搜索词' : '上传一些图片开始使用' }}</div>
-      <a href="./" class="nav-btn" style="margin-top: 20px; display: inline-flex;">
-        <i data-lucide="cloud-upload"></i> 去上传
+      <a href="./" class="btn btn-primary" style="margin-top: 20px;">
+        <i data-lucide="cloud-upload"></i><span>去上传</span>
       </a>
     </div>
 
     <!-- 分页 -->
     <div class="pagination" v-if="totalPages > 1">
-      <button class="page-btn" @click="currentPage = 1" :disabled="currentPage === 1">
+      <button class="btn btn-sm btn-icon" @click="currentPage = 1" :disabled="currentPage === 1" aria-label="第一页">
         <i data-lucide="chevrons-left"></i>
       </button>
-      <button class="page-btn" @click="currentPage--" :disabled="currentPage === 1">
+      <button class="btn btn-sm btn-icon" @click="currentPage--" :disabled="currentPage === 1" aria-label="上一页">
         <i data-lucide="chevron-left"></i>
       </button>
       <template v-for="page in displayPages">
-        <button class="page-btn" :class="{ active: page === currentPage }" @click="currentPage = page" :key="page">
+        <button class="btn btn-sm" :class="{ 'is-active': page === currentPage }" @click="currentPage = page" :key="page">
           {{ page }}
         </button>
       </template>
-      <button class="page-btn" @click="currentPage++" :disabled="currentPage === totalPages">
+      <button class="btn btn-sm btn-icon" @click="currentPage++" :disabled="currentPage === totalPages" aria-label="下一页">
         <i data-lucide="chevron-right"></i>
       </button>
-      <button class="page-btn" @click="currentPage = totalPages" :disabled="currentPage === totalPages">
+      <button class="btn btn-sm btn-icon" @click="currentPage = totalPages" :disabled="currentPage === totalPages" aria-label="末页">
         <i data-lucide="chevrons-right"></i>
       </button>
     </div>
@@ -138,23 +139,23 @@
     <!-- 批量操作栏 -->
     <div class="batch-bar" v-if="selectedCount > 0">
       <div class="batch-bar-count">已选择 <strong>{{ selectedCount }}</strong> 个文件</div>
-      <button class="batch-btn primary" @click="batchCopy">
-        <i data-lucide="copy"></i> 复制链接
+      <button class="btn btn-sm btn-primary" @click="batchCopy">
+        <i data-lucide="copy"></i><span>复制链接</span>
       </button>
-      <button class="batch-btn success" @click="batchDownload">
-        <i data-lucide="download"></i> 下载
+      <button class="btn btn-sm btn-ghost" @click="batchDownload">
+        <i data-lucide="download"></i><span>下载</span>
       </button>
-      <button class="batch-btn danger" @click="batchDelete">
-        <i data-lucide="trash"></i> 删除
+      <button class="btn btn-sm btn-danger" @click="batchDelete">
+        <i data-lucide="trash"></i><span>删除</span>
       </button>
-      <button class="batch-btn default" @click="clearSelection">
-        <i data-lucide="x"></i> 取消
+      <button class="btn btn-sm btn-quiet" @click="clearSelection">
+        <i data-lucide="x"></i><span>取消</span>
       </button>
     </div>
 
     <!-- 预览弹窗 - 原生图片 / iframe 预览 -->
     <div class="preview-modal" v-if="previewData" @click="closePreview">
-      <button class="preview-close" @click="closePreview">
+      <button class="btn btn-icon preview-close" @click="closePreview" aria-label="关闭预览">
         <i data-lucide="x"></i>
       </button>
       <!-- 原生图片预览 -->
@@ -170,8 +171,8 @@
       </div>
       <div class="preview-info" @click.stop>
         <span class="preview-link">{{ previewData.url }}</span>
-        <button class="batch-btn primary" @click="copyPreviewLink">
-          <i data-lucide="copy"></i> 复制
+        <button class="btn btn-sm btn-primary" @click="copyPreviewLink">
+          <i data-lucide="copy"></i><span>复制</span>
         </button>
       </div>
     </div>

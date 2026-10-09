@@ -94,34 +94,9 @@
         background: rgba(255, 255, 255, 0.92);
       }
 
-      .action-link,
-      .action-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        border: 1px solid var(--wf-border);
-        border-radius: 999px;
-        padding: 9px 13px;
-        min-height: 40px;
-        background: var(--wf-surface);
-        color: inherit;
-        text-decoration: none;
-        cursor: pointer;
-        transition: background 0.18s ease-out, border-color 0.18s ease-out;
-        font-weight: 600;
-      }
-
-      .action-link:hover,
-      .action-btn:hover {
-        border-color: rgba(138, 75, 255, 0.4);
-        background: var(--wf-primary-soft);
-      }
-
-      .action-link.active {
-        border-color: rgba(138, 75, 255, 0.5);
-        background: var(--wf-primary-soft);
-      }
+      /* 头部导航按钮此前在这里定义（.action-link / .action-btn），
+         现已换用 ui-buttons.css 的 .btn。这里只保留导航容器与激活态的
+         排版，激活态靠 .btn-primary 表达。 */
 
       .layout {
         display: grid;
@@ -236,7 +211,9 @@
       .upload-file-row {
         display: flex;
         gap: 10px;
-        align-items: stretch;
+        /* 原来是 stretch，于是「开始上传」被拉成和整块文件选择区一样高，
+           变成一个顶着大空白的方法块。按钮该按自身高度居中。 */
+        align-items: center;
       }
 
       .file-picker {
@@ -277,18 +254,6 @@
         border: 0;
       }
 
-      .file-choose-btn {
-        border-radius: var(--radius-sm);
-        border: 1px solid rgba(138, 75, 255, 0.36);
-        background: #ffffff;
-        min-height: 42px;
-        padding: 9px 14px;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        white-space: nowrap;
-      }
-
       .file-picker-meta {
         min-width: 0;
         flex: 1;
@@ -325,6 +290,8 @@
         padding: 6px 10px;
       }
 
+      /* 上传按钮是这一页的主操作，给它一个最小宽度免得窄屏下比
+         「选择文件」还窄。高度与配色由 ui-buttons.css 的 .btn-lg 负责。 */
       #uploadFilesBtn {
         min-width: 124px;
       }
@@ -352,15 +319,6 @@
         font-size: 0.9rem;
         font-weight: 700;
         color: #405072;
-      }
-
-      .file-queue-clear {
-        border-radius: var(--radius-sm);
-        padding: 6px 10px;
-        font-size: 0.8rem;
-        border: 1px solid rgba(245, 108, 108, 0.42);
-        background: #fff5f5;
-        color: #d74b4b;
       }
 
       .file-queue-list {
@@ -421,8 +379,13 @@
         padding: 4px 0 2px;
       }
 
-      input,
-      button {
+      /* 按钮的视觉定义已统一到 ui-buttons.css。本文件只保留页面特有的
+         布局约束 —— 通用的 border-radius / padding / 配色不再在这里重复，
+         否则同一批属性会有两处来源，改一处不生效。 */
+
+      /* 输入框仍留在本页：全站只有这一页用裸 input 做目录路径与 URL 输入。
+         按钮的高度由 .btn 决定，这里不碰。 */
+      input {
         border: 1px solid var(--wf-border);
         border-radius: 10px;
         background: var(--wf-surface);
@@ -430,46 +393,29 @@
         padding: 10px 12px;
       }
 
+      input:focus-visible {
+        outline: 2px solid var(--ui-focus-ring);
+        outline-offset: 1px;
+      }
+
+      /* 输入框的最小宽度在窄屏下会成为溢出来源：260px 加上内边距，
+         320px 视口里放不下。改为只在大屏生效。 */
+      @media (min-width: 641px) {
+        input[type="text"] {
+          min-width: 260px;
+        }
+      }
+
       input[type="text"] {
-        min-width: 260px;
         flex: 1;
       }
 
       .input-label {
         display: block;
         margin-bottom: 8px;
-        color: #5f6678;
+        color: var(--ui-ink-secondary);
         font-size: 0.85rem;
         font-weight: 600;
-      }
-
-      button {
-        font-weight: 600;
-        cursor: pointer;
-      }
-
-      button:hover {
-        border-color: rgba(138, 75, 255, 0.45);
-      }
-
-      .btn-primary {
-        /* 白字压在 #8a4bff 上只有约 3.4:1，低于 WCAG AA 的 4.5:1。
-           底色改用 --wf-primary-solid（更深一档），白字才够读。 */
-        background: var(--wf-primary-solid);
-        border-color: transparent;
-        color: #fff;
-      }
-
-      .btn-primary:hover {
-        border-color: transparent;
-      }
-
-      .btn-danger {
-        /* 原先 #f56c6c 配白字只有 2.9:1。改用语义危险色的深色档，
-           与全站 --ui-danger 保持同源。 */
-        background: var(--ui-danger-strong);
-        border-color: transparent;
-        color: #fff;
       }
 
       .result-tools {
@@ -477,11 +423,6 @@
         align-items: center;
         gap: 8px;
         flex-wrap: wrap;
-      }
-
-      button[disabled] {
-        opacity: 0.6;
-        cursor: wait;
       }
 
       .hint {
@@ -518,12 +459,6 @@
         background: #123b37;
       }
 
-      html[data-theme="dark"] .file-choose-btn {
-        border-color: rgba(154, 169, 255, 0.45);
-        background: rgba(26, 37, 63, 0.94);
-        color: #e4ecff;
-      }
-
       html[data-theme="dark"] .file-picker-title {
         color: #e6eeff;
       }
@@ -545,12 +480,6 @@
 
       html[data-theme="dark"] .file-queue-title {
         color: #cbd8f4;
-      }
-
-      html[data-theme="dark"] .file-queue-clear {
-        border-color: rgba(244, 114, 114, 0.5);
-        background: rgba(66, 25, 34, 0.7);
-        color: #fecaca;
       }
 
       html[data-theme="dark"] .file-queue-item {
@@ -692,10 +621,9 @@
           display: none;
         }
 
-        .action-link,
-        .action-btn {
+        /* 窄屏下导航横向滚动，按钮不参与收缩，否则会被压成窄条。 */
+        .header-actions .btn {
           flex: 0 0 auto;
-          font-size: 0.82rem;
         }
 
         .toolbar-row {
@@ -705,10 +633,51 @@
 
         .upload-file-row {
           flex-direction: column;
+          align-items: stretch;
+        }
+
+        /* 文件选择区内部改为上下排：320–375px 下「选择文件」按钮 + 两行
+           说明 + 计数徽章横向挤在一行，说明文字只剩几十像素宽。 */
+        .file-picker {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 10px;
+          min-height: 0;
+        }
+
+        .file-picker .btn {
+          width: 100%;
+        }
+
+        /* 计数徽章从行尾挪到选择按钮下方，靠左对齐，不再和文字抢宽度。 */
+        .file-count-badge {
+          align-self: flex-start;
+        }
+
+        /* 状态药丸里的文案较长（「WebDAV 当前不可用：Not configured」），
+           窄屏必须允许换行，否则整条撑破容器。 */
+        .status-pill {
+          white-space: normal;
+          align-items: flex-start;
+          line-height: 1.4;
+        }
+
+        .status-pill .status-dot {
+          margin-top: 6px;
+        }
+
+        /* 操作行整宽堆叠，按钮各自撑满，点按目标最大。 */
+        .toolbar-right {
+          width: 100%;
+        }
+
+        .toolbar-right .btn {
+          flex: 1 1 auto;
         }
 
         #uploadFilesBtn {
           width: 100%;
+          min-width: 0;
         }
 
         /* 文件选择区的两行文字是 nowrap + ellipsis，宽屏下截断得好看，

@@ -58,6 +58,7 @@ const TARGETS = [
   'admin-imgtc.css',
   'index.css',
   'theme.css',
+  'ui-buttons.css',
   'gallery.css',
   'webdav.css',
   'preview.css',

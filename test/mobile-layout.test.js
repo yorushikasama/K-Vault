@@ -60,15 +60,27 @@ describe('mobile layout contract', function () {
   });
 
   describe('touch targets meet the 44px floor', function () {
-    // 统一规则放在 mobile-refactor.css（9 个页面最后加载的那张），
-    // 首页因为不加载它，规则写在 workbench.css。
-    it('mobile-refactor covers bare buttons as a fallback', function () {
-      const css = read('mobile-refactor.css');
-      // webdav 的按钮是裸 <button> 或只挂颜色类，枚举具体类名必然漏
+    // 触摸目标现在有两个来源：已迁移到 .btn 的页面由 ui-buttons.css 负责，
+    // 尚未迁移的后台页仍靠 mobile-refactor.css 的兜底。
+    // 首页不加载 mobile-refactor.css，规则写在 workbench.css。
+    it('ui-buttons.css gives migrated buttons the 44px floor', function () {
+      const css = read('ui-buttons.css');
       assert.match(
         css,
-        /^\s*button,\s*$/m,
-        'mobile-refactor.css 没有裸 button 兜底规则；webdav 等页面会漏掉'
+        /@media \(max-width: 768px\)[\s\S]*?\.btn\s*\{[^}]*min-height:\s*44px/,
+        'ui-buttons.css 没有在窄屏把 .btn 抬到 44px；迁移后的页面会失去触摸下限'
+      );
+    });
+
+    it('mobile-refactor still covers bare buttons as a fallback', function () {
+      const css = read('mobile-refactor.css');
+      // 后台页仍有裸 <button>，枚举具体类名必然漏。
+      // 已挂 .btn 的排除在外 —— 它们的高度由 ui-buttons.css 定义，
+      // 再补一条 !important 会让两处来源互相打架。
+      assert.match(
+        css,
+        /^\s*button:not\(\.btn\),\s*$/m,
+        'mobile-refactor.css 缺少裸 button 兜底规则（应为 button:not(.btn)）；未迁移的页面会漏掉'
       );
     });
 

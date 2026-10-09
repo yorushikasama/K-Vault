@@ -1,0 +1,276 @@
+/* ===========================================================================
+   统一按钮层
+   ---------------------------------------------------------------------------
+   这个项目此前没有按钮基类：各页面各写一套，全站累计 36 个按钮类名、
+   散在 13 个 CSS 文件里，同一个页面里就有七八种。更麻烦的是 mobile-refactor.css
+   要用 !important 逐个类名去补 min-height —— 它自己的注释写着「枚举具体类名
+   必然漏」，只能再加一条裸 button 兜底。
+
+   这里给出唯一的按钮定义。所有取值都引用 theme.css 的 --ui-* token，因此
+   夜间模式、以及管理员在 UI 面板改的品牌色/圆角，都会自动跟随，本文件
+   不需要任何 html[data-theme="dark"] 覆盖块。
+
+   用法：
+     <button class="btn btn-primary">主操作</button>
+     <button class="btn btn-ghost">次操作</button>
+     <button class="btn btn-danger">危险操作</button>
+     <a class="btn btn-quiet" href="...">链接样式按钮</a>
+     <button class="btn btn-icon" aria-label="刷新"><i data-lucide="rotate-cw"></i></button>
+
+   尺寸：默认 40px 高，.btn-sm 32px，.btn-lg 48px。触摸目标由文件末尾的
+   媒体查询统一收到 44px，页面不需要各自处理。
+   ========================================================================= */
+
+/* --- 基类 ---------------------------------------------------------------- */
+
+.btn {
+  /* inline-flex 而非 inline-block：图标 + 文字要垂直居中，且允许图标
+     与文字之间用 gap 而不是靠空格对齐。 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  /* 40px 是桌面端的舒适高度；触摸端的 44px 下限在末尾的媒体查询里。 */
+  min-height: 40px;
+  padding: 0 16px;
+
+  border: 1px solid var(--ui-line-strong);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-surface-raised);
+  color: var(--ui-ink);
+
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+
+  transition:
+    background-color 0.16s ease-out,
+    border-color 0.16s ease-out,
+    color 0.16s ease-out,
+    box-shadow 0.16s ease-out;
+
+  /* 移动端双击不再触发放大，点击反馈留给下面的 :active。 */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--ui-surface-hover);
+  border-color: var(--ui-brand-ring);
+}
+
+.btn:active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--ui-surface-active);
+}
+
+/* 键盘可达性：只对键盘焦点显示环，鼠标点击不显示。 */
+.btn:focus-visible {
+  outline: 2px solid var(--ui-focus-ring);
+  outline-offset: 2px;
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* 按钮里的图标统一尺寸，免得各页各写一个 svg 宽度。 */
+.btn > svg,
+.btn > i > svg,
+.btn > i.lucide {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+/* --- 变体 ---------------------------------------------------------------- */
+
+/* 主操作。用在每个界面唯一的那一个「继续」动作上。
+   底色用 --ui-brand 配 --ui-brand-ink：这两个 token 成对定义，
+   在亮/暗两套里都满足对比度，不像各页写死的 #fff 配浅紫那样在
+   亮色下只有 3.4:1。 */
+.btn-primary {
+  background: var(--ui-brand);
+  border-color: var(--ui-brand);
+  color: var(--ui-brand-ink);
+}
+
+.btn-primary:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--ui-brand-hover);
+  border-color: var(--ui-brand-hover);
+}
+
+.btn-primary:active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--ui-brand-active);
+  border-color: var(--ui-brand-active);
+}
+
+/* 危险操作。同样取成对的语义 token。 */
+.btn-danger {
+  background: var(--ui-danger-strong);
+  border-color: var(--ui-danger-strong);
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled):not([aria-disabled="true"]) {
+  /* 悬停再深一档：亮色下 --ui-danger-strong 已经很深，
+     这里靠透明度和边框变化表达，而不是继续压暗。 */
+  background: var(--ui-danger);
+  border-color: var(--ui-danger);
+}
+
+/* 次要操作：无底色，只有边框与文字。用于「刷新状态」这类不改变数据的动作。 */
+.btn-ghost {
+  background: transparent;
+  border-color: var(--ui-line-strong);
+  color: var(--ui-ink-secondary);
+}
+
+.btn-ghost:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--ui-surface-hover);
+  color: var(--ui-ink);
+}
+
+/* 低权重：连边框都不要，用于「清空队列」这类不该抢视线的动作。 */
+.btn-quiet {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ui-ink-muted);
+  padding: 0 10px;
+}
+
+.btn-quiet:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--ui-surface-hover);
+  color: var(--ui-ink);
+}
+
+/* 纯图标。宽度与高度都锁死为正方形，否则会塌成一条。
+   aria-label 是必需项，不是可选项 —— 没有可见文字时它是唯一的名字。 */
+.btn-icon {
+  width: 40px;
+  min-width: 40px;
+  padding: 0;
+}
+
+/* --- 尺寸 ---------------------------------------------------------------- */
+
+.btn-sm {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 0.84rem;
+}
+
+.btn-lg {
+  min-height: 48px;
+  padding: 0 22px;
+  font-size: 0.95rem;
+}
+
+/* 撑满容器。比各页写 width:100% 更好，因为它在 flex/grid 子项里
+   也可靠（width:100% 在 min-width:auto 的 flex 子项上会被内容顶开）。 */
+.btn-block {
+  display: flex;
+  width: 100%;
+}
+
+/* --- 分段控件 ------------------------------------------------------------ */
+
+/* 一组互斥选项（链接格式 URL/MD/HTML/BB、视图切换）。此前各页各写一套，
+   底色和圆角都不一致。用容器承载底色与圆角，内部按钮去掉边框，
+   这样选中态只需要换底色，不会因为边框宽窄变化让整条宽度跳动。 */
+.segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-surface-sunken);
+}
+
+.segmented > .btn {
+  min-height: 30px;
+  padding: 0 12px;
+  border: none;
+  border-radius: calc(var(--ui-radius-md) - 3px);
+  background: transparent;
+  color: var(--ui-ink-secondary);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.segmented > .btn:hover:not(:disabled) {
+  background: var(--ui-surface-hover);
+  color: var(--ui-ink);
+}
+
+/* 选中态。aria-pressed 是给读屏用的，同时充当这里的样式钩子 ——
+   两者本就是一个事实，不必再额外挂一个 .active 类去和它保持同步。 */
+.segmented > .btn[aria-pressed="true"],
+.segmented > .btn.is-active {
+  background: var(--ui-brand);
+  color: var(--ui-brand-ink);
+}
+
+.segmented > .btn[aria-pressed="true"]:hover,
+.segmented > .btn.is-active:hover {
+  background: var(--ui-brand-hover);
+  color: var(--ui-brand-ink);
+}
+
+/* --- 按钮组 -------------------------------------------------------------- */
+
+/* 相邻按钮的间距由容器给，页面不用管。
+   用 :where() 把优先级压到 0，页面想覆盖成自己的间距时不必加 !important。 */
+:where(.btn-group) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+:where(.btn-group-end) {
+  justify-content: flex-end;
+}
+
+/* --- 触摸目标 ------------------------------------------------------------ */
+
+/* 44px 是 WCAG 2.5.5 的 AAA 下限，也是 iOS HIG 的建议值。
+   统一在基类上做，页面与 mobile-refactor.css 都不必再逐个类名去补 ——
+   那个文件此前枚举了 18 个类名外加一条裸 button 兜底，正是因为按钮没有
+   单一来源。现在只有这一个地方需要维护。 */
+@media (max-width: 768px) {
+  .btn {
+    min-height: 44px;
+  }
+
+  /* 图标按钮同样要够宽，否则是个 44×40 的瘦条。 */
+  .btn-icon {
+    width: 44px;
+    min-width: 44px;
+  }
+
+  /* 分段控件里的按钮也要够高。它们比常规按钮矮一档（30px）是为了
+     视觉紧凑，但触摸端不能按视觉尺寸放宽下限——WCAG 2.5.5 不区分
+     「看起来小」和「真的小」。容器跟着让出一点内边距。 */
+  .segmented > .btn {
+    min-height: 44px;
+  }
+
+  .segmented {
+    padding: 2px;
+  }
+}
+
+/* 尊重系统的减弱动效设置。 */
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}

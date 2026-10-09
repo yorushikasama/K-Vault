@@ -83,11 +83,12 @@ html[data-theme="dark"] {
     overflow: visible;
   }
 
+  /* .btn 的圆角与字重现在由 ui-buttons.css 定义，且不再需要 !important ——
+     那是为了压过各页各自为政的按钮样式；统一层之后没有需要压过的对手。
+     这里只剩尚未迁移到 .btn 的旧类名。 */
   .nav-links a,
   .nav-btn,
-  .btn,
   .batch-btn,
-  .login-btn,
   .action-btn {
     min-height: 40px;
     border-radius: var(--m-radius-md) !important;
@@ -353,9 +354,7 @@ html[data-theme="dark"] {
     right: 16px !important;
   }
 
-  .login-btn {
-    min-height: 46px;
-  }
+  /* 登录按钮已改用 .btn，高度由 ui-buttons.css 的 44px 触摸下限负责。 */
 
   .header-content {
     top: 8px !important;
@@ -1006,28 +1005,28 @@ html[data-theme="dark"] .el-image__placeholder {
    不加 !important 会被反向覆盖。这个文件的既有规则也是这个写法。
    --------------------------------------------------------------------------- */
 @media (max-width: 768px) {
-  /* 兜底：所有按钮与按钮样式的链接都要够大。
-     有些页面（webdav.html）的按钮是裸 <button> 或只挂颜色类（.btn-primary），
-     既没有 .btn 也没有 .action-btn，枚举具体类名必然漏。
-     放在这一组的最前面，后面更具体的规则可以继续叠加宽度等约束。
+  /* 兜底：尚未迁移到 .btn 的裸 <button> 与旧类名链接仍要够大。
+     webdav.html / login.html 已经换用 .btn（由 ui-buttons.css 负责下限），
+     但后台几页还在用旧类名，枚举仍然会漏，所以保留这条。
+     等所有页面迁移完，连同下面那张类名表一起删掉。
 
      不用 * 选择器：那会把 <summary>、checkbox 之外的所有元素都拉高，
      破坏文本流。button 与 a 是「可交互元素」的准确边界。 */
-  button,
-  a[class*="btn"],
+  button:not(.btn),
+  a[class*="btn"]:not(.btn),
   a[class*="action"],
   a[class*="link"] {
     min-height: 44px !important;
   }
 
+  /* 已迁移到 .btn 的类名从这里移除了（login-btn、action-link、
+     file-choose-btn、btn 本身）—— ui-buttons.css 自带 44px 触摸下限，
+     再在这里加一条 !important 只是重复。下面留下的都还没迁移，
+     等各页换用 .btn 后逐条删掉即可。 */
   .nav-btn,
   .back-btn,
-  .action-link,
   .action-btn,
   .upload-btn,
-  .btn,
-  .login-btn,
-  .file-choose-btn,
   .load-btn,
   .theme-floating-toggle,
   .theme-admin-toggle,

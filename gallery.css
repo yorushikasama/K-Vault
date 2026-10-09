@@ -92,63 +92,6 @@
       justify-content: flex-end;
     }
 
-    .header-actions .gallery-theme-toggle {
-      margin-left: 2px;
-      border: 1.5px solid rgba(138, 75, 255, 0.25);
-      background: rgba(138, 75, 255, 0.16);
-      color: #2f3243;
-      font-weight: 600;
-    }
-
-    .header-actions .gallery-theme-toggle i,
-    .header-actions .gallery-theme-toggle svg.lucide {
-      color: var(--primary);
-      width: 14px;
-      text-align: center;
-    }
-
-    .header-actions .gallery-theme-toggle:hover {
-      border-color: var(--primary-light);
-    }
-
-    html[data-theme="dark"] .header-actions .gallery-theme-toggle {
-      border-color: rgba(154, 169, 255, 0.45);
-      background: rgba(154, 169, 255, 0.2);
-      color: #e8eeff;
-    }
-
-    html[data-theme="dark"] .header-actions .gallery-theme-toggle i,
-    html[data-theme="dark"] .header-actions .gallery-theme-toggle svg.lucide {
-      color: #c4d4ff;
-    }
-
-    .nav-btn {
-      padding: 8px 16px;
-      border-radius: var(--radius-sm);
-      text-decoration: none;
-      color: #666;
-      font-size: 0.9em;
-      transition: all 0.2s ease-out;
-      background: #ffffff;
-      border: 1px solid #eee;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .nav-btn:hover {
-      background: var(--accent);
-      border-color: var(--primary-light);
-      color: #333;
-    }
-
-    .nav-btn.active {
-      background: var(--primary);
-      color: var(--ui-brand-ink);
-      border-color: var(--primary);
-    }
-
     /* 工具栏 */
     .toolbar {
       display: flex;
@@ -177,28 +120,12 @@
 
     .stat-badge strong { color: var(--primary); margin-left: 4px; }
 
-    /* 链接格式选择器 */
-    .format-selector {
-      display: flex;
-      gap: 4px;
-      background: #f5f5f5;
-      padding: 4px;
-      border-radius: var(--radius-sm);
+    /* 链接格式选择器。控件本体是 ui-buttons.css 的 .segmented，
+       这里只定义它左侧的说明文字。 */
+    .format-label {
+      font-size: 0.85em;
+      color: var(--ui-ink-muted);
     }
-
-    .format-btn {
-      padding: 6px 12px;
-      border: none;
-      background: transparent;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      font-size: 0.8em;
-      transition: all 0.2s;
-      color: #666;
-    }
-
-    .format-btn:hover { background: rgba(138, 75, 255, 0.1); }
-    .format-btn.active { background: var(--primary); color: var(--ui-brand-ink); }
 
     /* 图片网格 */
     .image-grid {
@@ -268,28 +195,6 @@
       justify-content: center;
     }
 
-    .card-btn {
-      width: 32px;
-      height: 32px;
-      border: none;
-      border-radius: var(--radius-sm);
-      background: #ffffff;
-      color: #333;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-      font-size: 0.9em;
-    }
-
-    .card-btn:hover {
-      background: var(--primary);
-      color: var(--ui-brand-ink);
-    }
-
-    .card-btn.delete:hover { background: #f56c6c; }
-
     .image-card-checkbox {
       position: absolute;
       top: 10px;
@@ -337,26 +242,8 @@
 
     .batch-bar-count strong { color: var(--accent); }
 
-    .batch-btn {
-      padding: 8px 16px;
-      border: none;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      font-size: 0.85em;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
     /* 品牌/语义实心按钮上的文字一律用 token：--ui-brand-ink 随主题翻转，
        success/danger 用各自的 -strong 档（亮色档压白字只有 2.9:1）。 */
-    .batch-btn.primary { background: var(--primary); color: var(--ui-brand-ink); }
-    .batch-btn.success { background: var(--ui-success-strong); color: #fff; }
-    .batch-btn.danger { background: var(--ui-danger-strong); color: #fff; }
-    .batch-btn.default { background: rgba(255,255,255,0.2); color: var(--ui-ink); }
-
-    .batch-btn:hover { filter: brightness(1.1); }
 
     /* 预览弹窗 - 原生图片 / iframe */
     .preview-modal {
@@ -444,21 +331,6 @@
       gap: 8px;
     }
 
-    .page-btn {
-      width: 40px;
-      height: 40px;
-      border: none;
-      border-radius: var(--radius-sm);
-      background: #ffffff;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-size: 0.9em;
-    }
-
-    .page-btn:hover { background: var(--accent); }
-    .page-btn.active { background: var(--primary); color: var(--ui-brand-ink); }
-    .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
     /* 空状态 */
     .empty-state {
       text-align: center;
@@ -542,15 +414,6 @@
         gap: 8px;
       }
 
-      .header-actions .gallery-theme-toggle {
-        order: 4;
-      }
-      
-      .nav-btn {
-        padding: 8px 14px;
-        font-size: 0.85em;
-      }
-      
       .toolbar {
         flex-direction: column;
         gap: 12px;
@@ -575,15 +438,10 @@
         font-size: 0.82em;
       }
       
-      .format-selector {
+      .segmented {
         justify-content: center;
       }
-      
-      .format-btn {
-        padding: 6px 12px;
-        font-size: 0.82em;
-      }
-      
+
       .image-grid { 
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
         gap: 10px; 
@@ -598,15 +456,8 @@
         font-size: 0.75em;
       }
 
-      /* 卡片上的操作按钮：原来这里把它从 32px 缩到 30px，比桌面端还小，
-         手机上几乎点不中（实测 32×44 与 30×30 都出现过）。
-         四个按钮一行：4×44 + 3×6(gap) = 194px，320px 屏也放得下。
-         .card-btn 是纯图标按钮，宽度和高度都要给足。 */
-      .card-btn {
-        width: 44px;
-        height: 44px;
-        font-size: 0.8em;
-      }
+      /* 卡片操作按钮已改用 .btn .btn-icon，44px 的触摸下限由 ui-buttons.css
+         统一负责（四个一行：4×44 + 3×8(gap) = 200px，320px 屏也放得下）。 */
       .image-card-actions { gap: 8px; }
       
       .batch-bar { 
@@ -618,12 +469,7 @@
         left: 12px;
         bottom: 12px;
       }
-      
-      .batch-btn {
-        padding: 8px 14px;
-        font-size: 0.85em;
-      }
-      
+
       /* 预览弹窗优化 */
       .preview-overlay .preview-content {
         max-width: 95%;
@@ -661,27 +507,6 @@
         gap: 6px;
       }
 
-      .header-actions .gallery-theme-toggle {
-        padding: 6px 9px;
-        min-width: 38px;
-        justify-content: center;
-      }
-
-      .header-actions .gallery-theme-toggle [data-theme-label] {
-        display: none;
-      }
-      
-      .nav-btn {
-        padding: 6px 10px;
-        font-size: 0.78em;
-        border-radius: var(--radius-sm);
-      }
-      
-            .nav-btn i,
-      .nav-btn svg.lucide {
-        font-size: 0.9em;
-      }
-      
       .toolbar {
         padding: 12px;
         border-radius: var(--radius-md);
@@ -697,13 +522,7 @@
         font-size: 0.75em;
         border-radius: var(--radius-sm);
       }
-      
-      .format-btn {
-        padding: 5px 10px;
-        font-size: 0.75em;
-        min-width: 36px;
-      }
-      
+
       .image-grid { 
         grid-template-columns: repeat(2, 1fr); 
         gap: 8px; 
@@ -718,17 +537,7 @@
         height: 24px;
         font-size: 0.75em;
       }
-      
-      /* 这里原先把卡片操作按钮缩到 26px，是「小屏就更小」的旧思路——
-         实际上屏幕越小，手指的绝对误差越大，目标应该更大而不是更小。
-         改成与 768px 档一致的 44px（WCAG 2.5.5 的下限）。
-         四个按钮一行 4×44+3×8 = 194px，320px 屏放得下。 */
-      .card-btn {
-        width: 44px;
-        height: 44px;
-        font-size: 0.8em;
-      }
-      
+
       .image-card-name {
         font-size: 0.68em;
         padding: 6px 8px;
@@ -744,10 +553,9 @@
         border-radius: var(--radius-md);
       }
       
-      .batch-btn {
+      /* 批量操作在窄屏占满整行。 */
+      .batch-bar .btn {
         width: 100%;
-        justify-content: center;
-        padding: 10px 16px;
       }
       
       .toast {
