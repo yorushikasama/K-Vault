@@ -181,6 +181,12 @@
       .upload-file-row {
         display: flex;
         gap: 10px;
+        /* 允许换行：文件选择区有个「不被压缩」的下限（里面的按钮与计数徽章
+           不收缩，标题又需要约 108px 才读得全），挤不下时让「开始上传」
+           整块换到下一行，而不是把文件选择区压到标题截断。
+           窄屏（≤640px）另有 flex-direction: column 的强规则，这里管的是
+           中间那档宽度（如 1024px 的两列布局，卡片内容区只有约 481px）。 */
+        flex-wrap: wrap;
         /* 原来是 stretch，于是「开始上传」被拉成和整块文件选择区一样高，
            变成一个顶着大空白的方法块。按钮该按自身高度居中。 */
         align-items: center;
@@ -188,7 +194,19 @@
 
       .file-picker {
         position: relative;
-        flex: 1;
+        /* flex-basis 取 340px：这是「标题能完整显示」所需的最小宽度，
+           低于它就该让按钮换行而不是继续压。仍保留可伸缩以便占满宽屏。 */
+        flex: 1 1 340px;
+        /* min-width: 0 是必需的，不是保险起见：flex 子项的 min-width 默认是
+           auto，不允许缩到内容最小宽度以下。而这块里的标题与说明都是
+           nowrap（靠 ellipsis 截断），最小宽度就约等于整行文字宽 ——
+           实测 1280px 下这块要 478px，加上 10px 间隙与 124px 的
+           「开始上传」，共 612px，而卡片内容区只有 576px，
+           于是按钮被顶出卡片右边缘（溢出 19px）。
+           min-width: 0 允许它被压缩，文字交给已有的省略号处理。
+           同一个坑这个仓库在 .layout 的 grid 轨道上踩过（见下方
+           @media (max-width: 980px) 的注释）。 */
+        min-width: 0;
         min-height: 74px;
         border-radius: var(--radius-md);
         border: 1px dashed rgba(138, 75, 255, 0.45);

@@ -42,6 +42,38 @@ describe('mobile layout contract', function () {
     });
   });
 
+  describe('flex items must not be sized by their content either', function () {
+    // grid 版的坑（上面那组）在 flex 里同样存在，只是写法不同：flex 子项的
+    // min-width 默认也是 auto，不允许缩到内容最小宽度以下。
+    //
+    // 实测踩到的是 WebDAV 的「开始上传」：.file-picker 是 flex:1 但没写
+    // min-width:0，而它里面的标题与说明都是 nowrap，于是它的最小宽度约等于
+    // 整行文字宽（1280px 下 478px）。加上 10px 间隙与 124px 按钮共 612px，
+    // 而卡片内容区只有 576px —— 按钮被顶出卡片右边缘 19px，看起来像从卡片
+    // 里溢出来。补上 min-width:0 之后由按钮换行兜住（见下面的 flex-wrap）。
+    it('webdav file picker carries min-width: 0', function () {
+      const css = read('webdav.css');
+      const m = /\.file-picker\s*\{[^}]*\}/.exec(css);
+      assert.ok(m, '找不到 .file-picker 规则');
+      assert.match(
+        m[0],
+        /min-width:\s*0\s*;/,
+        'webdav 的 .file-picker 缺 min-width:0；nowrap 的文字会把这块顶到内容宽度，把「开始上传」挤出卡片'
+      );
+    });
+
+    it('the upload row wraps instead of overflowing when space runs out', function () {
+      const css = read('webdav.css');
+      const m = /\.upload-file-row\s*\{[^}]*\}/.exec(css);
+      assert.ok(m, '找不到 .upload-file-row 规则');
+      assert.match(
+        m[0],
+        /flex-wrap:\s*wrap/,
+        '.upload-file-row 没有 flex-wrap:wrap；中等宽度（如 1024px 两列布局）下按钮会溢出或把标题压到截断'
+      );
+    });
+  });
+
   describe('the app shell header has mobile rules', function () {
     // 顶栏从 workbench.css 抽到 app-shell.css 之后（它现在是四个分区共用的
     // 应用外壳：上传 / 文件 / 图库 / WebDAV），这套规则随之搬家。
