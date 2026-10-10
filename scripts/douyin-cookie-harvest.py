@@ -123,7 +123,12 @@ def verify(path):
     r = subprocess.run(
         ["yt-dlp", "--no-playlist", "--no-config", "--no-warnings", "--no-progress",
          "--socket-timeout", "20", "--retries", "1", "--dump-single-json", "--skip-download",
-         "--add-header", "Referer: https://www.douyin.com/",
+         # 必须与 media-resolve-service 发出的请求头一致：详情接口在 Argus 网关后面，
+         # 它只对自称来自开放平台的请求免签名。这里若沿用 www.douyin.com 的 Referer，
+         # 验证会永远失败（网关返回 403 "Uifid Not Found"），于是每次续期都保留旧文件、
+         # 好 Cookie 永远换不上 —— 2026-10-10 实测就是这个症状。
+         "--add-header", "Referer: https://open.douyin.com/",
+         "--add-header", "Origin: https://open.douyin.com",
          "--cookies", path, probe],
         capture_output=True, text=True, timeout=120,
     )
