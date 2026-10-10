@@ -21,7 +21,11 @@
  * INVALID_SCOPE + invalidScopes[], never silently filtered.
  */
 
-export const TOKEN_PREFIX = 'kvault_';
+export const TOKEN_PREFIX = 'yoruvault_';
+// 旧前缀仍要认：已签发的令牌明文是 kvault_…，解析不了等于把在用的集成一次性
+// 全部踢下线。生成用新前缀，解析两者都收。
+export const LEGACY_TOKEN_PREFIXES = ['kvault_'];
+const TOKEN_VALUE_RE = /^(?:yoruvault|kvault)_([A-Za-z0-9_-]{6,128})_([A-Za-z0-9_-]{16,256})$/;
 const TOKEN_KEY_PREFIX = 'api_token:';
 const STAT_KEY_PREFIX = 'token_stat:';
 const VALID_SCOPES = new Set(['upload', 'read', 'delete', 'paste']);
@@ -70,7 +74,7 @@ function randomString(length) {
 
 function splitToken(rawToken = '') {
   const value = String(rawToken || '').trim();
-  const match = /^kvault_([A-Za-z0-9_-]{6,128})_([A-Za-z0-9_-]{16,256})$/.exec(value);
+  const match = TOKEN_VALUE_RE.exec(value);
   if (!match) return null;
   return { tokenId: match[1], secret: match[2], value };
 }

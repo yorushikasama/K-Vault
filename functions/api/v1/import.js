@@ -95,7 +95,7 @@ async function fetchRemoteStrict(rawUrl, maxBytes) {
     try {
       response = await fetch(currentUrl.href, {
         redirect: 'manual',
-        headers: { 'User-Agent': 'K-Vault-Import/1.0' },
+        headers: { 'User-Agent': 'YoruVault-Import/1.0' },
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       });
     } catch (error) {

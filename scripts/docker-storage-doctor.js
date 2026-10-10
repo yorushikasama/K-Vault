@@ -2,7 +2,7 @@
 
 const { spawnSync } = require('node:child_process');
 
-const serviceName = process.env.DOCKER_SERVICE || 'k-vault';
+const serviceName = process.env.DOCKER_SERVICE || 'yoruvault';
 
 function runCommand(command, args, options = {}) {
   const result = spawnSync(command, args, {
@@ -58,7 +58,9 @@ function checkDockerComposeReady() {
   }
 
   const escapedServiceName = serviceName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const hasService = new RegExp(`\\b${escapedServiceName}\\b|\\bkvault\\b`, 'i').test(ps.stdout);
+  // 兜底匹配新旧两个服务名：改名后用户可能还没重建容器（仍叫 kvault），
+  // 只认新名会让这个体检脚本谎报「服务未运行」。
+  const hasService = new RegExp(`\\b${escapedServiceName}\\b|\\bkvault\\b|\\byoruvault\\b`, 'i').test(ps.stdout);
   return {
     ok: hasService,
     message: hasService ? 'docker compose is running' : `${serviceName} service not found in docker compose ps`,
@@ -221,7 +223,7 @@ function printSection(title, body) {
 }
 
 function main() {
-  process.stdout.write('K-Vault Docker Storage Doctor\n');
+  process.stdout.write('YoruVault Docker Storage Doctor\n');
 
   const compose = checkDockerComposeReady();
   const status = compose.ok ? collectStatus() : { ok: false, message: 'skipped', detail: '' };

@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>K-Vault | 文件工作台</title>
+  <title>YoruVault | 文件工作台</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/logo.png">
   <link rel="shortcut icon" href="/favicon.ico">
   <!-- Vue / Element / Sentry 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://js.sentry-cdn.com" crossorigin>
-  <link rel="stylesheet" href="/theme.css?v=4d1fa0723b">
+  <link rel="stylesheet" href="/theme.css?v=0d1a7e3dea">
   <script src="/theme-core.js?v=6a9f70f021"></script>
   <script defer src="/theme-effects.js?v=29ad427078"></script>
   <!-- 应用外壳（顶栏）四个分区共用，因此排在页面私有样式之前：
@@ -29,9 +29,9 @@
   <div id="app" v-cloak>
     <el-container direction="vertical" class="files-shell">
       <header class="workspace-header" :inert="folderDrawerOpen && isMobileViewport ? '' : null">
-        <a class="workspace-brand" href="./" @click.prevent="goHome" aria-label="K-Vault 上传首页">
+        <a class="workspace-brand" href="./" @click.prevent="goHome" aria-label="YoruVault 上传首页">
           <img src="/logo.png" alt="" width="32" height="32">
-          <span>K-Vault</span>
+          <span>YoruVault</span>
         </a>
         <nav class="workspace-nav" aria-label="全局导航">
           <a href="./">上传</a>
@@ -400,9 +400,9 @@
           </section>
         </div>
   <el-footer class="footer">
-          <div>Powered By K-Vault</div>
+          <div>Powered By YoruVault</div>
           <a href="https://github.com/katelya77/K-Vault" target="_blank" rel="noopener noreferrer">
-            <div><kv-icon name="fab fa-github"></kv-icon> K-Vault</div>
+            <div><kv-icon name="fab fa-github"></kv-icon> YoruVault</div>
           </a>
         </el-footer>
       </el-main>
@@ -2390,7 +2390,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         document.body.classList.add('is-dragging-files');
         if (event && event.dataTransfer) {
           event.dataTransfer.effectAllowed = 'move';
-          event.dataTransfer.setData('application/x-kvault-files', JSON.stringify(ids));
+          event.dataTransfer.setData('application/x-yoruvault-files', JSON.stringify(ids));
           event.dataTransfer.setData('text/plain', ids.join(','));
           const dragGhost = document.createElement('div');
           dragGhost.textContent = ids.length > 1 ? `移动 ${ids.length} 个文件` : (item?.metadata?.fileName || item?.name || '移动文件');
@@ -2465,7 +2465,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       },
       extractDragIds(event) {
         if (this.dragState.fileIds.length > 0) return this.dragState.fileIds;
-        const raw = event?.dataTransfer?.getData('application/x-kvault-files') || '';
+        const raw = event?.dataTransfer?.getData('application/x-yoruvault-files') || '';
         if (!raw) {
           const plain = event?.dataTransfer?.getData('text/plain') || '';
           return plain

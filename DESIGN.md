@@ -1,6 +1,6 @@
 # Design
 
-The visual system for K-Vault after the "de-slop" pass. The one rule that overrides everything: **a colour exists in exactly one place — the token layer. Everything else derives from it.** When you meet an AI tell, keep the structure and change the treatment.
+The visual system for YoruVault after the "de-slop" pass. The one rule that overrides everything: **a colour exists in exactly one place — the token layer. Everything else derives from it.** When you meet an AI tell, keep the structure and change the treatment.
 
 ## Color
 

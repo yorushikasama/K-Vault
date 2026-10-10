@@ -1,8 +1,8 @@
 {
-  "name": "k-vault-server",
+  "name": "yoruvault-server",
   "version": "0.1.0",
   "private": true,
-  "description": "K-Vault Docker runtime backend",
+  "description": "YoruVault Docker runtime backend",
   "main": "index.js",
   "engines": {
     "node": ">=22"

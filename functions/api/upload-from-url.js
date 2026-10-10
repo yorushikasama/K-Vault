@@ -124,7 +124,7 @@ async function fetchRemote(url) {
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        "User-Agent": "Mozilla/5.0 K-Vault URL Uploader",
+        "User-Agent": "Mozilla/5.0 YoruVault URL Uploader",
         Accept: "image/*,video/*,audio/*,application/*,*/*",
       },
     });
@@ -181,12 +181,12 @@ function validateStorageSize(storageMode, fileSize) {
     discord: {
       maxBytes: 25 * MB,
       status: 413,
-      message: "Discord 上传上限受服务器加成影响，K-Vault 默认按 25MB 保守处理。",
+      message: "Discord 上传上限受服务器加成影响，YoruVault 默认按 25MB 保守处理。",
     },
     huggingface: {
       maxBytes: 35 * MB,
       status: 413,
-      message: "HuggingFace regular upload is capped at 35MB in K-Vault. Use another storage backend for larger files.",
+      message: "HuggingFace regular upload is capped at 35MB in YoruVault. Use another storage backend for larger files.",
     },
   };
   const limit = limits[storageMode];

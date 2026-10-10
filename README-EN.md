@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="logo.png" alt="K-Vault Logo" width="140">
+<img src="logo.png" alt="YoruVault Logo" width="140">
 
-# K-Vault
+# YoruVault
 
 > Free image/file hosting solution with dual deployment modes (Cloudflare Pages + Docker), supporting multiple storage backends.
 
@@ -67,20 +67,20 @@ A lightweight workflow note is included in `.github/workflows/pages-deploy.yml`.
 
 - No Cloudflare API secrets are required in this repository by default.
 - Recommended deployment path is Cloudflare Pages Git integration (connect your fork directly in Cloudflare Dashboard).
-- Leave Build command and Build output directory empty. K-Vault serves the root static pages plus `functions/`; `frontend/dist` is not part of the current Pages deployment.
+- Leave Build command and Build output directory empty. YoruVault serves the root static pages plus `functions/`; `frontend/dist` is not part of the current Pages deployment.
 - If you want CLI deployment, run Wrangler locally with your own credentials.
 
 Recommended architecture for multi-cloud mounts:
 
-- Use `WebDAV` adapter in K-Vault as a mounted entry.
+- Use `WebDAV` adapter in YoruVault as a mounted entry.
 - Use `alist/openlist` as aggregation layer for other providers.
-- This keeps K-Vault focused on UX/link/auth while reducing adapter maintenance complexity.
+- This keeps YoruVault focused on UX/link/auth while reducing adapter maintenance complexity.
 
 ---
 
 ## Deployment
 
-K-Vault has two official deployment modes:
+YoruVault has two official deployment modes:
 
 1. **Cloudflare Pages**: static root pages plus Pages Functions. This is best for Cloudflare KV/R2, edge functions, and free-tier deployments.
 2. **Docker**: one image, `ghcr.io/katelya77/k-vault:latest`, for VPS/NAS/private self-hosting and long-running multi-storage deployments.
@@ -159,7 +159,7 @@ No repository checkout and no local Node/npm installation are required:
 ```bash
 docker volume create kvault_data
 docker run -d \
-  --name kvault \
+  --name yoruvault \
   --restart unless-stopped \
   -p 8080:8080 \
   -v kvault_data:/app/data \
@@ -179,7 +179,7 @@ For public deployments, set admin credentials explicitly:
 
 ```bash
 docker run -d \
-  --name kvault \
+  --name yoruvault \
   --restart unless-stopped \
   -p 8080:8080 \
   -v kvault_data:/app/data \
@@ -328,7 +328,7 @@ Configure R2 to support uploads up to 100MB:
    - `Settings` -> `Environment variables` -> add `USE_R2` = `true`
    - Redeploy
 
-> If redeploy fails with `binding R2_BUCKET of type r2_bucket contains an invalid jurisdiction`, Cloudflare Pages is rejecting the R2 binding metadata before K-Vault code runs. Normal R2 buckets should not set `jurisdiction`; only residency-restricted buckets use `eu` or `fedramp`. Follow [Cloudflare Pages R2 binding troubleshooting](docs/cloudflare-pages-r2.md) to rebuild Production/Preview bindings, or run `npm run pages:r2:doctor -- --check` to validate `wrangler.jsonc`.
+> If redeploy fails with `binding R2_BUCKET of type r2_bucket contains an invalid jurisdiction`, Cloudflare Pages is rejecting the R2 binding metadata before YoruVault code runs. Normal R2 buckets should not set `jurisdiction`; only residency-restricted buckets use `eu` or `fedramp`. Follow [Cloudflare Pages R2 binding troubleshooting](docs/cloudflare-pages-r2.md) to rebuild Production/Preview bindings, or run `npm run pages:r2:doctor -- --check` to validate `wrangler.jsonc`.
 
 ### S3-Compatible Storage (Optional)
 

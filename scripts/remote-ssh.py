@@ -2,22 +2,22 @@
 """Run a command over SSH with password auth.
 
 Used for deployment testing against a server the operator owns. The password is
-passed via the KV_SSH_PASSWORD environment variable rather than argv, so it does
+passed via the YV_SSH_PASSWORD environment variable rather than argv, so it does
 not land in the process table or the shell history.
 """
 import os
 import sys
 import paramiko
 
-HOST = os.environ.get("KV_SSH_HOST", "103.117.139.31")
-USER = os.environ.get("KV_SSH_USER", "wbadmin")
-PASSWORD = os.environ.get("KV_SSH_PASSWORD", "")
-PORT = int(os.environ.get("KV_SSH_PORT", "22"))
+HOST = os.environ.get("YV_SSH_HOST", "103.117.139.31") or os.environ.get("KV_SSH_HOST", "103.117.139.31")
+USER = os.environ.get("YV_SSH_USER", "wbadmin") or os.environ.get("KV_SSH_USER", "wbadmin")
+PASSWORD = os.environ.get("YV_SSH_PASSWORD", "") or os.environ.get("KV_SSH_PASSWORD", "")
+PORT = int(os.environ.get("YV_SSH_PORT", "22") or os.environ.get("KV_SSH_PORT", "22"))
 
 
 def main() -> int:
     command = sys.argv[1] if len(sys.argv) > 1 else "echo ok"
-    timeout = int(os.environ.get("KV_SSH_TIMEOUT", "120"))
+    timeout = int(os.environ.get("YV_SSH_TIMEOUT", "120") or os.environ.get("KV_SSH_TIMEOUT", "120"))
 
     client = paramiko.SSHClient()
     # The host key was rotated on this box; accepting it here is fine because the

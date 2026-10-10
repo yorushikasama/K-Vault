@@ -80,7 +80,7 @@ describe('Admin API fail-closed security (Docker)', function () {
     }));
     assert.strictEqual(createResponse.status, 201);
     const createPayload = await createResponse.json();
-    assert.ok(String(createPayload.token || '').startsWith('kvault_'));
+    assert.ok(String(createPayload.token || '').startsWith('yoruvault_'));
 
     const listResponse = await app.fetch(new Request('http://localhost/api/admin/tokens', {
       headers: { Authorization: authHeader },

@@ -2,7 +2,7 @@
 
 const { spawnSync } = require('node:child_process');
 
-const serviceName = process.env.DOCKER_SERVICE || 'k-vault';
+const serviceName = process.env.DOCKER_SERVICE || 'yoruvault';
 
 function runCommand(command, args) {
   const result = spawnSync(command, args, {
@@ -152,11 +152,11 @@ function main() {
   assertConfigured(status, 'huggingface', errors);
   assertConfigured(status, 'github', errors);
 
-  if (!rootPage.ok || !rootPage.text.includes('K-Vault')) {
-    errors.push('public / should serve the K-Vault static UI through nginx');
+  if (!rootPage.ok || !rootPage.text.includes('YoruVault')) {
+    errors.push('public / should serve the YoruVault static UI through nginx');
   }
 
-  if (!uploadPage.ok || !uploadPage.text.includes('K-Vault')) {
+  if (!uploadPage.ok || !uploadPage.text.includes('YoruVault')) {
     errors.push('GET /upload should render the same root upload UI as Cloudflare Pages');
   }
 

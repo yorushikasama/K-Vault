@@ -37,7 +37,7 @@ const MAX_TRIM_FILENAME_LENGTH = 255;
 // their exact meaning stays with upstream and cannot drift here; `best` and
 // `bestaudio` are ours and describe selection rather than postprocessing.
 //
-// `best` is the historical K-Vault behaviour: best video plus best audio, muxed
+// `best` is the historical YoruVault behaviour: best video plus best audio, muxed
 // into mp4, with no forced remux — that keeps a picked AV1 stream as AV1 instead
 // of repackaging it. `mp4` additionally sorts towards h264/aac and remuxes, which
 // is what makes the result play in Telegram's in-app player.

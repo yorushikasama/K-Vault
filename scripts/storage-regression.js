@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * K-Vault storage regression helper
+ * YoruVault storage regression helper
  *
  * Usage example:
  *   BASE_URL=http://localhost:8080 \
@@ -298,7 +298,7 @@ async function cleanupStorage(createdId, originalDefaultId) {
 }
 
 async function main() {
-  process.stdout.write(`K-Vault storage regression start\nBASE_URL=${BASE_URL}\n`);
+  process.stdout.write(`YoruVault storage regression start\nBASE_URL=${BASE_URL}\n`);
 
   await ensureLoginIfNeeded();
   const { createdId, originalDefault } = await storageCrudAndSelection();

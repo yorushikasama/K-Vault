@@ -281,7 +281,7 @@ class UploadService {
       url: parsedUrl.href,
       timeoutMs,
       headers: {
-        'User-Agent': 'K-Vault/2.0 (+https://github.com/katelya77/K-Vault)',
+        'User-Agent': 'YoruVault/2.0 (+https://github.com/katelya77/K-Vault)',
         Accept: '*/*',
         ...normalizeRequestHeaders(headers),
       },

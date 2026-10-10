@@ -1,4 +1,4 @@
-# K-Vault Docker 部署指南
+# YoruVault Docker 部署指南
 
 English version: [README-DOCKER-EN.md](README-DOCKER-EN.md)
 
@@ -26,7 +26,7 @@ ghcr.io/katelya77/k-vault:latest
 ```bash
 docker volume create kvault_data
 docker run -d \
-  --name kvault \
+  --name yoruvault \
   --restart unless-stopped \
   -p 8080:8080 \
   -v kvault_data:/app/data \
@@ -47,7 +47,7 @@ docker run -d \
 ```bash
 docker rm -f kvault
 docker run -d \
-  --name kvault \
+  --name yoruvault \
   --restart unless-stopped \
   -p 8080:8080 \
   -v kvault_data:/app/data \
@@ -157,7 +157,7 @@ Docker Run：
 ```bash
 docker pull ghcr.io/katelya77/k-vault:latest
 docker rm -f kvault
-docker run -d --name kvault --restart unless-stopped -p 8080:8080 -v kvault_data:/app/data ghcr.io/katelya77/k-vault:latest
+docker run -d --name yoruvault --restart unless-stopped -p 8080:8080 -v kvault_data:/app/data ghcr.io/katelya77/k-vault:latest
 ```
 
 Docker Compose：

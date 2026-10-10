@@ -1,4 +1,4 @@
-# K-Vault Docker Deployment Guide
+# YoruVault Docker Deployment Guide
 
 Chinese version: [README-DOCKER.md](README-DOCKER.md)
 
@@ -26,7 +26,7 @@ No repository checkout and no local Node/npm installation are required:
 ```bash
 docker volume create kvault_data
 docker run -d \
-  --name kvault \
+  --name yoruvault \
   --restart unless-stopped \
   -p 8080:8080 \
   -v kvault_data:/app/data \
@@ -47,7 +47,7 @@ For public deployments, set admin credentials:
 ```bash
 docker rm -f kvault
 docker run -d \
-  --name kvault \
+  --name yoruvault \
   --restart unless-stopped \
   -p 8080:8080 \
   -v kvault_data:/app/data \
@@ -87,7 +87,7 @@ docker compose ps
 docker compose logs -f k-vault
 ```
 
-Expected: `kvault` is `Up ... (healthy)`.
+Expected: `yoruvault` is `Up ... (healthy)`.
 
 ## Storage Backends
 
@@ -157,7 +157,7 @@ Docker Run:
 ```bash
 docker pull ghcr.io/katelya77/k-vault:latest
 docker rm -f kvault
-docker run -d --name kvault --restart unless-stopped -p 8080:8080 -v kvault_data:/app/data ghcr.io/katelya77/k-vault:latest
+docker run -d --name yoruvault --restart unless-stopped -p 8080:8080 -v kvault_data:/app/data ghcr.io/katelya77/k-vault:latest
 ```
 
 Docker Compose:

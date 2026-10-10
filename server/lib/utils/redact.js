@@ -2,8 +2,10 @@
  * Secret redaction helpers (requirement #13) — Docker/CommonJS variant.
  */
 
-const TOKEN_PATTERN = /kvault_[A-Za-z0-9_-]{6,}/g;
-const REDACTED = 'kvault_***REDACTED***';
+// 两个前缀都要匹配：只认新前缀的话，已经在用的 kvault_… 令牌会以明文
+// 落进日志/错误信息/审计记录里 —— 脱敏漏一个前缀就是一次凭据泄露。
+const TOKEN_PATTERN = /(?:yoruvault|kvault)_[A-Za-z0-9_-]{6,}/g;
+const REDACTED = 'yoruvault_***REDACTED***';
 
 function redactSecrets(input) {
   if (typeof input !== 'string') return input;

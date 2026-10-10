@@ -32,10 +32,10 @@ jobs:
           EOF
 
       - name: Build single runtime image
-        run: docker build -t k-vault:ci .
+        run: docker build -t yoruvault:ci .
 
       - name: Start single-image stack
-        run: KVAULT_IMAGE=k-vault:ci docker compose up -d
+        run: YORUVAULT_IMAGE=yoruvault:ci docker compose up -d
 
       - name: Run Docker smoke checks
         run: npm run docker:smoke:ci
@@ -44,12 +44,12 @@ jobs:
         if: failure()
         run: |
           mkdir -p .artifacts
-          docker compose exec -T k-vault sh -lc "wget -qO- http://127.0.0.1:8080/api/status" > .artifacts/api-status.json || true
-          docker compose exec -T k-vault sh -lc "cd /app/server && node -e \"const { createContainer }=require('./lib/container'); const c=createContainer(process.env); console.log(JSON.stringify(c.storageRepo.list(false).map(x=>({id:x.id,type:x.type,name:x.name,enabled:x.enabled,isDefault:x.isDefault})), null, 2));\"" > .artifacts/storage-profiles.json || true
+          docker compose exec -T yoruvault sh -lc "wget -qO- http://127.0.0.1:8080/api/status" > .artifacts/api-status.json || true
+          docker compose exec -T yoruvault sh -lc "cd /app/server && node -e \"const { createContainer }=require('./lib/container'); const c=createContainer(process.env); console.log(JSON.stringify(c.storageRepo.list(false).map(x=>({id:x.id,type:x.type,name:x.name,enabled:x.enabled,isDefault:x.isDefault})), null, 2));\"" > .artifacts/storage-profiles.json || true
 
       - name: Show runtime logs on failure
         if: failure()
-        run: docker compose logs --no-color k-vault
+        run: docker compose logs --no-color yoruvault
 
       - name: Upload smoke diagnostics artifact
         if: failure()

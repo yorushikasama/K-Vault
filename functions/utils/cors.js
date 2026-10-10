@@ -8,7 +8,9 @@
  */
 
 const ALLOWED_METHODS = 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
-const ALLOWED_HEADERS = 'Authorization, Content-Type, Accept, Range, Idempotency-Key, X-KVault-Client';
+// 两个客户端头名都允许：改名后旧调用方仍发 X-KVault-Client，浏览器预检
+// 若不列出它，跨域请求会直接被挡下。
+const ALLOWED_HEADERS = 'Authorization, Content-Type, Accept, Range, Idempotency-Key, X-YoruVault-Client, X-KVault-Client';
 const MAX_AGE = '86400';
 
 export function parseCorsOrigins(env) {

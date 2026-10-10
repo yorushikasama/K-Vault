@@ -1,7 +1,11 @@
 const crypto = require('node:crypto');
 const { all, get, run } = require('../../db');
 
-const TOKEN_PREFIX = 'kvault_';
+const TOKEN_PREFIX = 'yoruvault_';
+// 改名后仍要认旧前缀：已经签发出去的令牌明文是 kvault_…，解析不了就等于
+// 把所有在用集成一次性踢下线。新签发的用新前缀，旧的照常可用。
+const LEGACY_TOKEN_PREFIXES = ['kvault_'];
+const TOKEN_VALUE_RE = /^(?:yoruvault|kvault)_([A-Za-z0-9_-]{6,128})_([A-Za-z0-9_-]{16,256})$/;
 const VALID_SCOPES = new Set(['upload', 'read', 'delete', 'paste']);
 const VALID_STORAGES = ['telegram', 'r2', 's3', 'discord', 'huggingface', 'webdav', 'github'];
 const TOKEN_ID_LENGTH = 12;
@@ -53,7 +57,7 @@ function sanitizeTokenId(rawValue = '') {
 
 function splitToken(rawToken = '') {
   const value = String(rawToken || '').trim();
-  const match = /^kvault_([A-Za-z0-9_-]{6,128})_([A-Za-z0-9_-]{16,256})$/.exec(value);
+  const match = TOKEN_VALUE_RE.exec(value);
   if (!match) return null;
   return { tokenId: match[1], secret: match[2], value };
 }

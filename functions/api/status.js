@@ -324,7 +324,7 @@ function getUploadLimits() {
       maxBytes: 25 * MB,
       directThreshold: DIRECT_UPLOAD_THRESHOLD,
       supportsChunkUpload: true,
-      message: 'Discord 上传上限受服务器加成影响，K-Vault 默认按 25MB 保守处理。',
+      message: 'Discord 上传上限受服务器加成影响，YoruVault 默认按 25MB 保守处理。',
     },
     huggingface: {
       maxBytes: 35 * MB,
