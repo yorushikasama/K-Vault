@@ -656,9 +656,9 @@
 // 于是同一个语义有两套值，且 CSS 那套永远不生效。这正是"样式没有统一
 // 管理"的最后一处漏点：改主题.css 改不动这里。
 // 现在改为引用权威层，只保留 JS 独有的产物（透明度旋钮本身）。
-var transparentCards = opacity <= 0.001;
-var useBackdropFilter = blur > 0 && !transparentCards;
-var surfaceAlpha = transparentCards ? 0 : clampNumber(next.cardOpacity, 0, 100) / 100;
+// 注意取的是上面那个已被压到下限的 opacity，不是 next.cardOpacity：
+// 重新读原始值会让下限形同虚设，卡片按 0.86 渲染、壁纸透进正文。
+var surfaceAlpha = transparentCards ? 0 : opacity;
 var cardBg = "var(--ui-surface)";
 var surface1 = "var(--ui-surface-sunken)";
 var surface2 = "var(--ui-surface)";
@@ -683,9 +683,14 @@ void darkMode;
 // 读的是 --ui-canvas：管理员在 UI 面板里改了 baseColor，body 会变，
 // 蒙版却不跟着变，最后蒙版用浅色压住一张已经偏色的背景 —— 全局看着发灰。
 // 两个名字并存是"样式没有统一管理"的根源，这里收敛到 --ui-canvas。
-root.style.setProperty("--ui-canvas", next.baseColor);
-root.style.setProperty("--ui-page-bg", next.baseColor);
-root.style.setProperty("--ui-page-bg-dark", "#101318");
+//
+// 写入的是亮色档 token 而不是解析后的值：内联优先级高于 :root，若直接把
+// #fafaf8 写到 --ui-canvas 上，html[data-theme="dark"] 里那条
+// --ui-canvas: var(--ui-canvas-dark) 就再也翻不动了，夜间蒙版会拿浅色去
+// 洗深色页。分成 --ui-canvas-light / -dark 两档后，主题切换仍由 CSS 决定。
+root.style.setProperty("--ui-canvas-light", next.baseColor);
+    // 夜间档不再由 JS 写死：它跟着 --ui-canvas-dark 走。此前这里写
+    // #101318，与权威层的 #0d1117 是两个值，内联那份还会把 CSS 覆盖掉。
     root.style.setProperty("--ui-card-opacity", surfaceAlpha.toFixed(2));
     root.style.setProperty("--ui-card-blur", blur + "px");
     root.style.setProperty(

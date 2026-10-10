@@ -60,8 +60,12 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
 .kv-workbench input::placeholder, .kv-workbench textarea::placeholder { color: var(--wb-muted); opacity: 1; }
 .kv-workbench summary { cursor: pointer; min-height: 40px; padding: 10px 0; color: var(--wb-ink); }
 .kv-workbench summary::marker { color: var(--wb-muted); }
-/* 上传流程：按任务顺序展开，不为尚未产生的结果占位。 */
-.kv-workbench { min-height: 100vh; background: var(--wb-surface); }
+/* 上传流程：按任务顺序展开，不为尚未产生的结果占位。
+   页面级容器一律不铺底：整页铺满的不透明底会把全局壁纸整个盖掉，于是同一个
+   背景图设置在「上传 / 文件」两页看不见、在其余页看得见（用户报的"有些地方
+   有图片背景，有些地方又没有"）。实心的是卡片，不是页面——壁纸本来就该从
+   卡片之间的空隙里露出来，这也是 theme.css 把卡片透明度下限锁在 1.0 的前提。 */
+.kv-workbench { min-height: 100vh; background: none; }
 .kv-workbench .upload-workspace { width: min(100%, 1064px); margin: 0 auto; padding: 36px 32px 56px; }
 .kv-workbench .upload-page-heading { margin-bottom: 28px; }
 .kv-workbench .upload-page-heading p { margin-top: 8px; color: var(--wb-muted); max-width: 72ch; }
@@ -134,7 +138,7 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
 .kv-workbench .upload-local-note { color: var(--wb-muted); font-size: 13px; padding-top: 20px; border-top: 1px solid var(--wb-border); }
 
 /* 上传队列、加载指示与弹窗 */
-.kv-workbench .upload-surface { min-height: 100vh; background: var(--wb-surface); }
+.kv-workbench .upload-surface { min-height: 100vh; background: none; }
 .kv-workbench .upload-spin { animation: kv-upload-spin 1s linear infinite; }
 @keyframes kv-upload-spin { to { transform: rotate(360deg); } }
 .kv-workbench .upload-queue { margin-top: 4px; }
@@ -235,8 +239,8 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
 }
 
 /* ==================== 文件工作台 ==================== */
-.kv-files .files-shell { min-height: 100vh; background: var(--wb-surface); }
-.kv-files .files-main { padding: 0; background: var(--wb-surface); }
+.kv-files .files-shell { min-height: 100vh; background: none; }
+.kv-files .files-main { padding: 0; background: none; }
 .kv-files .files-layout {
   display: grid; grid-template-columns: 272px minmax(0, 1fr); gap: 18px; align-items: start;
   width: min(100%, 1560px); margin: 0 auto; padding: 22px 28px 48px;

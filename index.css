@@ -1329,23 +1329,8 @@
         animation: spin 1s linear infinite;
       }
 
-      /* 滚动条美化 */
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-
-      ::-webkit-scrollbar-thumb {
-        background: var(--primary-light);
-        border-radius: 4px;
-      }
-
-      ::-webkit-scrollbar-thumb:hover {
-        background: var(--primary-color);
-      }
+      /* 滚动条样式已移到 theme.css：它只被本页加载的那份让全站十页里
+         只有上传页是紫滑块，其余是浏览器默认灰。定义收口到权威层。 */
 
       /* Toast 通知 */
       .toast-container {

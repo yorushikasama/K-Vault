@@ -191,6 +191,18 @@ describe('background + base color are centrally managed', function () {
       `壁纸有效可见度 ${product.toFixed(3)} 低于 0.1 下限，等于没有背景图`);
   });
 
+  it('cards stay opaque: the opacity floor is not bypassed', function () {
+    // DESIGN.md 明令"surfaces are opaque"，theme-effects.js 也把透明度下限
+    // 压到 1.0（壁纸透进卡片等于回到磨砂玻璃的老路）。但那份下限一度形同
+    // 虚设：写 --ui-card-opacity 时又回头读了滑块的原始值，于是卡片仍按
+    // 0.86 渲染，壁纸从正文下面透出来。这里守住"写出去的是被约束过的值"。
+    const effects = read('theme-effects.js');
+    assert.match(effects, /opacity\s*=\s*Math\.max\(\s*1(?:\.0)?\s*,\s*opacity\s*\)/,
+      'applyCompatibilityVars 不再把卡片透明度压到下限 —— 实心表面被放开了');
+    assert.doesNotMatch(effects, /surfaceAlpha\s*=[^;]*next\.cardOpacity/,
+      'surfaceAlpha 又去读未约束的 next.cardOpacity 了，下限会被绕过、壁纸透进卡片');
+  });
+
   it('pages do not declare their own base color or body background', function () {
     // 各页可以在 :root 里放自己的私有 token（预览器的代码块配色、
     // webdav 的 --wf-* 等），但"页面底色"和"body 背景"只有一个来源：
@@ -223,9 +235,9 @@ describe('background + base color are centrally managed', function () {
 
   it('only theme.css positions the wallpaper layer', function () {
     // 图层由 theme-effects.js 无条件注入，任何页面都不会缺失。真正要守住的是
-    // 层叠关系：壁纸 z-index 必须为 0，靠 body > #app 等容器的 z-index:5
-    // 让内容浮在它上面。页面样式表若自行改写 z-index，内容要么被壁纸盖住、
-    // 要么反过来把壁纸盖掉 —— 这类问题只在特定页面出现，很难联想到壁纸。
+    // 层叠关系：壁纸层必须挂在负 z-index 上，任何在流内容都自动压在它上面。
+    // 页面样式表若自行改写 z-index，内容要么被壁纸盖住、要么反过来把壁纸盖掉
+    // —— 这类问题只在特定页面出现，很难联想到壁纸。
     for (const sheet of sheets) {
       assert.doesNotMatch(
         read(sheet),
@@ -239,8 +251,69 @@ describe('background + base color are centrally managed', function () {
         `${sheet} 不该重新定义壁纸图层的层级（z-index/opacity），这属于 theme.css`
       );
     }
-    assert.match(theme, /\.ui-bg-image-layer\s*\{[^}]*z-index\s*:\s*0\s*;/,
-      '壁纸图层必须显式保持 z-index: 0');
+    // 负层级是"任意页面都盖不住壁纸"的机制本身：正 z-index 需要每个页面
+    // 记得把自己的内容根抬起来（preview 的 .shell 就漏过一次，壁纸直接
+    // 压在正文上）；负层级把这件事变成默认成立。
+    assert.match(theme, /\.ui-bg-image-layer\s*\{[^}]*z-index\s*:\s*-\d+\s*;/,
+      '壁纸图层必须挂在负 z-index 上，否则又回到"逐页登记内容根"的老路');
+    assert.doesNotMatch(theme, /body\s*>\s*#app\s*,[^}]*z-index\s*:\s*\d/,
+      '不该再用「body > #app 等容器抬 z-index」的白名单来给内容让位');
+  });
+
+  it('no page wrapper paints an opaque full-viewport background', function () {
+    // 用户报的"有些地方有图片背景，有些地方又没有"：壁纸是负层级，任何铺满
+    // 视口的不透明底都会把它整块抹掉。曾经是 .kv-workbench / .upload-surface /
+    // .files-shell / .files-main 四处各铺一层 --wb-surface，于是同一份背景图
+    // 设置在上传/文件两页看不见、其余页看得见。实心的应当是卡片，不是页面。
+    for (const sheet of sheets) {
+      const src = read(sheet);
+      const re = /(\.kv-workbench|\.upload-surface|\.files-shell|\.files-main)\s*\{([^}]*)\}/g;
+      let m;
+      while ((m = re.exec(src))) {
+        const decl = /\bbackground(?:-color)?\s*:\s*([^;}]+)/i.exec(m[2]);
+        if (!decl) continue;
+        const value = decl[1].trim().toLowerCase();
+        // 只有"真的铺了一层色"才算：none / transparent 是我们要的写法。
+        const paints = !/^(none|transparent|inherit|initial|unset)$/.test(value);
+        assert.ok(!paints,
+          `${sheet} 给页面级容器 ${m[1]} 铺了底（${decl[1].trim()}），会把全局壁纸整块盖掉`);
+      }
+    }
+  });
+
+  it('the wallpaper scrim reads a token that flips with the theme', function () {
+    // 蒙版用 --ui-canvas 洗壁纸。如果那个值被写成不随主题翻转的字面量，
+    // 夜间就会拿浅色去洗深色页 —— 壁纸发灰发脏。JS 尤其危险：它在 <html>
+    // 上写内联样式，内联优先级高于 :root，一旦写死主题就再也翻不动。
+    const cssCanvas = /--ui-canvas\s*:\s*([^;]+);/.exec(theme);
+    assert.ok(cssCanvas, 'theme.css 里找不到 --ui-canvas');
+    assert.match(cssCanvas[1], /var\(--ui-canvas-(?:light|dark)\)/,
+      '--ui-canvas 必须从亮/暗两档里选，写死颜色会让主题翻不动');
+
+    // JS 只能写亮色档：写 --ui-canvas 本身会锁死主题。
+    const effects = read('theme-effects.js');
+    assert.doesNotMatch(effects, /setProperty\(\s*["']--ui-canvas["']/,
+      'theme-effects.js 不得直接写 --ui-canvas（内联值会压过 :root 的暗色档）');
+    assert.match(effects, /setProperty\(\s*["']--ui-canvas-light["']/,
+      'theme-effects.js 的 baseColor 应当写进 --ui-canvas-light');
+  });
+
+  it('scrollbar styling lives in exactly one place', function () {
+    // 用户报的"滚动条又是紫色的，其他地方又是灰色的"：唯一一份滚动条样式在
+    // index.css 里、用品牌紫作滑块，而那份样式表只被上传页加载 —— 于是十页里
+    // 一页紫、九页浏览器默认灰。滚动条属于浏览器 chrome，只有一处定义。
+    //
+    // 例外是"藏掉某条滚动条"（.workspace-nav 的横向滚动导航、.header-actions
+    // 的溢出区）：那是布局手段，不是配色，且都限定在具体元素上，不参与全站
+    // 观感。这里只禁止不带元素的全局选择器去定义滚动条外观。
+    const globalAppearance = /(^|[^-\w.])::-(?:webkit|moz)-scrollbar/;
+    const owners = sheets.filter((s) => globalAppearance.test(read(s)));
+    assert.deepStrictEqual(owners, ['theme.css'],
+      `全局滚动条外观只能定义在 theme.css，实际出现在: ${owners.join(', ')}`);
+    assert.match(theme, /::-webkit-scrollbar-thumb\s*\{[^}]*background\s*:\s*var\(--ui-/,
+      '滚动条滑块颜色应当取中性 token，写品牌色会跟页面状态色争注意力');
+    assert.match(theme, /scrollbar-color\s*:/,
+      '缺少 Firefox 的 scrollbar-color —— 那边不认 ::-webkit-scrollbar');
   });
 
   it('solid brand/danger buttons use the theme-aware ink token', function () {

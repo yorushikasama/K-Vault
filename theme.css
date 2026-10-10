@@ -401,9 +401,18 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
      to remember which one to read — preview.css picked the light-only pair,
      so with `background: var(--ui-page-bg) !important` on body its dark mode
      never took effect and the page stayed light. Kept as aliases so any
-     remaining reference resolves correctly in both themes. */
+     remaining reference resolves correctly in both themes.
+
+     --ui-canvas is picked from the two named tiers below. The tiers exist so
+     the admin panel can supply a base color without locking the theme: JS used
+     to write --ui-canvas itself, and an inline value outranks :root, so once
+     the panel wrote a light base color the dark tier could never take effect
+     again — the wallpaper scrim kept washing dark pages with a light color. */
+  --ui-canvas-light: #fafaf8;
+  --ui-canvas-dark: #0d1117;
+  --ui-canvas: var(--ui-canvas-light);
   --ui-page-bg: var(--ui-canvas);
-  --ui-page-bg-dark: var(--ui-canvas);
+  --ui-page-bg-dark: var(--ui-canvas-dark);
   --ui-surface-rgb: 255, 255, 255;
   --ui-surface-rgb-dark: 19, 24, 33;
   --ui-border-rgb: 198, 206, 218;
@@ -456,6 +465,9 @@ html[data-theme="dark"] {
   --shadow-3-dark: var(--ui-elev-3);
   --ui-wall-opacity: 0.3;
   --ui-wall-mask: 0.42;
+  /* 壁纸蒙版读的就是它，所以这个翻转必须在这里发生，否则夜间会拿浅色去
+     洗一张深色底上的壁纸。 */
+  --ui-canvas: var(--ui-canvas-dark);
 }
 
 html,
@@ -483,6 +495,48 @@ html[data-theme="dark"] body {
   background-image: none !important;
 }
 
+/* 滚动条：全站一处定义。
+   此前唯一一份在 index.css 里，用 --primary-light（品牌紫）作滑块，而它只被
+   index.html 加载——于是同一个站点里，上传页是紫滑块、其余九页是浏览器默认
+   灰滑块。滚动条属于浏览器 chrome，不属于任何单个页面的设计语言，所以定义
+   放在权威层，颜色也取中性 token：有色滑块会和页面里的状态色争注意力。
+   Firefox 走 scrollbar-color（标准），WebKit/Blink 走 ::-webkit-scrollbar。
+   局部要藏滚动条的元素（.workspace-nav、.header-actions）各自在页面样式表里
+   覆盖，选择器更具体，不受这里影响。 */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-line-strong) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--ui-line-strong);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ui-ink-muted);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* 壁纸三层挂在负 z-index 上：它们天然排在所有内容之下，因此不需要
+   「哪个页面记得把自己的内容根抬起来」这种逐页白名单。此前是 z-index 0/1/2
+   配一份 body > #app / .page / .container 的清单，漏一页壁纸就压住正文
+   （preview 的 .shell 正是这么漏的），而清单内的页面又各自用不透明底把
+   壁纸整个盖住——同一份设置，一半页面看不见、一半页面被压字。
+   负层级同时消掉这两个方向：层永远在内容之下，页面只要不铺不透明底，
+   全局背景图就自然透出来。 */
 .ui-bg-image-layer,
 .ui-bg-canvas-layer,
 .ui-bg-noise-layer {
@@ -492,7 +546,7 @@ html[data-theme="dark"] body {
 }
 
 .ui-bg-image-layer {
-  z-index: 0;
+  z-index: -3;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -514,13 +568,13 @@ html[data-theme="dark"] body {
 }
 
 .ui-bg-canvas-layer {
-  z-index: 1;
+  z-index: -2;
   width: 100vw;
   height: 100dvh;
 }
 
 .ui-bg-noise-layer {
-  z-index: 2;
+  z-index: -1;
   opacity: var(--ui-noise-opacity);
   background-image:
     radial-gradient(rgba(17, 24, 39, 0.11) 0.4px, transparent 0.5px),
@@ -533,14 +587,6 @@ html[data-theme="dark"] body {
 html[data-theme="dark"] .ui-bg-noise-layer {
   mix-blend-mode: screen;
   opacity: calc(var(--ui-noise-opacity) * 0.75);
-}
-
-body > #app,
-body > .page,
-body > .login-container,
-body > .container {
-  position: relative;
-  z-index: 5;
 }
 
 .header,
@@ -692,7 +738,7 @@ html[data-theme="dark"] .el-button--danger {
   --ui-success-strong: #15803d;
 
   /* -- Surfaces (opaque; alpha lives in the legacy -rgb knobs) ---------- */
-  --ui-canvas: #fafaf8;
+  --ui-canvas: var(--ui-canvas-light);
   --ui-surface: #ffffff;
   --ui-surface-sunken: #f2f4f7;
   --ui-surface-raised: #ffffff;
@@ -788,7 +834,7 @@ html[data-theme="dark"] {
   --ui-danger-strong: #ef4444;
   --ui-success-strong: #16a34a;
 
-  --ui-canvas: #0d1117;
+  --ui-canvas: var(--ui-canvas-dark);
   --ui-surface: #161b22;
   --ui-surface-sunken: #0b0f14;
   --ui-surface-raised: #1c232c;
