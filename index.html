@@ -9,15 +9,16 @@
     <link rel="shortcut icon" href="/favicon.ico">
   <!-- Vue 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <link rel="stylesheet" href="/theme.css?v=0d1a7e3dea">
+  <link rel="stylesheet" href="/theme.css?v=4551e107c6">
   <script src="/theme-core.js?v=6a9f70f021"></script>
-  <script defer src="/theme-effects.js?v=29ad427078"></script>
+  <script src="/accent-color.js?v=35dbe085ce"></script>
+  <script defer src="/theme-effects.js?v=3df8ef36e3"></script>
     <link rel="stylesheet" href="/ui-buttons.css?v=1b5c5edaa7">
     <!-- 应用外壳（顶栏）四个分区共用，因此排在页面私有样式之前：
          上传/文件/图库/WebDAV 的顶栏必须逐字一样，页面样式只负责内容区。 -->
     <link rel="stylesheet" href="/app-shell.css?v=140b992d46">
     <link rel="stylesheet" href="/index.css?v=06c6981d59">
-    <link rel="stylesheet" href="/workbench.css?v=48db0dca47">
+    <link rel="stylesheet" href="/workbench.css?v=54e5bdb207">
   </head>
   <body class="kv-workbench kv-upload">
     <div id="app" v-cloak>

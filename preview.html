@@ -9,9 +9,9 @@
   <link rel="shortcut icon" href="/favicon.ico">
   <!-- 增强预览引擎按需从 unpkg 加载：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
-  <link rel="stylesheet" href="/theme.css?v=0d1a7e3dea">
+  <link rel="stylesheet" href="/theme.css?v=4551e107c6">
   <link rel="stylesheet" href="/ui-buttons.css?v=1b5c5edaa7">
-  <link rel="stylesheet" href="/preview.css?v=3f7f7ecf14">
+  <link rel="stylesheet" href="/preview.css?v=88d76789c1">
   <link rel="stylesheet" href="/mobile-refactor.css?v=a868ed831f">
   <!-- 预览页此前是全站唯一没加载 theme-core.js 的页面。没有它就没有
        ThemeManager，data-theme 永远是 null，于是 preview.css 里
@@ -19,7 +19,8 @@
        失效（实测两模式 body 背景同色）。它必须同步放在 <head>：首帧前把
        data-theme 写到 <html> 上，延后会闪一下白屏。 -->
   <script src="/theme-core.js?v=6a9f70f021"></script>
-  <script defer src="/theme-effects.js?v=29ad427078"></script>
+  <script src="/accent-color.js?v=35dbe085ce"></script>
+  <script defer src="/theme-effects.js?v=3df8ef36e3"></script>
 </head>
 <body>
   <div class="shell">

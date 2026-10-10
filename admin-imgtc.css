@@ -728,29 +728,34 @@ body {
   border: none !important;
 }
 
+/* 批量操作按钮原先各配一支固定色（蓝 #6a9eff / 靛 #6f8bff / 红 #ff7b7b /
+   绿 #35d49b）压白字。它们是"复制/移动/删除/下载"四种动作，语义上并不需要
+   四种不同的颜色；而固定色一旦写死，换壁纸时这四个按钮会保持原样、和其余
+   界面脱节（也躲过了紫色那轮扫描：色相 219/228 落在检测区间之外）。
+   现在：主要动作用品牌色（随壁纸），删除用危险色（语义固定），取消用中性档。 */
 .batch-btn-copy {
-  background: #6a9eff !important;
-  color: #fff !important;
+  background: var(--ui-brand) !important;
+  color: var(--ui-brand-ink) !important;
 }
 
 .batch-btn-move {
-  background: #6f8bff !important;
-  color: #fff !important;
+  background: var(--ui-brand) !important;
+  color: var(--ui-brand-ink) !important;
 }
 
 .batch-btn-delete {
-  background: #ff7b7b !important;
-  color: #fff !important;
+  background: var(--ui-danger-strong) !important;
+  color: #ffffff !important;
 }
 
 .batch-btn-download {
-  background: #35d49b !important;
-  color: #fff !important;
+  background: var(--ui-success-strong) !important;
+  color: #ffffff !important;
 }
 
 .batch-btn-cancel {
-  background: rgba(80, 80, 80, 0.15) !important;
-  color: #3b3b3b !important;
+  background: var(--ui-surface-active) !important;
+  color: var(--ui-ink) !important;
 }
 
 .batch-shortcuts {
@@ -915,15 +920,20 @@ body {
   height: 240px !important;
 }
 
-/* Admin UI Refresh */
+/* Admin UI Refresh
+   ---------------------------------------------------------------------------
+   这组 --admin-* 原先是一套独立的中性色 + 青绿品牌色，且没有暗色对应块
+   （本文件里 data-theme="dark" 出现 0 次）。于是本页在夜间仍是白底深字，
+   和其它页面完全脱节。现在改接 --ui-* 权威层：色相随壁纸、主题自动翻转，
+   本页不再需要自己的暗色块。 */
 :root {
-  --admin-ink: #142033;
-  --admin-muted: #627083;
-  --admin-surface: rgba(255, 255, 255, 1);
-  --admin-line: rgba(20, 32, 51, 0.12);
-  --admin-brand: #0f766e;
-  --admin-brand-deep: #0b4f4a;
-  --admin-accent: #f59e0b;
+  --admin-ink: var(--ui-ink);
+  --admin-muted: var(--ui-ink-muted);
+  --admin-surface: var(--ui-surface);
+  --admin-line: var(--ui-line);
+  --admin-brand: var(--ui-brand);
+  --admin-brand-deep: var(--ui-brand-active);
+  --admin-accent: var(--ui-warning);
 }
 
 body {
@@ -935,7 +945,7 @@ body {
 .header-content {
   border-radius: var(--radius-md);
   border: 1px solid var(--admin-line);
-  background: #ffffff;
+  background: var(--ui-surface);
   box-shadow: var(--shadow-1);
 }
 
@@ -998,7 +1008,7 @@ body {
   height: 38px;
   border-radius: var(--radius-md);
   border: 1px solid var(--admin-line);
-  background: #ffffff;
+  background: var(--ui-surface);
   display: inline-flex;
   align-items: center;
   justify-content: center;

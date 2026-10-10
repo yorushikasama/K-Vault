@@ -679,16 +679,15 @@ void darkMode;
       root.removeAttribute("data-ui-transparent-cards");
     }
 
-// 页面底色只有一个概念、一个名字。原先这里只写 --ui-page-bg，而壁纸蒙版
-// 读的是 --ui-canvas：管理员在 UI 面板里改了 baseColor，body 会变，
-// 蒙版却不跟着变，最后蒙版用浅色压住一张已经偏色的背景 —— 全局看着发灰。
-// 两个名字并存是"样式没有统一管理"的根源，这里收敛到 --ui-canvas。
-//
-// 写入的是亮色档 token 而不是解析后的值：内联优先级高于 :root，若直接把
-// #fafaf8 写到 --ui-canvas 上，html[data-theme="dark"] 里那条
-// --ui-canvas: var(--ui-canvas-dark) 就再也翻不动了，夜间蒙版会拿浅色去
-// 洗深色页。分成 --ui-canvas-light / -dark 两档后，主题切换仍由 CSS 决定。
-root.style.setProperty("--ui-canvas-light", next.baseColor);
+    // 页面底色现在完全由主题层决定：--ui-canvas 从 --ui-canvas-light/-dark
+    // 里挑一份，而两份都是 hsl(var(--ui-hue) calc(var(--ui-tint) * k) L%) ——
+    // 色相和强度来自壁纸，JS 通过 --ui-hue / --ui-tint 参与，明度配方留在
+    // CSS 里。
+    //
+    // 这里原先写 `--ui-canvas-light = next.baseColor`。那个 baseColor 已经
+    // 死了：admin 面板里没有任何控件会改它，读值处永远回 #fafaf8，于是每次
+    // applySettings 都把画布钉回白底 —— 内联优先级高于 :root，壁纸取色根本
+    // 生效不了。删掉，画布回归 CSS 单一来源。
     // 夜间档不再由 JS 写死：它跟着 --ui-canvas-dark 走。此前这里写
     // #101318，与权威层的 #0d1117 是两个值，内联那份还会把 CSS 覆盖掉。
     root.style.setProperty("--ui-card-opacity", surfaceAlpha.toFixed(2));
@@ -725,6 +724,227 @@ root.style.setProperty("--ui-canvas-light", next.baseColor);
     return globalUrl;
   }
 
+  /* ===== 壁纸取色 ======================================================
+     全站没有主题色：强调色与中性面的色相都从壁纸算出来。这里做三件事 ——
+     读壁纸像素 → 归纳出一个色相 → 写成 CSS 变量。明度阶梯不在这里定，
+     那是 theme.css 的事（每个角色一份亮/暗配方），JS 只给色相和强度。
+
+     没有壁纸、壁纸是灰阶、或跨域读不到像素时，一律走单色回退：
+     --ui-tint 停在 0%，CSS 里所有色度项塌成 0，页面就是黑白稿。 */
+
+  var PALETTE_CACHE_KEY = "kvUiWallpaperPalette";
+  // 取样尺寸：取色只需要"这张图整体偏什么色"，48×48 足够，
+  // 而且与原图大小无关 —— 2K 壁纸和缩略图耗时一样。
+  var PALETTE_SAMPLE_SIZE = 48;
+
+  /* 用来把 token 解析成真实 rgb 的探针。把 var(--ui-*-light/-dark) 赋给
+     background-color 这类真实属性时，浏览器会替我们完成 var() 替换与 calc()
+     求值，拿到的就是屏幕上那个颜色 —— 于是 JS 不必再抄一份明度配方。
+     这一点很重要：配方抄到 JS 就又多了一处真值，改 CSS 改不动代码。
+
+     挂在 <html> 上而不是 <body>：本脚本 eval 时 body 未必存在，而
+     documentElement 一定在。背景传播只作用于 html/body 自身，挂在 html
+     下面的 0×0 隐藏盒什么都不画，因此不会干扰页面。 */
+  var probe = null;
+
+  function ensureProbe() {
+    if (probe && probe.isConnected) return probe;
+    var host = document.documentElement;
+    if (!host) return null;
+    probe = document.createElement("div");
+    probe.setAttribute("aria-hidden", "true");
+    // 全部样式内联：这个盒子不进样式表，也就不会变成一条"没有元素匹配"的
+    // 死 CSS 规则。
+    probe.style.cssText =
+      "position:absolute;width:0;height:0;visibility:hidden;pointer-events:none;top:0;left:0";
+    host.appendChild(probe);
+    return probe;
+  }
+
+  function parseCssColor(value) {
+    var m = /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/.exec(String(value || ""));
+    if (!m) return null;
+    return [Math.round(Number(m[1])), Math.round(Number(m[2])), Math.round(Number(m[3]))];
+  }
+
+  function resolveTokenColors(names) {
+    var el = ensureProbe();
+    if (!el) return null;
+    var out = [];
+    for (var i = 0; i < names.length; i += 1) {
+      el.style.backgroundColor = "var(" + names[i] + ")";
+      var rgb = parseCssColor(window.getComputedStyle(el).backgroundColor);
+      if (rgb) out.push(rgb);
+    }
+    el.style.backgroundColor = "";
+    return out.length ? out : null;
+  }
+
+  /* 强调色要压在这些底面上读得清，所以搜索时把它们全部作为约束。
+     挑的是每个主题下最不利的那几个，而不是全部六个面：约束越少越容易
+     在极端色相上找到解，而搜索一旦失败就得回退单色（整页失色）。
+     - active 是该主题下离底最远的一档（亮色最暗 / 暗色最亮），绑定最强
+     - sunken 次之
+     - ink-inverse 是"压在实心强调色上的那层文字"的反相，等于把
+       "强调色当按钮底"这一用途也一并约束进去 */
+  var LIGHT_CONSTRAINT_TOKENS = [
+    "--ui-surface-active-light",
+    "--ui-surface-sunken-light",
+    "--ui-ink-inverse-light",
+  ];
+  var DARK_CONSTRAINT_TOKENS = [
+    "--ui-surface-active-dark",
+    "--ui-surface-sunken-dark",
+    "--ui-ink-inverse-dark",
+  ];
+
+  function readPaletteCache() {
+    try {
+      var raw = localStorage.getItem(PALETTE_CACHE_KEY);
+      if (!raw) return null;
+      var entry = JSON.parse(raw);
+      if (!entry || typeof entry.url !== "string") return null;
+      return entry;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writePaletteCache(entry) {
+    try {
+      localStorage.setItem(PALETTE_CACHE_KEY, JSON.stringify(entry));
+    } catch (e) {}
+  }
+
+  /** 把一套调色板写进 CSS。四个变量，两个旋钮 + 两档强调色。 */
+  function applyPalette(palette) {
+    if (!palette) return;
+    root.style.setProperty("--ui-hue", String(palette.hue));
+    root.style.setProperty("--ui-tint", palette.tint + "%");
+    if (palette.accent) {
+      root.style.setProperty("--ui-brand-light", palette.accent.light);
+      root.style.setProperty("--ui-brand-dark", palette.accent.dark);
+    }
+  }
+
+  /** 单色回退：没有可用色相时页面就是黑白稿。 */
+  function monoPalette(api) {
+    return api.buildPalette(null, {});
+  }
+
+  /**
+   * 由提取结果构造调色板。
+   *
+   * 分两步：先把色相/强度写进 CSS，这样下面探针读到的就是**这张壁纸的**
+   * 真实底面；再拿这些底面去搜强调色。顺序不能反 —— 底面本身带着壁纸的
+   * 色度，用"纯白/纯黑"当底面搜出来的强调色会偏亮/偏暗，实测压在真实
+   * 底面上有 294 个色相达不到 4.5:1（最差 3.93）。
+   */
+  function buildPalette(api, extracted) {
+    var hue = extracted && typeof extracted.hue === "number" && isFinite(extracted.hue)
+      ? extracted.hue
+      : null;
+    var tint = extracted ? api.tintForSaturation(extracted.sat) : 0;
+
+    // tint 为 0 就等于没有可用色相：没壁纸，或者是张灰阶图。
+    if (hue === null || tint <= 0) return monoPalette(api);
+
+    root.style.setProperty("--ui-hue", String(hue));
+    root.style.setProperty("--ui-tint", tint + "%");
+
+    var lightBgs = resolveTokenColors(LIGHT_CONSTRAINT_TOKENS);
+    var darkBgs = resolveTokenColors(DARK_CONSTRAINT_TOKENS);
+
+    return api.buildPalette(extracted, {
+      backgroundsLight: lightBgs || undefined,
+      backgroundsDark: darkBgs || undefined,
+    });
+  }
+
+  /**
+   * 读壁纸像素并归纳色相。
+   *
+   * 跨域壁纸若没带 CORS 头，画布会被标为 tainted，getImageData 抛异常 ——
+   * 那是"读不到"，不是"没颜色"，同样走单色回退（回调 null）。
+   */
+  function extractFromUrl(url, done) {
+    var api = paletteApi();
+    if (!api) {
+      done(null);
+      return;
+    }
+    var img = new Image();
+    if (!/^data:/i.test(url)) img.crossOrigin = "anonymous";
+    img.onload = function () {
+      var extracted = null;
+      try {
+        var canvas = document.createElement("canvas");
+        canvas.width = PALETTE_SAMPLE_SIZE;
+        canvas.height = PALETTE_SAMPLE_SIZE;
+        var ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0, PALETTE_SAMPLE_SIZE, PALETTE_SAMPLE_SIZE);
+        var data = ctx.getImageData(0, 0, PALETTE_SAMPLE_SIZE, PALETTE_SAMPLE_SIZE).data;
+        extracted = api.extractHue(data);
+      } catch (e) {
+        extracted = null;
+      }
+      done(extracted);
+    };
+    img.onerror = function () {
+      done(null);
+    };
+    img.src = url;
+  }
+
+  /** 重新算一次并落盘缓存；壁纸没变时不重复取色。 */
+  function refreshPalette(url) {
+    var api = paletteApi();
+    if (!api) return;
+
+    if (paletteState.url === url) return;
+    paletteState.url = url;
+
+    if (!url) {
+      applyPalette(monoPalette(api));
+      writePaletteCache({ url: "" });
+      return;
+    }
+
+    extractFromUrl(url, function (extracted) {
+      // 下载期间用户又换了壁纸，这次结果已经过期，丢弃。
+      if (paletteState.url !== url) return;
+      var palette = buildPalette(api, extracted);
+      applyPalette(palette);
+      writePaletteCache({
+        url: url,
+        hue: palette.hue,
+        tint: palette.tint,
+        brandLight: palette.accent ? palette.accent.light : "",
+        brandDark: palette.accent ? palette.accent.dark : "",
+      });
+    });
+  }
+
+  /** 首帧之前尽量用上次的结果，避免"先黑白再上色"的闪动。 */
+  function applyCachedPalette(url) {
+    var api = paletteApi();
+    if (!api) return;
+    var cached = readPaletteCache();
+    if (!cached || cached.url !== url) return;
+    if (url && (typeof cached.hue !== "number" || !cached.brandLight)) return;
+    applyPalette({
+      hue: cached.hue,
+      tint: cached.tint,
+      accent: { light: cached.brandLight, dark: cached.brandDark },
+    });
+  }
+
+  function paletteApi() {
+    return window.KVAccentColor || null;
+  }
+
+  var paletteState = { url: null };
+
   function applyBackgroundLayers(next) {
     if (!ensureLayers()) return;
     var url = resolveBackgroundUrl(next);
@@ -735,6 +955,8 @@ root.style.setProperty("--ui-canvas-light", next.baseColor);
       layers.image.style.display = "none";
       layers.image.style.backgroundImage = "none";
     }
+    // 取色与壁纸本身同一个来源：换了壁纸才算，没壁纸就退回黑白。
+    refreshPalette(url);
   }
 
   function applyEffect(next) {

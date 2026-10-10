@@ -746,8 +746,8 @@
     }
     .ui-upload-drop:hover {
       background: rgb(248, 250, 252);
-      border-color: rgba(15, 118, 110, 0.35);
-      color: #0f766e;
+      border-color: var(--ui-brand-ring);
+      color: var(--ui-brand);
     }
     .ui-segmented {
       display: inline-flex;
@@ -785,8 +785,8 @@
       user-select: none;
     }
     .ui-segment input:checked + span {
-      background: #0f766e;
-      color: #fff;
+      background: var(--ui-brand);
+      color: var(--ui-brand-ink);
     }
     .ui-design-range-wrap {
       display: grid;
@@ -816,7 +816,7 @@
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      border: 2px solid #0f766e;
+      border: 2px solid var(--ui-brand);
       background: #ffffff;
       box-shadow: 0 2px 8px rgba(15, 23, 42, 0.24);
     }
@@ -824,7 +824,7 @@
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      border: 2px solid #0f766e;
+      border: 2px solid var(--ui-brand);
       background: #ffffff;
       box-shadow: 0 2px 8px rgba(15, 23, 42, 0.24);
     }
@@ -856,7 +856,7 @@
       gap: 6px;
     }
     .ui-design-save-status[data-state="saving"] {
-      color: #0f766e;
+      color: var(--ui-brand);
     }
     .ui-design-save-status[data-state="success"] {
       color: #16a34a;
@@ -908,9 +908,9 @@
       filter: brightness(1.03);
     }
     .ui-design-alert .el-message-box__btns .el-button--primary {
-      background: #0f766e;
-      border-color: #0f766e;
-      color: #fff;
+      background: var(--ui-brand);
+      border-color: var(--ui-brand);
+      color: var(--ui-brand-ink);
     }
     .ui-design-alert .el-message-box__btns .el-button--default {
       border-color: rgba(17, 24, 39, 0.12);

@@ -4,23 +4,31 @@ The visual system for YoruVault after the "de-slop" pass. The one rule that over
 
 ## Color
 
-Every brand colour is defined once, in `theme.css`, and everything else is derived from it with `color-mix()`. A literal hex outside the token blocks is a second source of truth that the theme swap cannot reach — that is the defect this file exists to prevent.
+**There is no theme colour.** Every colour on every page is computed from the wallpaper. With no wallpaper the page is a pure black-and-white greyscale.
 
-Brand (`theme.css` `--ui-brand*`):
+The derivation lives in `accent-color.js` (pure functions, unit-tested) and is driven by `theme-effects.js`:
 
-- **Blue** `#1a5fa8` (light) / `#79b8ff` (dark) — index, login, gallery, webdav, admin, notice pages
-- **Teal** `#0f766e` / `#0f8f8a` — preview, admin-waterfall
-- These two are deliberately 35° apart in hue so they stay distinguishable, while both sitting in the logo's cool family. The logo itself measures hue 180/195/210 — the old violet brand was never related to it.
-- Element UI semantic colors (success/warning/danger/info) — keep
-- Surface + ink neutrals from theme.css `--ui-*` tokens — keep the hue, may adjust opacity/lightness
+1. The wallpaper is drawn to a 48×48 canvas and its pixels are reduced to one representative hue, weighted by saturation. Greyscale images, and images that cannot be read (cross-origin without CORS), yield no hue.
+2. `theme-effects.js` writes two CSS variables on `<html>`: `--ui-hue` (the angle) and `--ui-tint` (how strongly to apply it, 0–20%).
+3. `theme.css` expresses every neutral as `hsl(var(--ui-hue) calc(var(--ui-tint) * k) L%)`, where `k` is that role's share of the tint. Large areas (canvas, cards) take little; small text takes more — the same saturation looks grubby on a big panel and reads fine on small type.
+4. The accent is found by *search*: `findAccessibleForAll()` walks lightness at the wallpaper's hue until the colour clears 4.5:1 against **every** surface it can land on. Two tiers are produced because one colour cannot serve both themes — the old brand blue `#1a5fa8` managed 2.67:1 on a dark ground, and its night tier `#79b8ff` only 1.99:1 on white.
+
+Why hue-only inheritance rather than the pixels themselves: a wallpaper contains pixels at every lightness, so using them directly guarantees unreadable combinations. The hue answers "what colour does this image look like"; lightness is a legibility question, so the contrast algorithm decides it.
+
+Tint is capped at 20%, a measured ceiling rather than a taste call: across all 360 hues and every text/background pairing, 20% holds a 4.66:1 worst case, while 24% drops to 4.46:1 (light `--ui-ink-muted` on the selected-state surface). Raising it means re-running the sweeps in `test/theme-script-split.test.js`.
 
 Deriving, not restating:
 
 - **Tints and borders:** `color-mix(in srgb, var(--ui-brand) N%, transparent)`. Never a hard-coded `rgba(…)` of the brand hue — those do not follow the theme.
-- **Text on a brand-tinted surface:** `color-mix(in srgb, var(--ui-brand) N%, var(--ui-ink))`, which darkens on light and lightens on dark automatically. A literal dark tint only works in one theme and then needs a hand-written mirror rule, which is how the palette forked in the first place.
-- **Focus rings, soft fills, hover states:** read the derived tokens (`--ui-brand-soft`, `--ui-brand-ring`), not new literals.
+- **Text on a brand-tinted surface:** `color-mix(in srgb, var(--ui-brand) N%, var(--ui-ink))`.
+- **Hover / active tiers:** `color-mix(in srgb, var(--ui-brand) N%, var(--ui-ink))` — mixing toward ink moves *away* from the page in both themes, so button contrast only improves.
+- **Focus rings, soft fills:** read `--ui-brand-soft` / `--ui-brand-ring`, not new literals.
 
-Every brand pair must clear WCAG AA (4.5:1 for text, 3:1 for non-text) as text on canvas, as text on surface, and as the ground for `--ui-brand-ink`. Measured for the current pair — light `#1a5fa8`: 6.19 / 6.47 / 6.47; dark `#79b8ff`: 9.11 / 8.33 / 9.07. Re-measure before changing either value.
+The accent must clear WCAG AA (4.5:1) as text on canvas, as text on every surface, and as the ground for `--ui-brand-ink`. The test asserts this for all 360 hues instead of two fixed values, so it cannot be satisfied by editing a constant.
+
+Pages must not define `--ui-brand` or their own neutral palette. preview and admin-waterfall used to pin a teal brand, and admin-imgtc kept a private `--admin-*` scale with no dark block at all — every one of those forks the palette the moment the wallpaper changes.
+
+Element UI semantic colors (success/warning/danger/info) intentionally stay fixed: they carry meaning (a delete button is red in any theme), not brand identity.
 
 Treatment rules (this is where AI-ness is removed):
 - **Gradients → flat.** Replace every decorative `linear-gradient` / `radial-gradient` (bodies, buttons, icon chips, cards, headers, batch buttons) with a *solid fill of the same hue*. Use the gradient's dominant/first stop as the solid. A tonal two-stop of the same hue is only allowed on a single hero-scale element if truly needed; default is flat.

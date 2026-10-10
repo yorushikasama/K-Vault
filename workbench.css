@@ -9,7 +9,7 @@
    上传页用站点主色，文件页用青色（.kv-files 覆盖）——同一个后台里
    「上传」和「文件」两区一眼能分开。 */
 .kv-workbench {
-  --wb-surface: rgb(var(--ui-surface-rgb));
+  --wb-surface: var(--ui-surface);
   --wb-subtle: var(--ui-surface-sunken);
   --wb-border: var(--ui-line-strong);
   --wb-ink: var(--ui-ink);
@@ -23,11 +23,11 @@
   margin: 0; padding: 0; color: var(--wb-ink);
   font: 14px/1.6 system-ui, -apple-system, "Segoe UI", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif;
 }
-/* 文件页的青色 accent。--ui-* 里没有对应语义，所以保留显式取值，
-   但暗色档写在这里的一处，不再散落到下面那个块里。 */
-.kv-workbench.kv-files { --wb-accent: #0f766e; --wb-accent-ink: #0f766e; --wb-accent-soft: #e8f4f2; }
-/* 中性色已由 --ui-* 自动适配暗色，这里只剩文件页的青色需要在暗色下换档。 */
-html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-accent-ink: #85d7d1; --wb-accent-soft: #17332f; }
+/* 文件页原先自带一支青色 accent（#0f766e / 暗色 #0f8f8a），用来和上传区区分。
+   但全站现在没有主题色 —— 强调色是壁纸算出来的，页面自己钉一支色就又是
+   "第二份真值"，换壁纸时两区会一彩一灰。改成引用全局品牌 token：两区的
+   区分交给版面（工作台外壳 vs 文件列表），不再靠固定颜色。 */
+.kv-workbench.kv-files { --wb-accent: var(--ui-brand); --wb-accent-ink: var(--ui-brand); --wb-accent-soft: var(--ui-brand-soft); }
 .kv-workbench *, .kv-workbench *::before, .kv-workbench *::after { box-sizing: border-box; }
 .kv-workbench #app { width: 100%; max-width: none; margin: 0; padding: 0 !important; }
 .kv-workbench h1, .kv-workbench h2, .kv-workbench h3, .kv-workbench p, .kv-workbench dl { margin: 0; }

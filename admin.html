@@ -10,20 +10,21 @@
   <!-- Vue / Element / Sentry 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://js.sentry-cdn.com" crossorigin>
-  <link rel="stylesheet" href="/theme.css?v=0d1a7e3dea">
+  <link rel="stylesheet" href="/theme.css?v=4551e107c6">
   <script src="/theme-core.js?v=6a9f70f021"></script>
-  <script defer src="/theme-effects.js?v=29ad427078"></script>
+  <script src="/accent-color.js?v=35dbe085ce"></script>
+  <script defer src="/theme-effects.js?v=3df8ef36e3"></script>
   <!-- 应用外壳（顶栏）四个分区共用，因此排在页面私有样式之前：
        上传/文件/图库/WebDAV 的顶栏必须逐字一样，页面样式只负责内容区。 -->
   <link rel="stylesheet" href="/app-shell.css?v=140b992d46">
   <!-- Import CSS -->
-  <link rel="stylesheet" href="./admin-imgtc.css?v=e19769d0ff">
+  <link rel="stylesheet" href="./admin-imgtc.css?v=714197462d">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css" integrity="sha384-ZUOUQ+hNJ+DV4HfNwHNFq4PcclqayiUDpCMsWD1lOpUQZ/go0ofwD/GLaYdzOcdx" crossorigin="anonymous" referrerpolicy="no-referrer">
   <!-- Sentry loader 故意不加 SRI：这个脚本内容随项目配置变化（采样率、集成项），钉死哈希会在后台改配置时把它整个拦掉。 -->
   <script src="https://js.sentry-cdn.com/219f636ac7bde5edab2c3e16885cb535.min.js" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="/mobile-refactor.css?v=a868ed831f">
-  <link rel="stylesheet" href="/admin.css?v=4f84bcc114">
-  <link rel="stylesheet" href="/workbench.css?v=48db0dca47">
+  <link rel="stylesheet" href="/admin.css?v=aa2cd75e81">
+  <link rel="stylesheet" href="/workbench.css?v=54e5bdb207">
 </head>
 <body class="kv-workbench kv-files">
   <div id="app" v-cloak>

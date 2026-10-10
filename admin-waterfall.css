@@ -1,29 +1,19 @@
-    /* 本页的品牌是青绿（瀑布流与预览同一支）。只重指向品牌 token，
-       派生档交给 color-mix 算，页面自己的 --wf-primary 只是个别名。 */
+    /* 本页原先和预览页共用一套青绿品牌色（--ui-brand 重指向 #0f766e），
+       那是"第二份真值"：全站换成壁纸派生之后，页面自己钉色会让跳转时
+       观感断裂。现在本页只保留自己真正私有的东西 —— 表面/描边/阴影档位，
+       以及 --wf-primary 这个历史别名（指向全局品牌 token）。 */
     :root {
-      --wf-surface: #ffffff;
-      --wf-border: rgba(255, 255, 255, 0.58);
+      --wf-surface: var(--ui-surface);
+      --wf-border: var(--ui-line-strong);
       --wf-shadow: var(--shadow-2);
       --wf-shadow-soft: var(--shadow-1);
-      --ui-brand: #0f766e;
-      --ui-brand-hover: #0d6a62;
-      --ui-brand-active: #0a574f;
-      --ui-brand-ink: #ffffff;
-      --ui-brand-soft: color-mix(in srgb, var(--ui-brand) 13%, transparent);
       --wf-primary: var(--ui-brand);
       --wf-primary-soft: var(--ui-brand-soft);
     }
 
     html[data-theme="dark"] {
-      --wf-surface: #101a2b;
-      --wf-border: rgba(120, 145, 192, 0.32);
       --wf-shadow: var(--shadow-2-dark);
       --wf-shadow-soft: var(--shadow-1-dark);
-      --ui-brand: #67d4c2;
-      --ui-brand-hover: #8ee0d2;
-      --ui-brand-active: #4bbfa9;
-      --ui-brand-ink: #04211f;
-      --ui-brand-soft: color-mix(in srgb, var(--ui-brand) 17%, transparent);
       --wf-primary: var(--ui-brand);
       --wf-primary-soft: var(--ui-brand-soft);
     }

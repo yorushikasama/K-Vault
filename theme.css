@@ -413,15 +413,25 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
      to write --ui-canvas itself, and an inline value outranks :root, so once
      the panel wrote a light base color the dark tier could never take effect
      again — the wallpaper scrim kept washing dark pages with a light color. */
-  --ui-canvas-light: #fafaf8;
-  --ui-canvas-dark: #0d1117;
+  /* 全站配色的两个旋钮，由壁纸算出来（theme-effects.js 写、CSS 读）。
+     这里没有主题色：色相取自壁纸，强度取自那张图的鲜艳程度。
+
+       --ui-hue   壁纸里最有代表性的色相角（deg）
+       --ui-tint  那个色相该出多少力，百分比
+
+     下面每个中性色都写成 hsl(H calc(T * k) L%)，k 是该角色分到的着色系数：
+     大面积（底、卡片）少拿一点，文字多拿一点 —— 同等的饱和度涂在大块上
+     会显得脏，涂在小字上才刚好认得出。两个旋钮都不分主题，所以亮/暗两档
+     仍然由 CSS 翻转，JS 写内联值也锁不死主题。
+
+     没有壁纸时 --ui-tint 停在 0%，所有色度项塌成 0，页面就是纯灰阶。 */
+  --ui-hue: 0;
+  --ui-tint: 0%;
+  --ui-canvas-light: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.78) 97%);
+  --ui-canvas-dark: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.80) 7.1%);
   --ui-canvas: var(--ui-canvas-light);
   --ui-page-bg: var(--ui-canvas);
   --ui-page-bg-dark: var(--ui-canvas-dark);
-  --ui-surface-rgb: 255, 255, 255;
-  --ui-surface-rgb-dark: 19, 24, 33;
-  --ui-border-rgb: 198, 206, 218;
-  --ui-border-rgb-dark: 92, 105, 126;
   /* Opaque surfaces, no blur. Glass is gone. */
   --ui-card-opacity: 1;
   --ui-card-blur: 0px;
@@ -458,8 +468,6 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
 }
 
 html[data-theme="dark"] {
-  --ui-surface-rgb: var(--ui-surface-rgb-dark);
-  --ui-border-rgb: var(--ui-border-rgb-dark);
   --ui-shadow-soft: var(--ui-elev-1);
   --ui-shadow-soft-dark: var(--ui-elev-1);
   --shadow-1: var(--ui-elev-1);
@@ -627,8 +635,16 @@ html[data-theme="dark"] .ui-bg-noise-layer {
 .el-message-box__content,
 .el-message-box__header,
 .el-message-box__btns {
-  background: rgba(var(--ui-surface-rgb), var(--ui-card-opacity)) !important;
-  border-color: rgba(var(--ui-border-rgb), 0.46) !important;
+  /* 这些卡片原先走 rgba(var(--ui-surface-rgb), --ui-card-opacity) —— 那对
+     "-rgb" 数字孪生是中性色的第二份真值（改 --ui-surface 改不动它）。现在
+     中性面本身已经是主题感知的 hsl(...)，直接从它派生半透明版本：color-mix
+     不需要把颜色拆成通道，也就没有第二份数字要同步。 */
+  background: color-mix(
+    in srgb,
+    var(--ui-surface) calc(var(--ui-card-opacity) * 100%),
+    transparent
+  ) !important;
+  border-color: color-mix(in srgb, var(--ui-line-strong) 46%, transparent) !important;
   box-shadow: var(--ui-shadow-soft) !important;
   backdrop-filter: var(--ui-card-backdrop-filter);
   -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
@@ -663,8 +679,8 @@ html[data-theme="dark"] .el-message-box {
 .theme-auto-inline-toggle,
 .theme-admin-toggle,
 .gallery-theme-toggle {
-  border-color: rgba(var(--ui-border-rgb), 0.58) !important;
-  background: rgba(var(--ui-surface-rgb), 1) !important;
+  border-color: color-mix(in srgb, var(--ui-line-strong) 58%, transparent) !important;
+  background: var(--ui-surface) !important;
   box-shadow: var(--shadow-1) !important;
   color: var(--ui-ink-secondary) !important;
 }
@@ -685,7 +701,11 @@ html[data-theme="dark"] .gallery-theme-toggle svg.lucide {
 }
 html[data-theme="dark"] .stats-bar,
 html[data-theme="dark"] .guest-notice {
-  background: rgba(var(--ui-surface-rgb), var(--ui-card-opacity)) !important;
+  background: color-mix(
+    in srgb,
+    var(--ui-surface) calc(var(--ui-card-opacity) * 100%),
+    transparent
+  ) !important;
 }
 
 html[data-theme="dark"] .el-button--primary {
@@ -724,17 +744,31 @@ html[data-theme="dark"] .el-button--danger {
 
 :root {
   /* -- Brand ------------------------------------------------------------
-     蓝色，取自 logo 本身（其主色相为 180/195/210 的青蓝，此前那套紫
-     跟 logo 毫无关系）。色相刻意与另一支青色品牌（--wf-* 在预览/瀑布流
-     用的 175）错开 35°，两者同属冷色系但一眼能区分。
+     这里没有主题色。强调色是**算出来的**：theme-effects.js 读壁纸像素的
+     主要色相，再由 accent-color.js 对当前底色搜索出一个达标明度，写进
+     --ui-brand-light / --ui-brand-dark。
 
-     --ui-brand-* 之下的一切都由此派生：soft/hover/ring 走 color-mix，
-     各页的浅色底不再自己写 rgba(…) 字面量。这样"强调色"只有一个来源，
-     改品牌色只需改这一个块，且亮暗两档自动跟随主题。 */
-  --ui-brand: #1a5fa8;
-  --ui-brand-hover: #1d6fb8;
-  --ui-brand-active: #144880;
-  --ui-brand-ink: #ffffff;
+     为什么是两档而不是一个值：同一个颜色不可能同时压在两种底色上。实测
+     #1a5fa8（老品牌的蓝）在深色底上只有 2.67:1，而它的夜间档 #79b8ff 在
+     白底上只有 1.99:1 —— 亮暗必须各算一个。所以竖切两档、由主题挑一个，
+     这和 --ui-canvas-light/-dark 是同一个模式。
+
+     默认值是纯黑白：没有壁纸时不取色，页面就是黑白稿（用户要的"没有壁纸
+     那么就是黑色或者白色"）。JS 一取到色相就覆盖这两个值。
+
+     --ui-brand-* 之下的一切仍由此派生：soft/hover/ring 走 color-mix，
+     各页的浅色底不再自己写 rgba(…) 字面量。 */
+  --ui-brand-light: #000000;
+  --ui-brand-dark: #ffffff;
+  --ui-brand: var(--ui-brand-light);
+
+  /* hover / active 由 --ui-brand 派生，往 --ui-ink 方向推：亮色档里的
+     ink 是深色、暗色档里的 ink 是浅色，所以两个主题下都是"离页面底色更远"，
+     压在按钮上的文字对比度只会升不会降。用 color-mix 而不是再算两个值，
+     是为了 JS 只需写两档实色 —— 派生档永远跟着走，不会漏掉。 */
+  --ui-brand-hover: color-mix(in srgb, var(--ui-brand) 78%, var(--ui-ink));
+  --ui-brand-active: color-mix(in srgb, var(--ui-brand) 62%, var(--ui-ink));
+  --ui-brand-ink: var(--ui-ink-inverse);
   --ui-brand-soft: color-mix(in srgb, var(--ui-brand) 10%, transparent);
   --ui-brand-soft-hover: color-mix(in srgb, var(--ui-brand) 16%, transparent);
   --ui-brand-ring: color-mix(in srgb, var(--ui-brand) 35%, transparent);
@@ -749,23 +783,56 @@ html[data-theme="dark"] .el-button--danger {
   --ui-danger-strong: #b91c1c;
   --ui-success-strong: #15803d;
 
-  /* -- Surfaces (opaque; alpha lives in the legacy -rgb knobs) ---------- */
-  --ui-canvas: var(--ui-canvas-light);
-  --ui-surface: #ffffff;
-  --ui-surface-sunken: #f2f4f7;
-  --ui-surface-raised: #ffffff;
-  --ui-surface-hover: #f4f6f9;
-  --ui-surface-active: #eceff4;
+  /* -- Surfaces (opaque; alpha lives in the legacy -rgb knobs) ----------
+     色相/强度同样来自壁纸。三档明度差（sunken < canvas < surface）撑起
+     层级，彩度按面积分配：卡片是大块，拿得少；下沉区小、拿得多一点才看得出。
 
-  /* -- Ink -------------------------------------------------------------- */
-  --ui-ink: #101828;
-  --ui-ink-secondary: #475467;
-  --ui-ink-muted: #667085;
-  --ui-ink-inverse: #ffffff;
+     和 --ui-canvas 同一个模式：每个角色给亮/暗两份配方，`--ui-*` 从中挑
+     一份，暗色块里换指针。这样"暗色 = 值交换"仍然成立，JS 写内联也锁不死
+     主题（它只写 --ui-hue / --ui-tint，两个都不分主题）。 */
+  --ui-surface-light: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.35) 99%);
+  --ui-surface-dark: hsl(var(--ui-hue) calc(var(--ui-tint) * 1.00) 11%);
+  --ui-surface: var(--ui-surface-light);
+  --ui-surface-sunken-light: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.70) 95.5%);
+  --ui-surface-sunken-dark: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.75) 5.8%);
+  --ui-surface-sunken: var(--ui-surface-sunken-light);
+  --ui-surface-raised-light: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.35) 99%);
+  --ui-surface-raised-dark: hsl(var(--ui-hue) calc(var(--ui-tint) * 1.05) 14.2%);
+  --ui-surface-raised: var(--ui-surface-raised-light);
+  --ui-surface-hover-light: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.68) 96%);
+  --ui-surface-hover-dark: hsl(var(--ui-hue) calc(var(--ui-tint) * 1.05) 14.8%);
+  --ui-surface-hover: var(--ui-surface-hover-light);
+  --ui-surface-active-light: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.85) 93.5%);
+  --ui-surface-active-dark: hsl(var(--ui-hue) calc(var(--ui-tint) * 1.15) 19%);
+  --ui-surface-active: var(--ui-surface-active-light);
+
+  /* -- Ink --------------------------------------------------------------
+     文字是唯一"该多着色"的东西：小字需要更多彩度才认得出，而明度由对比度
+     定死（实测 12,960 组文字/底色在 0–360° 全色相下最差 4.66:1）。
+     --ui-ink 色相与页面同源，所以整页读起来是一套色，不是黑字压彩底。
+
+     --ui-ink-inverse 是"压在实心强调色上的那层文字"，等于反相的 ink：
+     亮色档近白、暗色档近黑，于是品牌按钮上的字两种主题下都读得清。 */
+  --ui-ink-light: hsl(var(--ui-hue) calc(var(--ui-tint) * 1.00) 11%);
+  --ui-ink-dark: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.85) 93%);
+  --ui-ink: var(--ui-ink-light);
+  --ui-ink-secondary-light: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.70) 34%);
+  --ui-ink-secondary-dark: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.70) 73%);
+  --ui-ink-secondary: var(--ui-ink-secondary-light);
+  --ui-ink-muted-light: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.46) 39%);
+  --ui-ink-muted-dark: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.48) 62%);
+  --ui-ink-muted: var(--ui-ink-muted-light);
+  --ui-ink-inverse-light: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.35) 99%);
+  --ui-ink-inverse-dark: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.80) 7.1%);
+  --ui-ink-inverse: var(--ui-ink-inverse-light);
 
   /* -- Lines & focus ---------------------------------------------------- */
-  --ui-line: #e4e7ec;
-  --ui-line-strong: #d0d5dd;
+  --ui-line-light: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.55) 90.6%);
+  --ui-line-dark: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.65) 21.4%);
+  --ui-line: var(--ui-line-light);
+  --ui-line-strong-light: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.60) 84.3%);
+  --ui-line-strong-dark: hsl(var(--ui-hue) calc(var(--ui-tint) * 0.70) 27.2%);
+  --ui-line-strong: var(--ui-line-strong-light);
   --ui-focus-ring: var(--ui-brand-ring);
 
   /* -- Shape ------------------------------------------------------------ */
@@ -831,13 +898,7 @@ html[data-theme="dark"] .el-button--danger {
 html[data-theme="dark"] {
   color-scheme: dark;
 
-  --ui-brand: #79b8ff;
-  --ui-brand-hover: #9ccaff;
-  --ui-brand-active: #5a9fe8;
-  --ui-brand-ink: #0b1120;
-  --ui-brand-soft: color-mix(in srgb, var(--ui-brand) 14%, transparent);
-  --ui-brand-soft-hover: color-mix(in srgb, var(--ui-brand) 20%, transparent);
-  --ui-brand-ring: color-mix(in srgb, var(--ui-brand) 45%, transparent);
+  --ui-brand: var(--ui-brand-dark);
 
   --ui-success: #4ade80;
   --ui-warning: #fbbf24;
@@ -847,19 +908,19 @@ html[data-theme="dark"] {
   --ui-success-strong: #16a34a;
 
   --ui-canvas: var(--ui-canvas-dark);
-  --ui-surface: #161b22;
-  --ui-surface-sunken: #0b0f14;
-  --ui-surface-raised: #1c232c;
-  --ui-surface-hover: #1f2731;
-  --ui-surface-active: #262f3a;
+  --ui-surface: var(--ui-surface-dark);
+  --ui-surface-sunken: var(--ui-surface-sunken-dark);
+  --ui-surface-raised: var(--ui-surface-raised-dark);
+  --ui-surface-hover: var(--ui-surface-hover-dark);
+  --ui-surface-active: var(--ui-surface-active-dark);
 
-  --ui-ink: #e6edf3;
-  --ui-ink-secondary: #b1bac4;
-  --ui-ink-muted: #8b949e;
-  --ui-ink-inverse: #0d1117;
+  --ui-ink: var(--ui-ink-dark);
+  --ui-ink-secondary: var(--ui-ink-secondary-dark);
+  --ui-ink-muted: var(--ui-ink-muted-dark);
+  --ui-ink-inverse: var(--ui-ink-inverse-dark);
 
-  --ui-line: #30363d;
-  --ui-line-strong: #3d444d;
+  --ui-line: var(--ui-line-dark);
+  --ui-line-strong: var(--ui-line-strong-dark);
   --ui-focus-ring: color-mix(in srgb, var(--ui-brand) 55%, transparent);
 
   --ui-elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);

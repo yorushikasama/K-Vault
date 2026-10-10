@@ -24,6 +24,25 @@ describe('theme script split', function () {
   // 现在每个页面都必须接入主题系统。
   const themedPages = pages;
 
+  /**
+   * 加载 accent-color.js 并在沙箱里求值。
+   *
+   * 它同时支持 window / module.exports 双份导出，所以这里可以像测普通模块
+   * 一样 require 它 —— 不必去解析页面里的脚本标签。
+   */
+  const loadAccentModule = () => require(path.join(root, 'accent-color.js'));
+
+  it('every page that renders colour loads the accent deriver', function () {
+    // 强调色和中性面的色相都是 accent-color.js 算的。漏掉这个脚本的页面会
+    // 静默走单色回退（theme-effects.js 里 paletteApi() 返回 null）——
+    // 页面本身不报错，但永远不上色，很难从截图看出是"脚本没加载"。
+    for (const page of pages) {
+      if (!/href="[^"]*theme\.css/.test(read(page))) continue;
+      assert.match(read(page), /src="\/accent-color\.js/,
+        `${page} 没有加载 accent-color.js —— 壁纸取色在该页不会生效，页面会一直是黑白`);
+    }
+  });
+
   it('every page that loads theme.css also loads theme-core.js', function () {
     for (const page of pages) {
       const src = read(page);
@@ -159,6 +178,14 @@ describe('background + base color are centrally managed', function () {
   const sheets = fs.readdirSync(root).filter((f) => f.endsWith('.css'));
   const theme = read('theme.css');
 
+  /**
+   * 加载 accent-color.js 并在沙箱里求值。
+   *
+   * 它同时支持 window / module.exports 双份导出，所以这里可以像测普通模块
+   * 一样 require 它 —— 不必去解析页面里的脚本标签。
+   */
+  const loadAccentModule = () => require(path.join(root, 'accent-color.js'));
+
   it('keeps wallpaper strength in tokens, not per-rule magic numbers', function () {
     // 壁纸强度是两个值的乘积：图层 opacity × 蒙版 opacity。上屏的是乘积，
     // 改任何一个都会改动观感，所以两者必须是 token 而不是散落的字面量。
@@ -290,12 +317,58 @@ describe('background + base color are centrally managed', function () {
     assert.match(cssCanvas[1], /var\(--ui-canvas-(?:light|dark)\)/,
       '--ui-canvas 必须从亮/暗两档里选，写死颜色会让主题翻不动');
 
-    // JS 只能写亮色档：写 --ui-canvas 本身会锁死主题。
+    // JS 不得写任何具体的色阶 token —— 三个层级（canvas / surface / ink）
+    // 全是内联写入的高危对象：内联值压过 :root，写了就锁死主题。
     const effects = read('theme-effects.js');
-    assert.doesNotMatch(effects, /setProperty\(\s*["']--ui-canvas["']/,
-      'theme-effects.js 不得直接写 --ui-canvas（内联值会压过 :root 的暗色档）');
-    assert.match(effects, /setProperty\(\s*["']--ui-canvas-light["']/,
-      'theme-effects.js 的 baseColor 应当写进 --ui-canvas-light');
+    for (const token of ['--ui-canvas', '--ui-canvas-light', '--ui-canvas-dark',
+      '--ui-surface', '--ui-ink', '--ui-line']) {
+      assert.doesNotMatch(effects, new RegExp(`setProperty\\(\\s*["']${token}["']`),
+        `theme-effects.js 不得直接写 ${token}（内联值会压过 :root 的主题档）`);
+    }
+    // 它只能写两个不分主题的旋钮：色相与着色强度。
+    assert.match(effects, /setProperty\(\s*["']--ui-hue["']/,
+      'theme-effects.js 应当把壁纸色相写进 --ui-hue');
+    assert.match(effects, /setProperty\(\s*["']--ui-tint["']/,
+      'theme-effects.js 应当把着色强度写进 --ui-tint');
+  });
+
+  it('every neutral colour is derived from the wallpaper knobs', function () {
+    // 用户要的"页面所有颜色根据壁纸来自动计算"：不是只改强调色，而是底色、
+    // 卡片、描边、文字全部随壁纸的色相走。这里钉住那个结构 —— 每个中性
+    // token 都必须是 hsl(var(--ui-hue) … var(--ui-tint) …) 而不是字面量。
+    // 一旦有人把某个面写回 #ffffff，那部分就脱离了壁纸，页面会花。
+    const NEUTRALS = [
+      'canvas-light', 'canvas-dark',
+      'surface-light', 'surface-dark',
+      'surface-sunken-light', 'surface-sunken-dark',
+      'surface-raised-light', 'surface-raised-dark',
+      'surface-hover-light', 'surface-hover-dark',
+      'surface-active-light', 'surface-active-dark',
+      'ink-light', 'ink-dark',
+      'ink-secondary-light', 'ink-secondary-dark',
+      'ink-muted-light', 'ink-muted-dark',
+      'ink-inverse-light', 'ink-inverse-dark',
+      'line-light', 'line-dark',
+      'line-strong-light', 'line-strong-dark',
+    ];
+    for (const name of NEUTRALS) {
+      const m = new RegExp(`--ui-${name}\\s*:\\s*([^;]+);`).exec(theme);
+      assert.ok(m, `theme.css 里缺少 --ui-${name} —— 中性色应当亮/暗成对给出`);
+      assert.match(m[1], /var\(--ui-hue\)/,
+        `--ui-${name} 写成了 ${m[1].trim()} —— 中性色应当由 --ui-hue 派生，不要字面量`);
+      assert.match(m[1], /var\(--ui-tint\)/,
+        `--ui-${name} 没跟着 --ui-tint 走 —— 壁纸取色对它不生效`);
+    }
+  });
+
+  it('with no wallpaper every neutral collapses to pure grey', function () {
+    // "如果没有壁纸，那么就是黑色或者白色"：--ui-tint 的默认值必须是 0%，
+    // 这样所有 calc(var(--ui-tint) * k) 都塌成 0，hsl(H 0% L%) 与色相无关，
+    // 页面就是纯灰阶。若默认值不是 0，没有壁纸的站点会凭空带一层色。
+    const m = /--ui-tint\s*:\s*([^;]+);/.exec(theme);
+    assert.ok(m, 'theme.css 里找不到 --ui-tint 的默认值');
+    assert.match(m[1].trim(), /^0(%|\s*%)?$/,
+      `--ui-tint 的默认值是 ${m[1].trim()}，没有壁纸时应当是 0%`);
   });
 
   it('scrollbar styling lives in exactly one place', function () {
@@ -385,30 +458,38 @@ describe('background + base color are centrally managed', function () {
     });
 
     it('brand tokens are defined exactly once per theme', function () {
-      // --ui-brand 是品牌色的唯一来源。同名 token 若在别处再定义一次，
+      // --ui-brand 是强调色的唯一来源。同名 token 若在别处再定义一次，
       // 主题切换时两套值会分叉（历史上 webdav 就自带一份 --wf-primary-solid）。
       //
-      // 例外：页面**故意**换品牌（preview / admin-waterfall 是青绿那支）。
-      // 那不是"第二份真值"，而是该页的品牌定义——但它必须成对给出亮/暗两档，
-      // 否则夜间会掉回主站品牌色。下面按文件分组核算。
+      // 现在的形态是两档实色 + 一个指针：
+      //   --ui-brand-light / --ui-brand-dark 由 JS 按壁纸写内联
+      //   --ui-brand 从两档里挑一份（暗色块换指针）
+      // 所以 theme.css 里 --ui-brand 的值是 var(...) 而不是色值 —— 它已经
+      // 不是一个可以写死的字面量了。
       const brandDefsIn = (src) => [...src.matchAll(/--ui-brand:\s*([^;]+);/g)].map((m) => m[1].trim());
 
       const base = brandDefsIn(theme);
       assert.strictEqual(base.length, 2,
         `theme.css 的 --ui-brand 应当只定义亮/暗两档，实际 ${base.length} 处：${JSON.stringify(base)}`);
-      assert.ok(base.every((v) => /^#[0-9a-f]{6}$/i.test(v)),
-        `theme.css 的 --ui-brand 应当是本层里的具体色值，实际 ${JSON.stringify(base)}`);
+      assert.deepStrictEqual(base, ['var(--ui-brand-light)', 'var(--ui-brand-dark)'],
+        `--ui-brand 应当从亮/暗两档里挑，实际 ${JSON.stringify(base)}`);
+
+      // 默认值就是黑白：没有壁纸时不取色（用户要的"没有壁纸就是黑色或者白色"）。
+      const light = /--ui-brand-light\s*:\s*([^;]+);/.exec(theme);
+      const dark = /--ui-brand-dark\s*:\s*([^;]+);/.exec(theme);
+      assert.ok(light && dark, 'theme.css 缺少 --ui-brand-light / --ui-brand-dark 的默认值');
+      assert.strictEqual(light[1].trim().toLowerCase(), '#000000',
+        `--ui-brand-light 的默认值应当是纯黑，实际 ${light[1].trim()}`);
+      assert.strictEqual(dark[1].trim().toLowerCase(), '#ffffff',
+        `--ui-brand-dark 的默认值应当是纯白，实际 ${dark[1].trim()}`);
 
       for (const sheet of sheets) {
         if (sheet === 'theme.css') continue;
         const defs = brandDefsIn(read(sheet));
-        if (!defs.length) continue;
-        // 页面要么完全不定义，要么亮暗成对定义。这里只放行成对的情况。
-        const rootBlock = read(sheet).indexOf('html[data-theme="dark"]');
-        assert.ok(rootBlock > -1 && defs.length >= 2,
-          `${sheet} 重新定义了 --ui-brand，但没有成对给出亮/暗两档 —— 夜间会掉回主站品牌色`);
-        assert.ok(defs.every((v) => /^#[0-9a-f]{6}$/i.test(v)),
-          `${sheet} 的 --ui-brand 必须是具体色值，实际 ${JSON.stringify(defs)}`);
+        // 页面一律不得再定义品牌色：强调色是壁纸算出来的，页面自己钉一个值
+        // 就是"第二份真值"，跳转时观感会断（预览页和瀑布流此前各有一套青绿）。
+        assert.deepStrictEqual(defs, [],
+          `${sheet} 重新定义了 --ui-brand（${JSON.stringify(defs)}）—— 强调色由壁纸派生，页面不得钉色`);
       }
     });
 
@@ -428,41 +509,93 @@ describe('background + base color are centrally managed', function () {
       }
     });
 
-    it('brand pair clears WCAG AA as ink, as text, and as a ground', function () {
-      // 换色时必须同时满足三种用法，任何一头不达标都会让某处读不出来：
-      // 作文字压在页面底 / 压在卡片上，以及当实心底时压在其上的 ink。
-      const rgb = (hex) => {
-        const h = hex.replace('#', '');
-        return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
-      };
-      const lum = ([r, g, b]) => {
-        const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
-        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
-      };
-      const ratio = (a, b) => {
-        const la = lum(rgb(a)), lb = lum(rgb(b));
-        return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
-      };
-      // 按出现顺序取具体色值：theme.css 里先是亮色档、后是暗色档。
-      // 不能用「indexOf('html[data-theme=dark]')」再找第一个 --ui-brand：
-      // 文件顶部还有一个历史遗留的 dark 块，那样会取到亮色档的值。
-      const brandDefs = [...theme.matchAll(/--ui-brand:\s*(#[0-9a-f]{6})\s*;/gi)].map((m) => m[1]);
-      assert.strictEqual(brandDefs.length, 2,
-        `theme.css 应当恰好给出亮/暗两档 --ui-brand，实际 ${JSON.stringify(brandDefs)}`);
-      const surfaceDefs = [...theme.matchAll(/--ui-surface:\s*(#[0-9a-f]{6})\s*;/gi)].map((m) => m[1]);
+    it('derivation always lands on WCAG AA, for every hue', function () {
+      // 这里不再校验"某个色值达标"，而是校验**派生函数本身**达标：壁纸的
+      // 色相是任意值（0–360° 连续），页面必须照样读得清。旧测试钉的是两个
+      // 固定色值（#1a5fa8 / #79b8ff），换色就得改测试 —— 而现在已经没有
+      // 固定色值可钉了，所以改成遍历全色相去证明"不存在读不清的壁纸"。
+      //
+      // 顺带说明为什么强调色必须分两档：同一个颜色压不到两种底色上。老品牌
+      // 蓝 #1a5fa8 在深色底上只有 2.67:1，它的夜间档 #79b8ff 在白底上只有
+      // 1.99:1 —— 亮暗各算一个不是设计偏好，是可读性的硬要求。
+      const accent = loadAccentModule();
 
-      for (const [label, brand, canvas, ink, surface] of [
-        ['亮色', brandDefs[0], '#fafaf8', '#ffffff', surfaceDefs[0]],
-        ['暗色', brandDefs[1], '#0d1117', '#0d1117', surfaceDefs[1]],
-      ]) {
-        assert.ok(surface, `${label}找不到 --ui-surface`);
-        const onCanvas = ratio(brand, canvas);
-        assert.ok(onCanvas >= 4.5, `${label}品牌色 ${brand} 作文字压在页底只有 ${onCanvas.toFixed(2)}:1`);
-        const onSurface = ratio(brand, surface);
-        assert.ok(onSurface >= 4.5, `${label}品牌色 ${brand} 作文字压在卡片上只有 ${onSurface.toFixed(2)}:1`);
-        const asGround = ratio(ink, brand);
-        assert.ok(asGround >= 4.5, `${label}品牌色 ${brand} 作实心底时文字只有 ${asGround.toFixed(2)}:1`);
+      // 中性面的底色配方（与 theme.css 的 calc 系数一一对应）。
+      // 这些数字改了的话，这里的断言会失败 —— 那正是想要的：配方是
+      // 对比度的地基，动了就必须重新验证。
+      const TINT = accent.TINT_MAX;
+      const LIGHT_BG = [
+        ['canvas', 0.78, 97], ['surface', 0.35, 99],
+        ['sunken', 0.70, 95.5], ['active', 0.85, 93.5],
+      ];
+      const DARK_BG = [
+        ['canvas', 0.80, 7.1], ['surface', 1.00, 11],
+        ['raised', 1.05, 14.2], ['active', 1.15, 19],
+      ];
+      const surfaceHexes = (recipe, hue) =>
+        recipe.map(([, k, l]) => accent.rgbToHex(accent.hslToRgb(hue, (TINT / 100) * k, l / 100)));
+
+      let worstLight = { ratio: Infinity };
+      let worstDark = { ratio: Infinity };
+      for (let hue = 0; hue < 360; hue += 1) {
+        const lightBgs = surfaceHexes(LIGHT_BG, hue);
+        const darkBgs = surfaceHexes(DARK_BG, hue);
+        const pair = accent.buildAccent(hue, {
+          backgroundsLight: lightBgs,
+          backgroundsDark: darkBgs,
+          saturation: 0.6,
+        });
+        // 作文字：压在每一种底面上都要达标（不是只压最白那个）
+        for (const bg of lightBgs) {
+          const r = accent.contrastRatio(accent.hexToRgb(pair.light), accent.hexToRgb(bg));
+          if (r < worstLight.ratio) worstLight = { ratio: r, hue, bg };
+        }
+        for (const bg of darkBgs) {
+          const r = accent.contrastRatio(accent.hexToRgb(pair.dark), accent.hexToRgb(bg));
+          if (r < worstDark.ratio) worstDark = { ratio: r, hue, bg };
+        }
+        // 作实心底：强调色自己当按钮底色时，压在其上的反相文字也要达标
+        assert.ok(accent.contrastRatio(accent.hexToRgb(pair.light), [255, 255, 255]) >= 4.5,
+          `hue ${hue}: 亮档强调色作实心底时白字只有 ${accent.contrastRatio(accent.hexToRgb(pair.light), [255, 255, 255]).toFixed(2)}:1`);
+        assert.ok(accent.contrastRatio(accent.hexToRgb(pair.dark), [0, 0, 0]) >= 4.5,
+          `hue ${hue}: 暗档强调色作实心底时黑字只有 ${accent.contrastRatio(accent.hexToRgb(pair.dark), [0, 0, 0]).toFixed(2)}:1`);
       }
+
+      assert.ok(worstLight.ratio >= 4.5,
+        `亮档强调色压在 (hue ${worstLight.hue}, ${worstLight.bg}) 上只有 ${worstLight.ratio.toFixed(2)}:1`);
+      assert.ok(worstDark.ratio >= 4.5,
+        `暗档强调色压在 (hue ${worstDark.hue}, ${worstDark.bg}) 上只有 ${worstDark.ratio.toFixed(2)}:1`);
+    });
+
+    it('falls back to black and white when there is no wallpaper', function () {
+      // 用户的原话："如果没有壁纸，那么就是黑色或者白色"。
+      // 三种输入都算"没有可用壁纸"：没有壁纸、灰阶壁纸、非数字色相。
+      const accent = loadAccentModule();
+      for (const [label, input] of [
+        ['没有壁纸', null],
+        ['undefined', undefined],
+        ['NaN', NaN],
+        ['空串', ''],
+        ['灰阶壁纸（提取不出色相）', { hue: 0, sat: 0 }],
+      ]) {
+        const palette = accent.buildPalette(input, {});
+        assert.strictEqual(palette.tint, 0, `${label}: tint 应当是 0，实际 ${palette.tint}`);
+        assert.strictEqual(palette.mono, true, `${label}: 应当走单色回退`);
+        assert.strictEqual(palette.hasWallpaperHue, false, `${label}: 不该认为取到了色相`);
+        assert.strictEqual(palette.accent.light, '#000000', `${label}: 亮档应当是纯黑`);
+        assert.strictEqual(palette.accent.dark, '#ffffff', `${label}: 暗档应当是纯白`);
+      }
+    });
+
+    it('gives a coloured wallpaper a non-zero tint', function () {
+      // 反向守住：有颜色的壁纸必须真的染上页面，否则"取色"是空转。
+      const accent = loadAccentModule();
+      const palette = accent.buildPalette({ hue: 210, sat: 0.6 }, {});
+      assert.ok(palette.tint > 0, `有色壁纸的 tint 应当大于 0，实际 ${palette.tint}`);
+      assert.ok(palette.tint <= accent.TINT_MAX,
+        `tint ${palette.tint} 超出对比度上限 ${accent.TINT_MAX}`);
+      assert.strictEqual(palette.mono, false, '有彩壁纸不该走单色回退');
+      assert.notStrictEqual(palette.accent.light, '#000000', '有彩壁纸的强调色不该是纯黑');
     });
   });
 });
