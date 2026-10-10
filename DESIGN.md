@@ -1,21 +1,31 @@
 # Design
 
-The visual system for K-Vault after the "de-slop" pass. The one rule that overrides everything: **brand hues are fixed, only their treatment changes.** When you meet an AI tell, keep the color and change the structure.
+The visual system for K-Vault after the "de-slop" pass. The one rule that overrides everything: **a colour exists in exactly one place — the token layer. Everything else derives from it.** When you meet an AI tell, keep the structure and change the treatment.
 
 ## Color
 
-Hues are frozen. Do not introduce new hues, do not change existing ones. What changes is *how* color is applied.
+Every brand colour is defined once, in `theme.css`, and everything else is derived from it with `color-mix()`. A literal hex outside the token blocks is a second source of truth that the theme swap cannot reach — that is the defect this file exists to prevent.
 
-Existing brand hues (keep exactly):
-- Purple brand `#8a4bff` (light) / `#9aa9ff` (dark) — index, login, gallery, webdav, notice pages
-- Teal brand `#0f766e` / `#0f8f8a` — preview, admin-waterfall, admin UI panel
+Brand (`theme.css` `--ui-brand*`):
+
+- **Blue** `#1a5fa8` (light) / `#79b8ff` (dark) — index, login, gallery, webdav, admin, notice pages
+- **Teal** `#0f766e` / `#0f8f8a` — preview, admin-waterfall
+- These two are deliberately 35° apart in hue so they stay distinguishable, while both sitting in the logo's cool family. The logo itself measures hue 180/195/210 — the old violet brand was never related to it.
 - Element UI semantic colors (success/warning/danger/info) — keep
 - Surface + ink neutrals from theme.css `--ui-*` tokens — keep the hue, may adjust opacity/lightness
+
+Deriving, not restating:
+
+- **Tints and borders:** `color-mix(in srgb, var(--ui-brand) N%, transparent)`. Never a hard-coded `rgba(…)` of the brand hue — those do not follow the theme.
+- **Text on a brand-tinted surface:** `color-mix(in srgb, var(--ui-brand) N%, var(--ui-ink))`, which darkens on light and lightens on dark automatically. A literal dark tint only works in one theme and then needs a hand-written mirror rule, which is how the palette forked in the first place.
+- **Focus rings, soft fills, hover states:** read the derived tokens (`--ui-brand-soft`, `--ui-brand-ring`), not new literals.
+
+Every brand pair must clear WCAG AA (4.5:1 for text, 3:1 for non-text) as text on canvas, as text on surface, and as the ground for `--ui-brand-ink`. Measured for the current pair — light `#1a5fa8`: 6.19 / 6.47 / 6.47; dark `#79b8ff`: 9.11 / 8.33 / 9.07. Re-measure before changing either value.
 
 Treatment rules (this is where AI-ness is removed):
 - **Gradients → flat.** Replace every decorative `linear-gradient` / `radial-gradient` (bodies, buttons, icon chips, cards, headers, batch buttons) with a *solid fill of the same hue*. Use the gradient's dominant/first stop as the solid. A tonal two-stop of the same hue is only allowed on a single hero-scale element if truly needed; default is flat.
 - **No gradient text.** No `background-clip: text`. Solid brand color; emphasis via weight/size.
-- **No colored glows.** Remove `box-shadow` that uses a brand hue (e.g. `rgba(138,75,255,.2)`, teal glows). Shadows are neutral only.
+- **No colored glows.** Remove `box-shadow` that uses a brand hue (teal glows included). Shadows are neutral only.
 - **Accent is for action/state, not decoration.** Brand color on primary buttons, current selection, focus ring, active state. Neutrals carry surfaces and chrome.
 - **Never gray-on-color.** Muted text on a tinted surface uses a darker shade of that surface's hue, not a gray.
 

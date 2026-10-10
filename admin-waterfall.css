@@ -1,10 +1,17 @@
+    /* 本页的品牌是青绿（瀑布流与预览同一支）。只重指向品牌 token，
+       派生档交给 color-mix 算，页面自己的 --wf-primary 只是个别名。 */
     :root {
       --wf-surface: #ffffff;
       --wf-border: rgba(255, 255, 255, 0.58);
       --wf-shadow: var(--shadow-2);
       --wf-shadow-soft: var(--shadow-1);
-      --wf-primary: #0f766e;
-      --wf-primary-soft: rgba(15, 118, 110, 0.13);
+      --ui-brand: #0f766e;
+      --ui-brand-hover: #0d6a62;
+      --ui-brand-active: #0a574f;
+      --ui-brand-ink: #ffffff;
+      --ui-brand-soft: color-mix(in srgb, var(--ui-brand) 13%, transparent);
+      --wf-primary: var(--ui-brand);
+      --wf-primary-soft: var(--ui-brand-soft);
     }
 
     html[data-theme="dark"] {
@@ -12,8 +19,13 @@
       --wf-border: rgba(120, 145, 192, 0.32);
       --wf-shadow: var(--shadow-2-dark);
       --wf-shadow-soft: var(--shadow-1-dark);
-      --wf-primary: #67d4c2;
-      --wf-primary-soft: rgba(103, 212, 194, 0.17);
+      --ui-brand: #67d4c2;
+      --ui-brand-hover: #8ee0d2;
+      --ui-brand-active: #4bbfa9;
+      --ui-brand-ink: #04211f;
+      --ui-brand-soft: color-mix(in srgb, var(--ui-brand) 17%, transparent);
+      --wf-primary: var(--ui-brand);
+      --wf-primary-soft: var(--ui-brand-soft);
     }
 
     * {

@@ -9,7 +9,9 @@
       --primary: var(--ui-brand);
       --primary-light: var(--ui-brand-hover);
       --primary-dark: var(--ui-brand-active);
-      --accent: #ffd7e4;
+      /* 曾经是 #ffd7e4（粉色）—— 与本页主题色不是一支，是上面那处 --bg 笔误
+         的同一批残留。它唯一的用途是批量条里的计数强调，指回品牌色。 */
+      --accent: var(--ui-brand);
       --card-bg: var(--ui-surface);
       --shadow: var(--ui-elev-1);
       --shadow-hover: var(--ui-elev-2);
@@ -83,7 +85,7 @@
 
     .stat-badge {
       padding: 8px 16px;
-      background: rgba(138, 75, 255, 0.08);
+      background: color-mix(in srgb, var(--ui-brand) 8%, transparent);
       border-radius: var(--radius-sm);
       font-size: 0.88em;
       color: #555;

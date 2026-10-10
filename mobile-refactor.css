@@ -421,7 +421,7 @@ html[data-theme="dark"] {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: rgba(138, 75, 255, 0.08);
+    background: color-mix(in srgb, var(--ui-brand) 8%, transparent);
   }
 
   .header-content .actions > .theme-admin-toggle {
@@ -431,7 +431,7 @@ html[data-theme="dark"] {
   html[data-theme="dark"] .header-content .actions > i,
   html[data-theme="dark"] .header-content .actions > .el-dropdown > .el-dropdown-link,
   html[data-theme="dark"] .header-content .actions > .theme-admin-toggle {
-    background: rgba(154, 169, 255, 0.18);
+    background: color-mix(in srgb, var(--ui-brand) 18%, transparent);
   }
 
   .el-main.main-container {
@@ -844,7 +844,7 @@ html[data-theme="dark"] .el-dropdown-menu__item:not(.is-disabled):hover,
 html[data-theme="dark"] .el-dropdown-menu__item--selected,
 html[data-theme="dark"] .el-select-dropdown__item.hover,
 html[data-theme="dark"] .el-select-dropdown__item:hover {
-  background: rgba(111, 132, 255, 0.22) !important;
+  background: color-mix(in srgb, var(--ui-brand) 22%, transparent) !important;
   color: #ffffff !important;
 }
 

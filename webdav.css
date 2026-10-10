@@ -3,12 +3,12 @@
         --wf-border: rgba(255, 255, 255, 0.58);
         --wf-shadow: var(--shadow-2);
         --wf-shadow-soft: var(--shadow-1);
-        /* 同一个紫兼任"文字色"和"实心按钮底色"时必然有一头不达标：
-           做文字够亮，做按钮底色压白字只有 3.4:1。所以拆成两档 ——
-           -solid 专供实心按钮（更深，配白字），前者用于文字与描边。 */
-        --wf-primary: #8a4bff;
-        --wf-primary-solid: #6d28d9;
-        --wf-primary-soft: rgba(138, 75, 255, 0.13);
+        /* 曾经这里另有 --wf-primary-solid 一档：同一个紫既要当文字色又要当
+           实心按钮底，做文字够亮时压白字只有 3.4:1，只能拆成两个值。
+           现在的品牌蓝同一档就能兼顾（文字对白底 6.5:1、白字压其上 6.5:1），
+           所以拆出来的那份是多余的，删掉——同一个语义不再有两套值。 */
+        --wf-primary: var(--ui-brand);
+        --wf-primary-soft: color-mix(in srgb, var(--ui-brand) 13%, transparent);
       }
 
       html[data-theme="dark"] {
@@ -16,9 +16,9 @@
         --wf-border: rgba(120, 145, 192, 0.32);
         --wf-shadow: var(--shadow-2-dark);
         --wf-shadow-soft: var(--shadow-1-dark);
-        --wf-primary: #9aa9ff;
-        --wf-primary-solid: #4f46e5;
-        --wf-primary-soft: rgba(154, 169, 255, 0.2);
+        /* --wf-primary 在夜间无需重写：它别名到 --ui-brand，那个 token 自己
+           会翻档。这里只留夜间独有的表面色。 */
+        --wf-primary-soft: color-mix(in srgb, var(--ui-brand) 20%, transparent);
       }
 
       * {
@@ -209,7 +209,7 @@
         min-width: 0;
         min-height: 74px;
         border-radius: var(--radius-md);
-        border: 1px dashed rgba(138, 75, 255, 0.45);
+        border: 1px dashed color-mix(in srgb, var(--ui-brand) 45%, transparent);
         background: #ffffff;
         padding: 12px 14px;
         display: flex;
@@ -219,7 +219,7 @@
       }
 
       .file-picker:hover {
-        border-color: rgba(138, 75, 255, 0.68);
+        border-color: color-mix(in srgb, var(--ui-brand) 68%, transparent);
       }
 
       .file-picker.is-dragover {
@@ -270,9 +270,9 @@
       .file-count-badge {
         flex: 0 0 auto;
         border-radius: 999px;
-        border: 1px solid rgba(138, 75, 255, 0.25);
-        background: rgba(138, 75, 255, 0.12);
-        color: #5b35b5;
+        border: 1px solid color-mix(in srgb, var(--ui-brand) 25%, transparent);
+        background: color-mix(in srgb, var(--ui-brand) 12%, transparent);
+        color: color-mix(in srgb, var(--ui-brand) 68%, var(--ui-ink));
         font-size: 0.8rem;
         font-weight: 700;
         padding: 6px 10px;
@@ -321,7 +321,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        border: 1px solid rgba(138, 75, 255, 0.18);
+        border: 1px solid color-mix(in srgb, var(--ui-brand) 18%, transparent);
         border-radius: var(--radius-md);
         padding: 7px 8px;
         background: #ffffff;
@@ -334,8 +334,8 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: rgba(138, 75, 255, 0.14);
-        color: #6b3be7;
+        background: color-mix(in srgb, var(--ui-brand) 14%, transparent);
+        color: color-mix(in srgb, var(--ui-brand) 72%, var(--ui-ink));
         flex: 0 0 auto;
       }
 
@@ -437,7 +437,7 @@
       }
 
       html[data-theme="dark"] .file-picker:hover {
-        border-color: rgba(154, 169, 255, 0.72);
+        border-color: color-mix(in srgb, var(--ui-brand) 72%, transparent);
         box-shadow: var(--shadow-2-dark);
       }
 
@@ -456,8 +456,8 @@
       }
 
       html[data-theme="dark"] .file-count-badge {
-        border-color: rgba(154, 169, 255, 0.34);
-        background: rgba(154, 169, 255, 0.22);
+        border-color: color-mix(in srgb, var(--ui-brand) 34%, transparent);
+        background: color-mix(in srgb, var(--ui-brand) 22%, transparent);
         color: #d9e4ff;
       }
 
@@ -471,12 +471,12 @@
       }
 
       html[data-theme="dark"] .file-queue-item {
-        border-color: rgba(154, 169, 255, 0.26);
+        border-color: color-mix(in srgb, var(--ui-brand) 26%, transparent);
         background: rgba(28, 40, 64, 0.9);
       }
 
       html[data-theme="dark"] .file-queue-icon {
-        background: rgba(154, 169, 255, 0.2);
+        background: color-mix(in srgb, var(--ui-brand) 20%, transparent);
         color: #dbe5ff;
       }
 

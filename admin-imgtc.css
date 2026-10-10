@@ -57,7 +57,7 @@ body {
 }
 
 .title:hover {
-  color: #B39DDB; /* 使用柔和的淡紫色 */
+  color: var(--ui-brand-hover); /* 使用柔和的淡紫色 */
 }
 
 .search-card {
@@ -80,9 +80,9 @@ body {
 }
 
 .stats:hover {
-  background-color: #f0eaf8; /* 柔和的淡紫色 */
+  background-color: var(--ui-brand-soft); /* 柔和的淡紫色 */
   box-shadow: var(--shadow-1);
-  color: #B39DDB;
+  color: var(--ui-brand-hover);
 }
 
 .upload-icon {
@@ -93,7 +93,7 @@ body {
   cursor: pointer;
   border-radius: 50%;
   padding: 8px;
-  background-color: rgba(179, 157, 219, 0.15);
+  background-color: color-mix(in srgb, var(--ui-brand) 15%, transparent);
   border: 1px solid transparent;
 }
 
@@ -113,7 +113,7 @@ body {
 
 .header-content .actions i:hover,
 .header-content .actions svg.lucide:hover {
-  color: #B39DDB;
+  color: var(--ui-brand-hover);
   transform: scale(1.1);
 }
 
@@ -128,7 +128,7 @@ body {
 }
 
 .header-content .actions .enabled {
-  color: #B39DDB; /* 使用柔和的淡紫色 */
+  color: var(--ui-brand-hover); /* 使用柔和的淡紫色 */
 }
 
 .search-card .el-input__inner {
@@ -524,7 +524,7 @@ body {
 
 /* 音视频卡片基础样式 */
 .video-card, .audio-card, .file-card {
-  background: rgba(138, 75, 255, 0.9);
+  background: color-mix(in srgb, var(--ui-brand) 90%, transparent);
   border: none;
   border-radius: var(--radius-md) !important;
   overflow: hidden;
@@ -544,7 +544,7 @@ body {
 }
 
 .audio-card.selected, .video-card.selected, .file-card.selected {
-  background: rgba(138, 75, 255, 0.85);
+  background: color-mix(in srgb, var(--ui-brand) 85%, transparent);
 }
 
 .video-card:hover, .audio-card:hover, .file-card:hover {
@@ -685,7 +685,7 @@ body {
   gap: 12px;
   padding: 10px 18px;
   background: rgba(255, 255, 255, 1);
-  border: 1px solid rgba(138, 75, 255, 0.25);
+  border: 1px solid color-mix(in srgb, var(--ui-brand) 25%, transparent);
   border-radius: 999px;
   box-shadow: var(--shadow-2);
   z-index: 1000;
@@ -712,7 +712,7 @@ body {
 .batch-count {
   font-size: 13px;
   font-weight: 600;
-  color: #8a4bff;
+  color: var(--ui-brand);
   white-space: nowrap;
 }
 

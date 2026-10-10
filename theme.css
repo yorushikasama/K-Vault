@@ -35,15 +35,17 @@
   flex-shrink: 0;
 }
 
-/* ===== Light :root — shared purple-brand token set =====
-   The purple-brand pages (index / login / gallery) use these as their
-   default tokens; a page may still override a var locally in its own sheet.
-   Hues are unchanged from the previous inline definitions. */
+/* ===== Light :root — legacy aliases onto the authoritative brand =====
+   These names predate the --ui-* layer and are kept so older rules keep
+   resolving. They must stay *aliases* — a literal here is a second source of
+   truth that the theme swap cannot reach. */
 :root {
-  --primary-color: #8a4bff;
-  --primary-light: #b39ddb;
-  --primary-dark: #6c3ce0;
-  --accent-color: #ffd7e4;
+  --primary-color: var(--ui-brand);
+  --primary-light: var(--ui-brand-hover);
+  --primary-dark: var(--ui-brand-active);
+  /* 粉色不是本项目的品牌色，也没有消费者 —— 留着只会让下一个人以为它是
+     "第二支强调色"。强调色即 --ui-brand*。 */
+  --accent-color: var(--ui-brand);
   --success-color: #67c23a;
   --warning-color: #e6a23c;
   --danger-color: #f56c6c;
@@ -89,8 +91,11 @@ html[data-theme="dark"] {
   --primary-light: var(--ui-brand-hover);
   --primary-dark: var(--ui-brand-active);
   --primary: var(--ui-brand);
-  --accent-color: #8d9dd8;
-  --accent: #8d9dd8;
+  /* 曾经这里是写死的淡紫 #8d9dd8：夜间把强调色钉死在第三个紫上，
+     和亮色档的 --ui-brand 不是一个色，主题切换时这一处不跟着走。
+     它唯一的消费者是图库批量条的计数文字，本就是"强调"，指回品牌色。 */
+  --accent-color: var(--ui-brand);
+  --accent: var(--ui-brand);
   --bg-gradient: var(--ui-canvas);
   --bg: var(--ui-canvas);
   --card-bg: var(--ui-surface);
@@ -270,7 +275,7 @@ html[data-theme="dark"] textarea::placeholder {
   gap: 8px;
   padding: 10px 14px;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(138, 75, 255, 0.25);
+  border: 1px solid color-mix(in srgb, var(--ui-brand) 25%, transparent);
   background: #ffffff;
   color: #2f3243;
   font-size: 0.88em;
@@ -282,14 +287,14 @@ html[data-theme="dark"] textarea::placeholder {
 
 .theme-floating-toggle i,
 .theme-floating-toggle svg.lucide {
-  color: #8a4bff;
+  color: var(--ui-brand);
   width: 14px;
   text-align: center;
 }
 
 .theme-floating-toggle:hover {
-  border-color: rgba(138, 75, 255, 0.55);
-  background: #f6f3ff;
+  border-color: color-mix(in srgb, var(--ui-brand) 55%, transparent);
+  background: var(--ui-brand-soft);
 }
 
 .theme-auto-inline-toggle {
@@ -298,7 +303,7 @@ html[data-theme="dark"] textarea::placeholder {
   gap: 8px;
   padding: 9px 13px;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(138, 75, 255, 0.25);
+  border: 1px solid color-mix(in srgb, var(--ui-brand) 25%, transparent);
   background: #ffffff;
   color: #2f3243;
   font-size: 0.86em;
@@ -309,14 +314,14 @@ html[data-theme="dark"] textarea::placeholder {
 
 .theme-auto-inline-toggle i,
 .theme-auto-inline-toggle svg.lucide {
-  color: #8a4bff;
+  color: var(--ui-brand);
   width: 14px;
   text-align: center;
 }
 
 .theme-auto-inline-toggle:hover {
-  border-color: rgba(138, 75, 255, 0.55);
-  background: #f6f3ff;
+  border-color: color-mix(in srgb, var(--ui-brand) 55%, transparent);
+  background: var(--ui-brand-soft);
 }
 
 .theme-admin-toggle {
@@ -325,7 +330,7 @@ html[data-theme="dark"] textarea::placeholder {
   justify-content: center;
   width: 38px;
   height: 38px;
-  border: 1px solid rgba(138, 75, 255, 0.25);
+  border: 1px solid color-mix(in srgb, var(--ui-brand) 25%, transparent);
   border-radius: 50%;
   background: #ffffff;
   color: #2f3243;
@@ -340,17 +345,17 @@ html[data-theme="dark"] textarea::placeholder {
 
 .theme-admin-toggle i,
 .theme-admin-toggle svg.lucide {
-  color: #8a4bff;
+  color: var(--ui-brand);
   font-size: 14px;
 }
 
 .theme-admin-toggle:hover {
-  border-color: rgba(138, 75, 255, 0.55);
-  background: #f6f3ff;
+  border-color: color-mix(in srgb, var(--ui-brand) 55%, transparent);
+  background: var(--ui-brand-soft);
 }
 
 html[data-theme="dark"] .theme-floating-toggle {
-  border-color: rgba(154, 169, 255, 0.45);
+  border-color: color-mix(in srgb, var(--ui-brand) 45%, transparent);
   background: #1b2436;
   color: #e8eeff;
 }
@@ -362,7 +367,7 @@ html[data-theme="dark"] .theme-floating-toggle svg.lucide {
 
 html[data-theme="dark"] .theme-auto-inline-toggle,
 html[data-theme="dark"] .theme-admin-toggle {
-  border-color: rgba(154, 169, 255, 0.45);
+  border-color: color-mix(in srgb, var(--ui-brand) 45%, transparent);
   background: #1b2436;
   color: #e8eeff;
 }
@@ -718,14 +723,21 @@ html[data-theme="dark"] .el-button--danger {
    editing one block rather than thirteen sheets. */
 
 :root {
-  /* -- Brand ------------------------------------------------------------ */
-  --ui-brand: #6c3ce0;
-  --ui-brand-hover: #7d4ff0;
-  --ui-brand-active: #5a2fc4;
+  /* -- Brand ------------------------------------------------------------
+     蓝色，取自 logo 本身（其主色相为 180/195/210 的青蓝，此前那套紫
+     跟 logo 毫无关系）。色相刻意与另一支青色品牌（--wf-* 在预览/瀑布流
+     用的 175）错开 35°，两者同属冷色系但一眼能区分。
+
+     --ui-brand-* 之下的一切都由此派生：soft/hover/ring 走 color-mix，
+     各页的浅色底不再自己写 rgba(…) 字面量。这样"强调色"只有一个来源，
+     改品牌色只需改这一个块，且亮暗两档自动跟随主题。 */
+  --ui-brand: #1a5fa8;
+  --ui-brand-hover: #1d6fb8;
+  --ui-brand-active: #144880;
   --ui-brand-ink: #ffffff;
-  --ui-brand-soft: rgba(108, 60, 224, 0.1);
-  --ui-brand-soft-hover: rgba(108, 60, 224, 0.16);
-  --ui-brand-ring: rgba(108, 60, 224, 0.35);
+  --ui-brand-soft: color-mix(in srgb, var(--ui-brand) 10%, transparent);
+  --ui-brand-soft-hover: color-mix(in srgb, var(--ui-brand) 16%, transparent);
+  --ui-brand-ring: color-mix(in srgb, var(--ui-brand) 35%, transparent);
 
   /* -- Semantic (Element UI compatible) --------------------------------- */
   --ui-success: #16a34a;
@@ -819,13 +831,13 @@ html[data-theme="dark"] .el-button--danger {
 html[data-theme="dark"] {
   color-scheme: dark;
 
-  --ui-brand: #9aa9ff;
-  --ui-brand-hover: #b5bdf8;
-  --ui-brand-active: #768cff;
+  --ui-brand: #79b8ff;
+  --ui-brand-hover: #9ccaff;
+  --ui-brand-active: #5a9fe8;
   --ui-brand-ink: #0b1120;
-  --ui-brand-soft: rgba(154, 169, 255, 0.14);
-  --ui-brand-soft-hover: rgba(154, 169, 255, 0.2);
-  --ui-brand-ring: rgba(154, 169, 255, 0.45);
+  --ui-brand-soft: color-mix(in srgb, var(--ui-brand) 14%, transparent);
+  --ui-brand-soft-hover: color-mix(in srgb, var(--ui-brand) 20%, transparent);
+  --ui-brand-ring: color-mix(in srgb, var(--ui-brand) 45%, transparent);
 
   --ui-success: #4ade80;
   --ui-warning: #fbbf24;
@@ -848,7 +860,7 @@ html[data-theme="dark"] {
 
   --ui-line: #30363d;
   --ui-line-strong: #3d444d;
-  --ui-focus-ring: rgba(154, 169, 255, 0.55);
+  --ui-focus-ring: color-mix(in srgb, var(--ui-brand) 55%, transparent);
 
   --ui-elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
   --ui-elev-2: 0 4px 8px -2px rgba(0, 0, 0, 0.45);

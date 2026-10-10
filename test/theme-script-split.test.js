@@ -340,4 +340,129 @@ describe('background + base color are centrally managed', function () {
       }
     }
   });
+
+  describe('brand colour lives in one place', function () {
+    const hueOf = (hex) => {
+      const h = hex.replace('#', '');
+      const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+      const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+      if (!d) return null;
+      let x = max === r ? ((g - b) / d + (g < b ? 6 : 0)) : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      return Math.round(x * 60);
+    };
+    // 只认整块颜色的声明，避免把注释里的举例也当成字面量。
+    const colourLiterals = (src) => {
+      const out = [];
+      const noComments = src.replace(/\/\*[\s\S]*?\*\//g, '');
+      for (const m of noComments.matchAll(/#([0-9a-fA-F]{6})\b/g)) {
+        const h = hueOf('#' + m[1]);
+        if (h === null) continue;
+        out.push({ hex: '#' + m[1].toLowerCase(), hue: h });
+      }
+      return out;
+    };
+
+    it('no violet survives anywhere in the stylesheets', function () {
+      // 紫色是这次要清掉的东西，也是全站最容易靠"凭手感"再写回来的东西
+      // （它当年就散在 10 个文件、106 处）。凡是色相落在 240–300 的有色值
+      // 都拦下：写这类颜色时应当引用 --ui-brand 的派生式，而不是新字面量。
+      for (const sheet of sheets) {
+        for (const { hex, hue } of colourLiterals(read(sheet))) {
+          assert.ok(
+            !(hue >= 240 && hue <= 300),
+            `${sheet} 出现紫色字面量 ${hex}（色相 ${hue}）—— 强调色应当由 var(--ui-brand) 派生，不要新写颜色`
+          );
+        }
+      }
+      for (const page of fs.readdirSync(root).filter((f) => f.endsWith('.html'))) {
+        for (const { hex, hue } of colourLiterals(read(page))) {
+          assert.ok(
+            !(hue >= 240 && hue <= 300),
+            `${page} 出现紫色字面量 ${hex}（色相 ${hue}）—— 强调色应当由 var(--ui-brand) 派生`
+          );
+        }
+      }
+    });
+
+    it('brand tokens are defined exactly once per theme', function () {
+      // --ui-brand 是品牌色的唯一来源。同名 token 若在别处再定义一次，
+      // 主题切换时两套值会分叉（历史上 webdav 就自带一份 --wf-primary-solid）。
+      //
+      // 例外：页面**故意**换品牌（preview / admin-waterfall 是青绿那支）。
+      // 那不是"第二份真值"，而是该页的品牌定义——但它必须成对给出亮/暗两档，
+      // 否则夜间会掉回主站品牌色。下面按文件分组核算。
+      const brandDefsIn = (src) => [...src.matchAll(/--ui-brand:\s*([^;]+);/g)].map((m) => m[1].trim());
+
+      const base = brandDefsIn(theme);
+      assert.strictEqual(base.length, 2,
+        `theme.css 的 --ui-brand 应当只定义亮/暗两档，实际 ${base.length} 处：${JSON.stringify(base)}`);
+      assert.ok(base.every((v) => /^#[0-9a-f]{6}$/i.test(v)),
+        `theme.css 的 --ui-brand 应当是本层里的具体色值，实际 ${JSON.stringify(base)}`);
+
+      for (const sheet of sheets) {
+        if (sheet === 'theme.css') continue;
+        const defs = brandDefsIn(read(sheet));
+        if (!defs.length) continue;
+        // 页面要么完全不定义，要么亮暗成对定义。这里只放行成对的情况。
+        const rootBlock = read(sheet).indexOf('html[data-theme="dark"]');
+        assert.ok(rootBlock > -1 && defs.length >= 2,
+          `${sheet} 重新定义了 --ui-brand，但没有成对给出亮/暗两档 —— 夜间会掉回主站品牌色`);
+        assert.ok(defs.every((v) => /^#[0-9a-f]{6}$/i.test(v)),
+          `${sheet} 的 --ui-brand 必须是具体色值，实际 ${JSON.stringify(defs)}`);
+      }
+    });
+
+    it('page-level accent aliases point at the token, never a literal', function () {
+      // 各页自定义的强调色别名（--wf-primary / --primary-color / --accent …）
+      // 必须别名到品牌 token。写死一个色值就是第二份真值，亮暗两档会各自漂移
+      // —— webdav 的 --wf-primary-solid 就是这么来的（同一语义两个值）。
+      const aliasRe = /--(primary-color|primary-light|primary-dark|wf-primary|accent)\s*:\s*([^;]+);/g;
+      for (const sheet of sheets) {
+        // 先去掉注释：注释里说明历史值的文字（"--accent: #f59e0b"）不该被当成声明。
+        const src = read(sheet).replace(/\/\*[\s\S]*?\*\//g, '');
+        let m;
+        while ((m = aliasRe.exec(src))) {
+          assert.match(m[2], /var\(--ui-brand/,
+            `${sheet} 的 --${m[1]} 写成了 ${m[2].trim()} —— 应别名到 var(--ui-brand*)`);
+        }
+      }
+    });
+
+    it('brand pair clears WCAG AA as ink, as text, and as a ground', function () {
+      // 换色时必须同时满足三种用法，任何一头不达标都会让某处读不出来：
+      // 作文字压在页面底 / 压在卡片上，以及当实心底时压在其上的 ink。
+      const rgb = (hex) => {
+        const h = hex.replace('#', '');
+        return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+      };
+      const lum = ([r, g, b]) => {
+        const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+      };
+      const ratio = (a, b) => {
+        const la = lum(rgb(a)), lb = lum(rgb(b));
+        return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+      };
+      // 按出现顺序取具体色值：theme.css 里先是亮色档、后是暗色档。
+      // 不能用「indexOf('html[data-theme=dark]')」再找第一个 --ui-brand：
+      // 文件顶部还有一个历史遗留的 dark 块，那样会取到亮色档的值。
+      const brandDefs = [...theme.matchAll(/--ui-brand:\s*(#[0-9a-f]{6})\s*;/gi)].map((m) => m[1]);
+      assert.strictEqual(brandDefs.length, 2,
+        `theme.css 应当恰好给出亮/暗两档 --ui-brand，实际 ${JSON.stringify(brandDefs)}`);
+      const surfaceDefs = [...theme.matchAll(/--ui-surface:\s*(#[0-9a-f]{6})\s*;/gi)].map((m) => m[1]);
+
+      for (const [label, brand, canvas, ink, surface] of [
+        ['亮色', brandDefs[0], '#fafaf8', '#ffffff', surfaceDefs[0]],
+        ['暗色', brandDefs[1], '#0d1117', '#0d1117', surfaceDefs[1]],
+      ]) {
+        assert.ok(surface, `${label}找不到 --ui-surface`);
+        const onCanvas = ratio(brand, canvas);
+        assert.ok(onCanvas >= 4.5, `${label}品牌色 ${brand} 作文字压在页底只有 ${onCanvas.toFixed(2)}:1`);
+        const onSurface = ratio(brand, surface);
+        assert.ok(onSurface >= 4.5, `${label}品牌色 ${brand} 作文字压在卡片上只有 ${onSurface.toFixed(2)}:1`);
+        const asGround = ratio(ink, brand);
+        assert.ok(asGround >= 4.5, `${label}品牌色 ${brand} 作实心底时文字只有 ${asGround.toFixed(2)}:1`);
+      }
+    });
+  });
 });

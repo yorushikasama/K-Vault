@@ -156,7 +156,7 @@
       padding: 10px 12px;
       border-bottom: 1px solid rgba(0, 0, 0, 0.06);
       font-weight: 600;
-      color: #4c3b7a;
+      color: color-mix(in srgb, var(--ui-brand) 62%, var(--ui-ink));
     }
     .folder-head-title {
       display: inline-flex;
@@ -240,13 +240,13 @@
       transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
     }
     .folder-node:hover {
-      border-color: rgba(138, 75, 255, 0.25);
-      background: rgba(138, 75, 255, 0.08);
+      border-color: color-mix(in srgb, var(--ui-brand) 25%, transparent);
+      background: color-mix(in srgb, var(--ui-brand) 8%, transparent);
     }
     .folder-node.is-active {
-      border-color: rgba(138, 75, 255, 0.4);
-      background: rgba(138, 75, 255, 0.14);
-      color: #53308a;
+      border-color: color-mix(in srgb, var(--ui-brand) 40%, transparent);
+      background: color-mix(in srgb, var(--ui-brand) 14%, transparent);
+      color: color-mix(in srgb, var(--ui-brand) 68%, var(--ui-ink));
       font-weight: 600;
     }
     .folder-node-main {
@@ -260,8 +260,8 @@
     }
     .folder-node-count {
       font-size: 12px;
-      color: #7d6d97;
-      background: rgba(138, 75, 255, 0.08);
+      color: color-mix(in srgb, var(--ui-brand) 55%, var(--ui-ink));
+      background: color-mix(in srgb, var(--ui-brand) 8%, transparent);
       border-radius: 999px;
       padding: 2px 7px;
       min-width: 24px;
@@ -300,8 +300,8 @@
       padding: 8px;
     }
     .list-view-card .el-table th {
-      background: rgba(138, 75, 255, 0.08);
-      color: #4f3d75;
+      background: color-mix(in srgb, var(--ui-brand) 8%, transparent);
+      color: color-mix(in srgb, var(--ui-brand) 55%, var(--ui-ink));
       font-weight: 600;
     }
     .list-actions .el-button {
@@ -315,7 +315,7 @@
       width: 20px;
       height: 20px;
       margin-right: 6px;
-      color: #9a8ab6;
+      color: var(--ui-ink-muted);
       cursor: grab;
       vertical-align: middle;
     }
@@ -358,12 +358,12 @@
       gap: 12px;
       padding: 12px 14px;
       border-radius: var(--radius-md);
-      background: rgba(138, 75, 255, 0.08);
-      color: #4f3d75;
+      background: color-mix(in srgb, var(--ui-brand) 8%, transparent);
+      color: color-mix(in srgb, var(--ui-brand) 55%, var(--ui-ink));
       font-size: 13px;
     }
     .move-folder-summary strong {
-      color: #4a2d85;
+      color: color-mix(in srgb, var(--ui-brand) 72%, var(--ui-ink));
       font-size: 15px;
     }
     .move-folder-toolbar {
@@ -381,10 +381,10 @@
     }
     .move-folder-option {
       width: 100%;
-      border: 1px solid rgba(138, 75, 255, 0.14);
+      border: 1px solid color-mix(in srgb, var(--ui-brand) 14%, transparent);
       border-radius: var(--radius-md);
       background: #fff;
-      color: #3e3454;
+      color: var(--ui-ink);
       padding: 11px 12px;
       cursor: pointer;
       display: grid;
@@ -396,8 +396,8 @@
     }
     .move-folder-option:hover,
     .move-folder-option.is-active {
-      border-color: rgba(138, 75, 255, 0.55);
-      background: rgba(138, 75, 255, 0.1);
+      border-color: color-mix(in srgb, var(--ui-brand) 55%, transparent);
+      background: color-mix(in srgb, var(--ui-brand) 10%, transparent);
     }
     .move-folder-option-name {
       min-width: 0;
@@ -407,14 +407,14 @@
       font-weight: 650;
     }
     .move-folder-option-meta {
-      color: #82759a;
+      color: var(--ui-ink-muted);
       font-size: 12px;
     }
     .move-folder-create {
-      border: 1px dashed rgba(138, 75, 255, 0.38);
+      border: 1px dashed color-mix(in srgb, var(--ui-brand) 38%, transparent);
       border-radius: var(--radius-md);
       padding: 12px;
-      background: rgba(138, 75, 255, 0.05);
+      background: color-mix(in srgb, var(--ui-brand) 5%, transparent);
       display: grid;
       gap: 10px;
     }
@@ -426,8 +426,8 @@
     .move-folder-empty {
       padding: 18px;
       border-radius: var(--radius-md);
-      border: 1px dashed rgba(138, 75, 255, 0.25);
-      color: #82759a;
+      border: 1px dashed color-mix(in srgb, var(--ui-brand) 25%, transparent);
+      color: var(--ui-ink-muted);
       text-align: center;
       background: #fff;
     }
@@ -439,7 +439,7 @@
       flex-wrap: wrap;
     }
     .move-folder-target {
-      color: #63557f;
+      color: var(--ui-ink-secondary);
       font-size: 13px;
     }
     @media (max-width: 720px) {
@@ -479,11 +479,11 @@
       margin: 26px auto 8px;
       max-width: 620px;
       border-radius: var(--radius-md);
-      border: 1px dashed rgba(138, 75, 255, 0.32);
+      border: 1px dashed color-mix(in srgb, var(--ui-brand) 32%, transparent);
       background: #fff;
       padding: 16px 18px;
       text-align: center;
-      color: #63557f;
+      color: var(--ui-ink-secondary);
     }
     .empty-tip .el-button {
       margin-top: 10px;
@@ -521,8 +521,8 @@
     html[data-theme="dark"] .move-folder-summary,
     html[data-theme="dark"] .move-folder-create,
     html[data-theme="dark"] .move-folder-empty {
-      background: rgba(103, 118, 255, 0.12);
-      border-color: rgba(135, 152, 255, 0.28);
+      background: color-mix(in srgb, var(--ui-brand) 12%, transparent);
+      border-color: color-mix(in srgb, var(--ui-brand) 28%, transparent);
       color: #dce7ff;
     }
     html[data-theme="dark"] .move-folder-summary strong,
@@ -536,8 +536,8 @@
     }
     html[data-theme="dark"] .move-folder-option:hover,
     html[data-theme="dark"] .move-folder-option.is-active {
-      background: rgba(103, 118, 255, 0.2);
-      border-color: rgba(135, 152, 255, 0.55);
+      background: color-mix(in srgb, var(--ui-brand) 20%, transparent);
+      border-color: color-mix(in srgb, var(--ui-brand) 55%, transparent);
     }
     html[data-theme="dark"] .move-folder-option-meta,
     html[data-theme="dark"] .move-folder-target {
@@ -547,16 +547,16 @@
       color: #dce7ff;
     }
     html[data-theme="dark"] .folder-node:hover {
-      background: rgba(103, 118, 255, 0.15);
-      border-color: rgba(103, 118, 255, 0.35);
+      background: color-mix(in srgb, var(--ui-brand) 15%, transparent);
+      border-color: color-mix(in srgb, var(--ui-brand) 35%, transparent);
     }
     html[data-theme="dark"] .folder-node.is-active {
-      background: rgba(103, 118, 255, 0.22);
-      border-color: rgba(135, 152, 255, 0.5);
+      background: color-mix(in srgb, var(--ui-brand) 22%, transparent);
+      border-color: color-mix(in srgb, var(--ui-brand) 50%, transparent);
       color: #e8eeff;
     }
     html[data-theme="dark"] .folder-node-count {
-      background: rgba(122, 140, 255, 0.18);
+      background: color-mix(in srgb, var(--ui-brand) 18%, transparent);
       color: #deebff;
     }
     html[data-theme="dark"] .list-view-card .el-table th {

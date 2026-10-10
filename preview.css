@@ -377,11 +377,13 @@
       min-height: 100vh;
     }
 
-    /* 预览器自己的私有 token（代码块配色），底色/文字/线条一律引用全局权威层。 */
+    /* 预览器自己的私有 token（代码块配色），底色/文字/线条一律引用全局权威层。
+       这里原先还有一条 --accent: #f59e0b（琥珀）—— 本页从未消费它，而它
+       与"品牌强调色"同名却是完全无关的语义（像是给代码高亮准备的）。同名两义
+       正是配色分叉的起点，删掉；需要强调色时用 --ui-brand*。 */
     :root {
       --code-bg: #0c1220;
       --code-text: #e7eef8;
-      --accent: #f59e0b;
     }
 
     body {
@@ -835,30 +837,30 @@
       --code-bg: #101828;
       --code-text: #e6edf3;
       --shadow: var(--ui-elev-1);
-      --accent: var(--ui-brand-soft);
     }
 
-    /* 预览页的品牌是青绿而非主站的紫：只改品牌这几个 token，语义色、表面、
-       文字全部沿用全局。两套主题都成立，所以放在 :root 里。 */
+    /* 预览页的品牌是青绿而非主站的蓝：本页把品牌 token 重指向青色。
+       这是「换品牌」而不是「另起一套颜色」—— 派生档（soft/ring）仍由
+       --ui-brand 算出，所以这里只给三个实色档。 */
     :root {
       --ui-brand: #0f8f8a;
       --ui-brand-hover: #0a6f6b;
       --ui-brand-active: #085c58;
       --ui-brand-ink: #ffffff;
-      --ui-brand-soft: rgba(15, 143, 138, 0.12);
-      --ui-brand-soft-hover: rgba(15, 143, 138, 0.2);
-      --ui-brand-ring: rgba(15, 143, 138, 0.4);
+      --ui-brand-soft: color-mix(in srgb, var(--ui-brand) 12%, transparent);
+      --ui-brand-soft-hover: color-mix(in srgb, var(--ui-brand) 20%, transparent);
+      --ui-brand-ring: color-mix(in srgb, var(--ui-brand) 40%, transparent);
     }
 
-    /* 夜间：只换值、不换规则。这是本文件第一处深色支持。 */
+    /* 夜间：只换值、不换规则。 */
     html[data-theme="dark"] {
       --ui-brand: #5eead4;
       --ui-brand-hover: #99f6e4;
       --ui-brand-active: #2dd4bf;
       --ui-brand-ink: #04211f;
-      --ui-brand-soft: rgba(94, 234, 212, 0.14);
-      --ui-brand-soft-hover: rgba(94, 234, 212, 0.22);
-      --ui-brand-ring: rgba(94, 234, 212, 0.5);
+      --ui-brand-soft: color-mix(in srgb, var(--ui-brand) 14%, transparent);
+      --ui-brand-soft-hover: color-mix(in srgb, var(--ui-brand) 22%, transparent);
+      --ui-brand-ring: color-mix(in srgb, var(--ui-brand) 50%, transparent);
 
       --code-bg: #010409;
       --code-text: #e6edf3;

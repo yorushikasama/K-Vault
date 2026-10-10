@@ -371,7 +371,7 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
 
 /* ==================== 弹出层（挂载于 body，独立于工作台作用域） ==================== */
 .files-menu { min-width: 190px; }
-.files-menu .el-dropdown-menu__item.is-current { color: #6c3ce0; font-weight: 600; }
+.files-menu .el-dropdown-menu__item.is-current { color: var(--ui-brand); font-weight: 600; }
 .files-detail-popover { max-width: min(88vw, 380px); }
 .files-detail-popover div { overflow-wrap: anywhere; }
 .files-connection-panel .connection-title { margin: 0 0 8px; font-size: .9375rem; font-weight: 650; }
@@ -386,7 +386,7 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
 .token-manager-dialog .token-loading { display: flex; align-items: center; gap: 8px; padding: 24px 16px; color: #6b7280; }
 
 /* ==================== 深色主题 ==================== */
-html[data-theme="dark"] .files-menu .el-dropdown-menu__item.is-current { color: #b5bdf8; }
+html[data-theme="dark"] .files-menu .el-dropdown-menu__item.is-current { color: var(--ui-brand-hover); }
 html[data-theme="dark"] .files-connection-panel .connection-list li > span:last-child { color: #fbbf24; }
 html[data-theme="dark"] .files-connection-panel .connection-list li > span.is-connected { color: #86efac; }
 html[data-theme="dark"] .token-manager-dialog .token-empty,
