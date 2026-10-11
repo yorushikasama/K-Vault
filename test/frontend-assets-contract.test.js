@@ -131,6 +131,49 @@ describe('frontend third-party asset contract', function () {
     });
   });
 
+  describe('every shared JS module is loaded as a <script>', function () {
+    // 实测踩过：给 7 个页面加 kv-shared.js 时误写成 <link rel="stylesheet">，
+    // 浏览器静默忽略，于是 KVShared 未定义、各页 Vue 全部不挂载——
+    // 而「标签里有没有这个文件名」的粗检查照样通过。这里钉住标签类型。
+    const MODULES = ['kv-shared.js', 'admin-shared.js', 'upload-media.js', 'upload-image.js',
+      'admin-tokens.js', 'admin-ui-design.js', 'preview-parsers.js', 'gallery-app.js',
+      'webdav-app.js', 'preview-app.js', 'upload-app.js', 'admin-app.js', 'admin-imgtc-app.js'];
+
+    it('none of them is referenced with a <link> tag', function () {
+      const offenders = [];
+      for (const page of allPages) {
+        const src = read(page);
+        for (const mod of MODULES) {
+          if (new RegExp(`<link[^>]+href="[^"]*${mod.replace('.', '\\.')}`).test(src)) {
+            offenders.push(`${page} 用 <link> 引了 ${mod}`);
+          }
+        }
+      }
+      assert.deepStrictEqual(offenders, [], '这些模块必须用 <script src> 加载（<link> 会被静默忽略）');
+    });
+
+    it('the shared utilities module is loaded by every page that uses KVShared', function () {
+      const missing = [];
+      for (const page of allPages) {
+        const src = read(page);
+        const appFiles = (src.match(/<script[^>]+src="\/[a-z-]+-app\.js/g) || []);
+        // 用到 KVShared 的 app 文件对应的页面必须加载 kv-shared.js
+        const usesShared = appFiles.length > 0 &&
+          (() => {
+            const appNames = appFiles.map((m) => m.match(/src="\/([^"?]+)/)[1]);
+            return appNames.some((f) => {
+              try { return fs.readFileSync(path.join(root, f), 'utf8').includes('KVShared.'); }
+              catch { return false; }
+            });
+          })();
+        if (usesShared && !/<script[^>]+src="\/kv-shared\.js/.test(src)) {
+          missing.push(page);
+        }
+      }
+      assert.deepStrictEqual(missing, [], '这些页面的应用脚本用了 KVShared，但页面没有加载 kv-shared.js');
+    });
+  });
+
   describe('page-specific CSS lives in a cacheable file, not inline', function () {
     // HTML 走 no-cache，内联 <style> 每次导航都要重传；CSS 文件带内容哈希可以缓存
     // 一年。admin.html 原来有 1.9 KB 内联样式，而 admin.css 只被它一个页面加载，
