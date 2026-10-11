@@ -156,4 +156,46 @@ describe('static asset caching contract', function () {
     const copiesSubset = /^COPY\s+(?:[^\n]*\s)?icons-subset\.js\b/m.test(dockerfile);
     assert.ok(copiesAllJs || copiesSubset, 'Dockerfile 没有把 icons-subset.js 拷进镜像');
   });
+
+  describe('wallpaper files cache, public file links do not', function () {
+    /**
+     * /file/ 直链的默认策略必须是 no-store：文件可能被删除、封禁或移入白名单，
+     * 缓存住了就会继续被读到。
+     *
+     * 但站点壁纸也走 /file/，每次切页都重下整张图（线上 514 KB）是切页卡顿的
+     * 主因。所以两套部署都按「请求是否带 v 版本参数」分流：带 v 是调用方在
+     * 声明 URL 内容不变，放行长缓存；不带就是普通直链，维持 no-store。
+     */
+    const nodeServer = fs.readFileSync(path.join(root, 'server', 'app.js'), 'utf8');
+    const pagesFn = fs.readFileSync(path.join(root, 'functions', 'file', '[id].js'), 'utf8');
+    const themeEffects = fs.readFileSync(path.join(root, 'theme-effects.js'), 'utf8');
+
+    it('node server branches on the v parameter', function () {
+      assert.match(nodeServer, /immutable: Boolean\(c\.req\.query\('v'\)\)/,
+        'server/app.js 没有按 v 参数分流缓存策略');
+      assert.match(nodeServer, /options\.immutable \? 'public, max-age=31536000, immutable' : 'no-store, max-age=0'/,
+        'server/app.js 的 Cache-Control 分流不见了');
+    });
+
+    it('cloudflare function branches on the v parameter', function () {
+      assert.match(pagesFn, /new URL\(request\.url\)\.searchParams\.has\('v'\)/,
+        'functions/file/[id].js 没有按 v 参数分流缓存策略');
+      assert.match(pagesFn, /requestDeclaresImmutable \? 'public, max-age=31536000, immutable' : 'no-store, max-age=0'/,
+        'functions/file/[id].js 的 Cache-Control 分流不见了');
+    });
+
+    it('wallpaper URLs carry the v fingerprint', function () {
+      // 前端不带 v 的话服务端永远走 no-store，优化等于没做。
+      assert.match(themeEffects, /function withWallpaperCacheKey\(url\)/,
+        'theme-effects.js 缺少壁纸 URL 的 v 指纹生成');
+      assert.match(themeEffects, /searchParams\.set\("v", hash\.toString\(36\)\)/,
+        '壁纸 v 指纹没有写进 URL');
+    });
+
+    it('external wallpapers are left untouched', function () {
+      // 外部图床不归本站代理，加参数只会打扰对方服务器。
+      assert.match(themeEffects, /if \(parsed\.origin !== window\.location\.origin\) return url;/,
+        '外部壁纸 URL 不应被附加 v 参数');
+    });
+  });
 });

@@ -896,7 +896,14 @@ void darkMode;
     img.src = url;
   }
 
-  /** 重新算一次并落盘缓存；壁纸没变时不重复取色。 */
+  /**
+   * 应用壁纸调色板。
+   *
+   * 每次进页面（MPA 切换）壁纸都要重新取色；取色要下载整张图，实测线上
+   * 壁纸 514 KB，于是切一次页面就是双份下载（CSS 背景一份 + 取色一份）。
+   * 取色结果已按「壁纸 URL」落盘在 localStorage：URL 没变就直接用缓存，
+   * 不再下载第二份。只有 URL 变化（换壁纸）才真正重新取色。
+   */
   function refreshPalette(url) {
     var api = paletteApi();
     if (!api) return;
@@ -907,6 +914,17 @@ void darkMode;
     if (!url) {
       applyPalette(monoPalette(api));
       writePaletteCache({ url: "" });
+      return;
+    }
+
+    // 命中同 URL 的取色缓存：直接上色，本轮不再发起任何网络请求。
+    var cached = readPaletteCache();
+    if (cached && cached.url === url && typeof cached.hue === "number" && cached.brandLight) {
+      applyPalette({
+        hue: cached.hue,
+        tint: cached.tint,
+        accent: { light: cached.brandLight, dark: cached.brandDark },
+      });
       return;
     }
 
@@ -945,12 +963,39 @@ void darkMode;
 
   var paletteState = { url: null };
 
+  /**
+   * 给站内壁纸 URL 附加 v 指纹，让 /file/ 代理放行长缓存。
+   *
+   * 服务端对 /file/ 默认 no-store（文件撤下后不能再从缓存读到），只有带 v
+   * 参数的请求才给 immutable —— v 就是调用方「这个 URL 的内容不变」的声明。
+   * 指纹从 URL 自身派生：同一张壁纸每次进页面得到同一个 v，浏览器直接拿缓存；
+   * 管理员换了壁纸，URL 变了、指纹也变，自然拉新图。
+   * 外部图床（https://其他域名）不归本站代理，原样返回不加参数。
+   */
+  function withWallpaperCacheKey(url) {
+    if (!url) return url;
+    try {
+      var parsed = new URL(url, window.location.origin);
+      if (parsed.origin !== window.location.origin) return url;
+      // 简易稳定哈希（djb2）：只需要同串同值、不同串大概率不同值。
+      var hash = 5381;
+      for (var i = 0; i < url.length; i++) {
+        hash = ((hash << 5) + hash + url.charCodeAt(i)) >>> 0;
+      }
+      parsed.searchParams.set("v", hash.toString(36));
+      return parsed.pathname + "?" + parsed.searchParams.toString();
+    } catch (e) {
+      return url;
+    }
+  }
+
   function applyBackgroundLayers(next) {
     if (!ensureLayers()) return;
     var url = resolveBackgroundUrl(next);
     if (url) {
+      var cachedUrl = withWallpaperCacheKey(url);
       layers.image.style.display = "block";
-      layers.image.style.backgroundImage = 'url("' + url.replace(/"/g, '\\"') + '")';
+      layers.image.style.backgroundImage = 'url("' + cachedUrl.replace(/"/g, '\\"') + '")';
     } else {
       layers.image.style.display = "none";
       layers.image.style.backgroundImage = "none";

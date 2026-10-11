@@ -67,6 +67,13 @@ export async function onRequest(context) {
     return handleOptions();
   }
 
+  // 每个请求重新判定：模块级变量在 Pages 的复用实例上会跨请求残留。
+  try {
+    requestDeclaresImmutable = new URL(request.url).searchParams.has('v');
+  } catch {
+    requestDeclaresImmutable = false;
+  }
+
   try {
     let fileId = params.id;
     if (!fileId) {
@@ -147,19 +154,31 @@ function getMimeType(fileName = '') {
   return MIME_TYPES[ext] || 'application/octet-stream';
 }
 
+// 请求是否声明了「这个 URL 的内容不变」（带 v 版本参数）。
+// onRequest 入口按当前请求设置；站点壁纸这类 UI 资源会带 v，据此放行长缓存。
+// 为什么用模块级而不是逐处传参：header 由 9 个 handler 各自构造，
+// 逐个加参数会把这个标志散到所有分支里，漏一处就静默回到 no-store。
+let requestDeclaresImmutable = false;
+
 function addCorsHeaders(headers) {
   headers.set('Access-Control-Allow-Origin', '*');
   headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
   headers.set('Access-Control-Allow-Headers', 'Range, Content-Type, Accept, Origin');
   headers.set('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges, Content-Type, Content-Disposition');
-  headers.set('CDN-Cache-Control', 'no-store');
+  // 带 v 的请求连 CDN 缓存也放行（换壁纸时 v 变，自然拿到新图）。
+  headers.set('CDN-Cache-Control', requestDeclaresImmutable ? 'public, max-age=31536000' : 'no-store');
   return headers;
 }
 
 function addResponseHeaders(headers, fileName, mimeType, upstream = null) {
   addCorsHeaders(headers);
   headers.set('Content-Type', mimeType || 'application/octet-stream');
-  headers.set('Cache-Control', 'no-store, max-age=0');
+  // 默认 no-store：文件可能被删除、封禁或移入白名单审核，直链必须每次回源。
+  // 带 v 参数才长缓存（调用方声明 URL 内容不变），见 requestDeclaresImmutable。
+  headers.set(
+    'Cache-Control',
+    requestDeclaresImmutable ? 'public, max-age=31536000, immutable' : 'no-store, max-age=0'
+  );
   headers.set('Accept-Ranges', 'bytes');
 
   if (fileName) {

@@ -1059,13 +1059,27 @@ function createApp() {
     return new URL(path, `${getPublicOrigin(c)}/`).toString();
   }
 
-  function buildFileProxyHeaders(result, upstreamHeaders) {
+  /**
+   * 文件代理响应头。
+   *
+   * Cache-Control 分两档：
+   *   - 默认 no-store：文件可能被删除、封禁或移入白名单审核，直链必须每次回源，
+   *     否则被撤下的文件会继续从浏览器缓存里被读到。
+   *   - options.immutable（请求带 v 版本参数时）：调用方声明「这个 URL 的内容不变」。
+   *     站点壁纸这类 UI 资源用它——不然每次切页（MPA）都要重下整张图，
+   *     实测线上壁纸 514 KB，是切页卡顿的主要来源。换壁纸时 URL 的内容指纹会变，
+   *     自然拿到新图，不存在「删了还在」的问题。
+   */
+  function buildFileProxyHeaders(result, upstreamHeaders, options = {}) {
     const headers = new Headers(upstreamHeaders);
     headers.set('Access-Control-Allow-Origin', '*');
     headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     headers.set('Access-Control-Allow-Headers', 'Range, Content-Type, Accept, Origin');
     headers.set('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges, Content-Disposition');
-    headers.set('Cache-Control', 'no-store, max-age=0');
+    headers.set(
+      'Cache-Control',
+      options.immutable ? 'public, max-age=31536000, immutable' : 'no-store, max-age=0'
+    );
 
     if (!headers.get('content-type') && result.file.mime_type) {
       headers.set('Content-Type', result.file.mime_type);
@@ -1985,7 +1999,11 @@ function createApp() {
       }
 
       const upstream = result.response;
-      const headers = buildFileProxyHeaders(result, upstream.headers);
+      // v 参数是调用方对「URL 内容不变」的声明（站点壁纸等 UI 资源带它），
+      // 带 v 才允许长缓存；普通直链不带，维持 no-store 的即时撤下语义。
+      const headers = buildFileProxyHeaders(result, upstream.headers, {
+        immutable: Boolean(c.req.query('v')),
+      });
       const response = new Response(upstream.body, {
         status: upstream.status,
         statusText: upstream.statusText,
@@ -3402,7 +3420,11 @@ function createApp() {
       }
 
       const upstream = result.response;
-      const headers = buildFileProxyHeaders(result, upstream.headers);
+      // v 参数是调用方对「URL 内容不变」的声明（站点壁纸等 UI 资源带它），
+      // 带 v 才允许长缓存；普通直链不带，维持 no-store 的即时撤下语义。
+      const headers = buildFileProxyHeaders(result, upstream.headers, {
+        immutable: Boolean(c.req.query('v')),
+      });
 
       const response = new Response(upstream.body, {
         status: upstream.status,
@@ -3449,7 +3471,11 @@ function createApp() {
       }
 
       const upstream = result.response;
-      const headers = buildFileProxyHeaders(result, upstream.headers);
+      // v 参数是调用方对「URL 内容不变」的声明（站点壁纸等 UI 资源带它），
+      // 带 v 才允许长缓存；普通直链不带，维持 no-store 的即时撤下语义。
+      const headers = buildFileProxyHeaders(result, upstream.headers, {
+        immutable: Boolean(c.req.query('v')),
+      });
 
       return new Response(null, {
         status: upstream.status,
@@ -3519,7 +3545,11 @@ function createApp() {
       }
 
       const upstream = result.response;
-      const headers = buildFileProxyHeaders(result, upstream.headers);
+      // v 参数是调用方对「URL 内容不变」的声明（站点壁纸等 UI 资源带它），
+      // 带 v 才允许长缓存；普通直链不带，维持 no-store 的即时撤下语义。
+      const headers = buildFileProxyHeaders(result, upstream.headers, {
+        immutable: Boolean(c.req.query('v')),
+      });
       headers.set('Cache-Control', 'private, max-age=60');
 
       return new Response(upstream.body, {
