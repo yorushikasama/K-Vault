@@ -41,8 +41,9 @@ describe('CDN supply chain', function () {
     assert.deepStrictEqual(offenders, [], '这些 CDN 标签缺 SRI');
   });
 
-  describe('preview.html enhanced viewer engine', function () {
-    const src = read('preview.html');
+  describe('preview enhanced viewer engine', function () {
+    // 引擎配置与 resolveEngineUrl 已随模块化搬进 preview-app.js
+    const src = read('preview-app.js');
 
     it('does not load the engine from jsDelivr', function () {
       // 该包解包后超过 150 MB，jsDelivr 会返回 200 + 一段纯文本错误，
@@ -86,7 +87,7 @@ describe('CDN supply chain', function () {
       let resolved;
 
       before(function () {
-        const doc = fs.readFileSync(path.join(root, 'preview.html'), 'utf8');
+        const doc = fs.readFileSync(path.join(root, 'preview-app.js'), 'utf8');
         const start = doc.indexOf('const FILE_VIEWER_VERSION');
         const end = doc.indexOf('let enhancedViewerPromise');
         assert.notStrictEqual(start, -1, '找不到引擎配置段');

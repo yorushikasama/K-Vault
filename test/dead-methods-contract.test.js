@@ -23,6 +23,24 @@ describe('pruned dead methods stay pruned', function () {
   const root = path.resolve(__dirname, '..');
   const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
 
+  /**
+   * 应用逻辑已拆到根级 app 文件（upload-app.js 等）：页面 HTML 只剩模板，
+   * 方法定义跟着搬了家。这里维护「页面 → 它的逻辑文件」的映射，
+   * 所有「页面引用的方法有没有定义」的检查都把 app 文件算进去。
+   */
+  const APP_FILES = {
+    'index.html': ['upload-app.js', 'upload-media.js', 'upload-image.js'],
+    'admin.html': ['admin-app.js', 'admin-tokens.js', 'admin-ui-design.js'],
+    'admin-imgtc.html': ['admin-imgtc-app.js'],
+    'gallery.html': ['gallery-app.js'],
+    'webdav.html': ['webdav-app.js'],
+    'preview.html': ['preview-app.js', 'preview-parsers.js'],
+    'admin-waterfall.html': [],
+    'block-img.html': [],
+    'whitelist-on.html': [],
+  };
+  const sourcesOf = (page) => [read(page), ...APP_FILES[page].map(read)];
+
   /** name -> 定义它的页面。注意同名可能属于不同页面的独立实现。 */
   const REMOVED = {
     'admin.html': [
@@ -48,20 +66,22 @@ describe('pruned dead methods stay pruned', function () {
 
   for (const [page, names] of Object.entries(REMOVED)) {
     describe(page, function () {
-      const src = read(page);
-      // 只看 Vue 选项区，避免把模板里的同名 DOM 属性误判成方法定义
-      const vueAt = src.search(/\bnew Vue\s*\(/);
-      const options = vueAt === -1 ? src : src.slice(vueAt);
+      // 方法已随模块化搬进 app 文件，「不许回来」的检查覆盖页面与 app 文件两侧
+      const srcs = sourcesOf(page);
 
       for (const name of names) {
         it(`does not define ${name} again`, function () {
           const defRe = new RegExp(`^[ \\t]+(?:async\\s+)?${name}\\s*\\([^)]*\\)\\s*\\{`, 'm');
-          assert.doesNotMatch(
-            options,
-            defRe,
-            `${page} 又重新定义了 ${name}。如果是有意恢复某功能，请一并把调用方和入口补上；` +
-            `只加方法不改调用方等于没恢复。`
-          );
+          for (const src of srcs) {
+            const vueAt = src.search(/\bnew Vue\s*\(/);
+            const options = vueAt === -1 ? src : src.slice(vueAt);
+            assert.doesNotMatch(
+              options,
+              defRe,
+              `${page} 又重新定义了 ${name}。如果是有意恢复某功能，请一并把调用方和入口补上；` +
+              `只加方法不改调用方等于没恢复。`
+            );
+          }
         });
       }
     });
@@ -69,15 +89,15 @@ describe('pruned dead methods stay pruned', function () {
 
   describe('same-named methods that belong to other pages are untouched', function () {
     // 清理时最容易误伤的就是同名方法。这两处必须保留。
-    it('keeps gallery.html previewImage (its own implementation, wired to the template)', function () {
-      const src = read('gallery.html');
-      assert.match(src, /^\s+previewImage\s*\([^)]*\)\s*\{/m, 'gallery.html 的 previewImage 被误删了');
-      assert.match(src, /@click\.stop="previewImage\(/, 'gallery 模板里还在调用 previewImage，实现不能删');
+    it('keeps gallery previewImage (its own implementation, wired to the template)', function () {
+      const src = read('gallery-app.js');
+      assert.match(src, /^\s+previewImage\s*\([^)]*\)\s*\{/m, 'gallery 的 previewImage 被误删了');
+      assert.match(read('gallery.html'), /@click\.stop="previewImage\(/, 'gallery 模板里还在调用 previewImage，实现不能删');
     });
 
-    it('keeps webdav.html uploadFiles (standalone function, has call sites)', function () {
-      const src = read('webdav.html');
-      assert.match(src, /function uploadFiles\s*\(/, 'webdav.html 的 uploadFiles 被误删了');
+    it('keeps webdav uploadFiles (standalone function, has call sites)', function () {
+      const src = read('webdav-app.js');
+      assert.match(src, /function uploadFiles\s*\(/, 'webdav 的 uploadFiles 被误删了');
       assert.match(src, /uploadFiles\(\)\.catch/, 'webdav 里还有调用点，实现不能删');
     });
   });
@@ -102,51 +122,55 @@ describe('pruned dead methods stay pruned', function () {
 
     for (const page of PAGES) {
       it(`${page} defines everything it references`, function () {
-        const src = read(page);
-        const vueAt = src.search(/\bnew Vue\s*\(/);
-        const options = vueAt === -1 ? src : src.slice(vueAt);
+        // 页面模板 + 它的 app 文件一起算「本页代码」；定义侧用同一组来源。
+        const srcs = sourcesOf(page);
+        const pageSrc = srcs[0];
 
         // 方法/computed 定义：选项区里 `name(...) {` 或 `name() {`
         const defined = new Set();
-        for (const m of options.matchAll(/^[ \t]+(?:async\s+)?([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{/gm)) {
-          defined.add(m[1]);
-        }
-
-        // data() 与 computed() 的键也是合法引用目标。两种缩进都要认：
-        //   data: { urlToUpload: "" }     —— 8 空格
-        //   urlToUpload: "",              —— 10 空格（选项对象内部）
-        for (const m of options.matchAll(/^[ \t]{6,10}([A-Za-z_$][\w$]*)\s*[:(]/gm)) {
-          defined.add(m[1]);
+        for (const src of srcs) {
+          for (const m of src.matchAll(/^[ \t]+(?:async\s+)?([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{/gm)) {
+            defined.add(m[1]);
+          }
+          // data() 与 computed() 的键也是合法引用目标
+          for (const m of src.matchAll(/^[ \t]{6,10}([A-Za-z_$][\w$]*)\s*[:(]/gm)) {
+            defined.add(m[1]);
+          }
         }
 
         // 引用点：this.foo(...) 与模板 @click/@input 等指令
         const referenced = new Set();
-        for (const m of src.matchAll(/this\.([A-Za-z_$][\w$]*)\s*\(/g)) referenced.add(m[1]);
-        for (const m of src.matchAll(/@(?:click|input|change|submit|keyup|keydown|focus|blur|close|cancel|paste|drop|dragover|error|contextmenu)(?:\.[\w-]+)?="([A-Za-z_$][\w$]*)/g)) {
+        for (const m of pageSrc.matchAll(/this\.([A-Za-z_$][\w$]*)\s*\(/g)) referenced.add(m[1]);
+        for (const src of srcs.slice(1)) {
+          for (const m of src.matchAll(/this\.([A-Za-z_$][\w$]*)\s*\(/g)) referenced.add(m[1]);
+        }
+        for (const m of pageSrc.matchAll(/@(?:click|input|change|submit|keyup|keydown|focus|blur|close|cancel|paste|drop|dragover|error|contextmenu)(?:\.[\w-]+)?="([A-Za-z_$][\w$]*)/g)) {
           referenced.add(m[1]);
         }
         // 把方法当值传递：this.$nextTick(this.syncModalEnvironment)。
         // 这类调用不会出现在 this.foo( 里，正是它藏住了 admin.html 的
         // syncModalEnvironment —— $nextTick(undefined) 是静默空操作，
         // watch 看着有逻辑，实际什么都没做。
-        for (const m of src.matchAll(/this\.\$[A-Za-z]+\s*\(\s*this\.([A-Za-z_$][\w$]*)/g)) {
+        for (const m of pageSrc.matchAll(/this\.\$[A-Za-z]+\s*\(\s*this\.([A-Za-z_$][\w$]*)/g)) {
           referenced.add(m[1]);
         }
         // 注意：这里**不**检查「this.foo = ... 但 foo 未声明」。
         // 曾经想加这条规则去抓 showLogoutButton，但实测推翻了前提：
         // Vue 2 给实例上的新属性赋值是存得住的（hasOwn 为 true、无警告，
-        // 只是不具响应性）。gallery.html 的 handleGlobalKeydown 正是靠这个
+        // 只是不具响应性）。gallery 的 handleGlobalKeydown 正是靠这个
         // 特性挂事件处理函数，加了那条规则只会误报。真正坏掉的是
         // syncModalEnvironment —— 名字根本不存在，被当值传给 $nextTick，
         // 上面那条规则才抓得到。
 
         // Vue 与 Element UI 挂在原型上的成员，以及 admin-shared.js 以 mixin
-        // 形式注入的方法，都不是本页自己定义的，不算缺失。
+        // 形式注入的方法、kv-shared.js 的全局工具，都不是本页自己定义的，不算缺失。
         const EXTERNAL = new Set([
           '$nextTick', '$set', '$delete', '$forceUpdate', '$watch', '$emit', '$refs', '$el',
           '$confirm', '$message', '$alert', '$prompt', '$notify', '$loading', '$msgbox',
           // 模板作用域里的局部变量，不是方法引用
           '$event', '$refs',
+          // kv-shared.js 全局对象：方法通过它调用，不属于页面缺定义
+          'KVShared',
         ]);
         const sharedSrc = read('admin-shared.js');
         for (const m of sharedSrc.matchAll(/^[ \t]+(?:async\s+)?([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{/gm)) {
@@ -169,11 +193,11 @@ describe('pruned dead methods stay pruned', function () {
     // 旧代码却在 12 处写 `this.urlResolving = false`。Vue 2 对 computed 赋值会
     // 静默忽略并在控制台报警告，赋值根本不生效，于是转��结束后的清理全部失效，
     // 界面一直显示「等待中」。这类错误没有任何运行时症状，只能静态查。
-    it('index.html has no `this.<computed> =` assignments', function () {
-      const src = read('index.html');
+    it('index upload-app has no `this.<computed> =` assignments', function () {
+      const src = read('upload-app.js');
       const computedNames = new Set();
       for (const m of src.matchAll(/^\s{10}([A-Za-z_$][\w$]*)\s*\(\)\s*\{/gm)) {
-        // 只取 computed 段（第 749 行附近）里的无参 getter
+        // 只取 computed 段里的无参 getter
         computedNames.add(m[1]);
       }
       const offenders = [];

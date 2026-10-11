@@ -17,7 +17,9 @@ const path = require('node:path');
 describe('shared admin module contract', function () {
   const root = path.resolve(__dirname, '..');
   const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
+  // 应用逻辑已拆到根级 app 文件：加载顺序与合并/重复检查都针对 app 文件。
   const PAGES = ['admin.html', 'admin-imgtc.html'];
+  const APP_FILES = { 'admin.html': 'admin-app.js', 'admin-imgtc.html': 'admin-imgtc-app.js' };
 
   it('exists and exposes the three Vue option sections', function () {
     const src = read('admin-shared.js');
@@ -28,14 +30,16 @@ describe('shared admin module contract', function () {
   });
 
   it('loads before Vue is instantiated on every page that uses it', function () {
-    // 与 icons.js 同类的问题：共享模块提供 Vue 选项，必须在 new Vue 之前执行，
+    // 与 icons.js 同类的问题：共享模块提供 Vue 选项，必须在应用脚本之前执行，
     // 否则 Object.assign 拿到 undefined，会抛 TypeError。
+    // 页面不再内联 new Vue（已拆到 app 文件），锚点改为应用脚本标签。
     for (const page of PAGES) {
       const src = read(page);
       const sharedAt = src.search(/<script[^>]+src="\/admin-shared\.js/);
-      const vueAt = src.search(/\bnew Vue\s*\(/);
+      const appAt = src.search(new RegExp(`<script[^>]+src="/${APP_FILES[page]}`));
       assert.notStrictEqual(sharedAt, -1, `${page} 没有加载 admin-shared.js`);
-      assert.ok(sharedAt < vueAt, `${page} 把 admin-shared.js 放在了 new Vue 之后`);
+      assert.notStrictEqual(appAt, -1, `${page} 没有加载应用脚本 ${APP_FILES[page]}`);
+      assert.ok(sharedAt < appAt, `${page} 把 admin-shared.js 放在了应用脚本之后`);
     }
   });
 
@@ -43,7 +47,7 @@ describe('shared admin module contract', function () {
     // 页面定义在后会覆盖共享版本。如果页面里又写了一份同名方法，
     // 去重就失效了——而且表面上完全看不出来，代码照样能跑。
     for (const page of PAGES) {
-      const src = read(page);
+      const src = read(APP_FILES[page]);
       for (const sec of ['methods', 'computed', 'watch']) {
         assert.match(
           src,
@@ -70,10 +74,10 @@ describe('shared admin module contract', function () {
 
     for (const page of PAGES) {
       it(`${page} defines none of them locally`, function () {
-        const src = read(page);
-        // 只看 Vue 选项区（new Vue 之后），避免误报 HTML 模板里的同名调用
+        // 只看应用文件的 Vue 选项区（new Vue 之后），避免误报同名调用
+        const src = read(APP_FILES[page]);
         const vueAt = src.search(/\bnew Vue\s*\(/);
-        assert.notStrictEqual(vueAt, -1, `${page} 找不到 new Vue`);
+        assert.notStrictEqual(vueAt, -1, `${APP_FILES[page]} 找不到 new Vue`);
         const options = src.slice(vueAt);
         const offenders = unique.filter((name) =>
           new RegExp(`^\\s+(?:async\\s+)?${name}\\s*\\([^)]*\\)\\s*\\{`, 'm').test(options)

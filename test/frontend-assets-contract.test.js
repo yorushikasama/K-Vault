@@ -80,41 +80,55 @@ describe('frontend third-party asset contract', function () {
   describe('index.html clear-history flow', function () {
     // 这条路径原本是半成品：原生弹窗的模板、状态和焦点管理都在，但 clearHistory()
     // 还在调 Element 的 $confirm，而弹窗按钮绑的 confirmClearHistory 方法根本不存在。
+    // 方法体随模块化在 upload-app.js、模板绑定仍在页面里，两头都查。
     const src = read('index.html');
+    const appSrc = read('upload-app.js');
 
     it('opens the native dialog instead of Element $confirm', function () {
-      assert.match(src, /clearHistory\(\)\s*\{\s*this\.historyConfirmOpen = true;/);
+      assert.match(appSrc, /clearHistory\(\)\s*\{\s*this\.historyConfirmOpen = true;/);
     });
 
     it('defines the method the dialog button binds to', function () {
       assert.match(src, /@click="confirmClearHistory"/, '弹窗按钮的绑定没了');
-      assert.match(src, /confirmClearHistory\(\)\s*\{/, 'confirmClearHistory 方法缺失，点确认会抛异常');
+      assert.match(appSrc, /confirmClearHistory\(\)\s*\{/, 'confirmClearHistory 方法缺失，点确认会抛异常');
     });
   });
 
   describe('icons.js loads before the page instantiates Vue', function () {
     // icons.js 用 Vue.mixin 注册渲染钩子，而 Vue.mixin 只作用于之后创建的实例。
-    // 脚本放在 new Vue 后面时，首屏那次全文档扫描照样能把静态图标换掉，所以问题
-    // 完全不显形——只有 v-if / v-for 之后才进 DOM 的图标会永久保持空白。
+    // 应用逻辑已拆到根级 app 文件：页面不再内联 new Vue，约束转化为
+    // 「icons.js 必须排在应用脚本之前」——script 标签按序执行，等价。
     // gallery.html 和 admin-imgtc.html 都踩过这个坑。
-    const vuePages = allPages.filter((p) => /\bnew Vue\s*\(/.test(read(p)));
+    const APP_SCRIPTS = {
+      'index.html': 'upload-app.js',
+      'gallery.html': 'gallery-app.js',
+      'admin.html': 'admin-app.js',
+      'admin-imgtc.html': 'admin-imgtc-app.js',
+    };
 
     it('finds the Vue pages to check', function () {
-      assert.ok(vuePages.length >= 4, `只扫到 ${vuePages.length} 个 Vue 页面，扫描逻辑可能失效了`);
+      assert.strictEqual(Object.keys(APP_SCRIPTS).length, 4, 'Vue 页面清单与预期不符，请同步更新');
     });
 
-    for (const page of vuePages) {
-      it(`${page} registers the mixin first`, function () {
+    for (const [page, app] of Object.entries(APP_SCRIPTS)) {
+      it(`${page} loads icons before its Vue app (${app})`, function () {
         const src = read(page);
         const iconsAt = src.search(/<script[^>]+src="\/icons\.js/);
-        const vueAt = src.search(/\bnew Vue\s*\(/);
+        const appAt = src.search(new RegExp(`<script[^>]+src="/${app}`));
         assert.notStrictEqual(iconsAt, -1, `${page} 没有加载 icons.js`);
+        assert.notStrictEqual(appAt, -1, `${page} 没有加载应用脚本 ${app}`);
         assert.ok(
-          iconsAt < vueAt,
-          `${page} 把 icons.js 放在了 new Vue 之后，条件渲染里的图标不会被替换`
+          iconsAt < appAt,
+          `${page} 的 icons.js 排在了 ${app} 之后，条件渲染里的图标不会被替换`
         );
       });
     }
+
+    it('keeps no Vue instantiation inline in any page', function () {
+      // 模块化契约：应用逻辑不回灌 HTML。出现即说明又把内联脚本塞回来了。
+      const offenders = allPages.filter((p) => /\bnew Vue\s*\(/.test(read(p)));
+      assert.deepStrictEqual(offenders, [], 'Vue 应用又内联回页面了；请放进独立的 app 文件');
+    });
   });
 
   describe('page-specific CSS lives in a cacheable file, not inline', function () {

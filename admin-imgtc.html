@@ -10,12 +10,13 @@
   <!-- Vue / Element / Sentry 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://js.sentry-cdn.com" crossorigin>
-  <link rel="stylesheet" href="/theme.css?v=4551e107c6">
+  <link rel="stylesheet" href="/theme.css?v=6bf079e19e">
   <script src="/theme-core.js?v=6a9f70f021"></script>
   <script src="/accent-color.js?v=35dbe085ce"></script>
   <script defer src="/theme-effects.js?v=3df8ef36e3"></script>
   <!-- Import CSS -->
-  <link rel="stylesheet" href="./admin-imgtc.css?v=714197462d">
+  <link rel="stylesheet" href="./admin-imgtc.css?v=0a6926d0d1">
+<link rel="stylesheet" href="/kv-shared.js?v=5901ac7854">
   <link rel="stylesheet" href="/mobile-refactor.css?v=a868ed831f">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css" integrity="sha384-ZUOUQ+hNJ+DV4HfNwHNFq4PcclqayiUDpCMsWD1lOpUQZ/go0ofwD/GLaYdzOcdx" crossorigin="anonymous" referrerpolicy="no-referrer">
   <!-- Sentry loader 故意不加 SRI：这个脚本内容随项目配置变化（采样率、集成项），钉死哈希会在后台改配置时把它整个拦掉。 -->
@@ -36,18 +37,18 @@
           <div class="actions">
             <el-tooltip content="文件类型" placement="bottom">
               <el-dropdown @command="switchFileType" :hide-on-click="false">
-                <span class="el-dropdown-link"><i :class="fileTypeIcon"></i></span>
+                <span class="el-dropdown-link"><kv-icon :name="fileTypeIcon"></kv-icon></span>
                 <el-dropdown-menu slot="dropdown">
-                  <el-dropdown-item command="image" :class="{ 'el-dropdown-menu__item--selected': fileType === 'image' }"><i :class="fileConfig.image.icon"></i> 图片</el-dropdown-item>
-                  <el-dropdown-item command="video" :class="{ 'el-dropdown-menu__item--selected': fileType === 'video' }"><i :class="fileConfig.video.icon"></i> 视频</el-dropdown-item>
-                  <el-dropdown-item command="audio" :class="{ 'el-dropdown-menu__item--selected': fileType === 'audio' }"><i :class="fileConfig.audio.icon"></i> 音频</el-dropdown-item>
-                  <el-dropdown-item command="document" :class="{ 'el-dropdown-menu__item--selected': fileType === 'document' }"><i :class="fileConfig.document.icon"></i> 文件</el-dropdown-item>
+                  <el-dropdown-item command="image" :class="{ 'el-dropdown-menu__item--selected': fileType === 'image' }"><kv-icon :name="fileConfig.image.icon"></kv-icon> 图片</el-dropdown-item>
+                  <el-dropdown-item command="video" :class="{ 'el-dropdown-menu__item--selected': fileType === 'video' }"><kv-icon :name="fileConfig.video.icon"></kv-icon> 视频</el-dropdown-item>
+                  <el-dropdown-item command="audio" :class="{ 'el-dropdown-menu__item--selected': fileType === 'audio' }"><kv-icon :name="fileConfig.audio.icon"></kv-icon> 音频</el-dropdown-item>
+                  <el-dropdown-item command="document" :class="{ 'el-dropdown-menu__item--selected': fileType === 'document' }"><kv-icon :name="fileConfig.document.icon"></kv-icon> 文件</el-dropdown-item>
                 </el-dropdown-menu>
               </el-dropdown>
             </el-tooltip>
             <el-tooltip content="排序" placement="bottom">
               <el-dropdown @command="sort" :hide-on-click="false">
-                <span class="el-dropdown-link"><i :class="sortIcon"></i></span>
+                <span class="el-dropdown-link"><kv-icon :name="sortIcon"></kv-icon></span>
                 <el-dropdown-menu slot="dropdown">
                   <el-dropdown-item command="dateDesc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'dateDesc' }"><i data-lucide="arrow-down-wide-narrow"></i> 按时间倒序</el-dropdown-item>
                   <el-dropdown-item command="nameAsc" :class="{ 'el-dropdown-menu__item--selected': sortOption === 'nameAsc' }"><i data-lucide="arrow-down-a-z"></i> 按名称升序</el-dropdown-item>
@@ -57,7 +58,7 @@
             </el-tooltip>
             <el-tooltip content="筛选" placement="bottom">
               <el-dropdown @command="filter" :hide-on-click="false">
-                <span class="el-dropdown-link"><i :class="filterIcon"></i></span>
+                <span class="el-dropdown-link"><kv-icon :name="filterIcon"></kv-icon></span>
                 <el-dropdown-menu slot="dropdown">
                   <el-dropdown-item command="all" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'all' }"><i data-lucide="funnel"></i> 全部</el-dropdown-item>
                   <el-dropdown-item command="favorites" :class="{ 'el-dropdown-menu__item--selected': filterOption === 'favorites' }"><i data-lucide="bookmark"></i> 收藏</el-dropdown-item>
@@ -87,7 +88,7 @@
                 <el-dropdown-menu slot="dropdown">
                   <template v-for="site in quickWebsites">
                     <el-dropdown-item :command="site.url">
-                      <i :class="site.icon"></i> {{ site.name }}
+                      <kv-icon :name="site.icon"></kv-icon> {{ site.name }}
                     </el-dropdown-item>
                   </template>
                 </el-dropdown-menu>
@@ -116,7 +117,7 @@
             <template v-if="fileType === 'image'">
               <el-card class="image-card">
                 <span class="collect-icon" @click.stop="toggleLike(index, item.name)">
-                <i :class="item.metadata.liked ? 'bookmark liked' : 'bookmark not-liked'"></i>
+                <kv-icon name="bookmark" :class="item.metadata.liked ? 'liked' : 'not-liked'"></kv-icon>
                 </span>
                 <el-checkbox v-model="item.selected" :ref="'checkbox-' + index"></el-checkbox>
                 <el-image :src="'/file/' + item.name" :preview-src-list="['/file/' + item.name]" fit="cover" lazy="true"></el-image>
@@ -172,9 +173,9 @@
                   </div>
                     <!-- 控制按钮区域 -->
                   <div class="video-controls">
-                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'heart liked' : 'heart'"></i></button>
+                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><kv-icon name="heart" :class="{ liked: item.metadata.liked }"></kv-icon></button>
                     <button class="control-btn edit-btn" @click.stop="handleEditName(item)"><i data-lucide="pencil"></i></button>
-                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'square-check selected' : 'square'"></i></button>
+                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><kv-icon :name="item.selected ? 'square-check' : 'square'" :class="{ selected: item.selected }"></kv-icon></button>
                     <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i data-lucide="link"></i></button>
                     <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i data-lucide="trash"></i></button>
                   </div>
@@ -216,9 +217,9 @@
                   </audio>
                   <!-- 控制按钮区域 -->
                   <div class="audio-controls">
-                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'heart liked' : 'heart'"></i></button>
+                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><kv-icon name="heart" :class="{ liked: item.metadata.liked }"></kv-icon></button>
                     <button class="control-btn edit-btn" @click.stop="handleEditName(item)"><i data-lucide="pencil"></i></button>
-                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'square-check selected' : 'square'"></i></button>
+                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><kv-icon :name="item.selected ? 'square-check' : 'square'" :class="{ selected: item.selected }"></kv-icon></button>
                     <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i data-lucide="copy"></i></button>
                     <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i data-lucide="trash"></i></button>
                   </div>
@@ -232,7 +233,7 @@
                   <!-- 文件标题区域 -->
                   <div class="file-header">
                     <div class="file-avatar">
-                      <i :class="getFileIcon(item.name)" style="font-size: 32px;"></i>
+                      <kv-icon :name="getFileIcon(item.name)" class="file-avatar-icon"></kv-icon>
                     </div>
                     <div class="file-info">
                       <div class="file-title">
@@ -253,9 +254,9 @@
                   </div>
                   <!-- 控制按钮区域 -->
                   <div class="file-controls">
-                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><i :class="item.metadata.liked ? 'heart liked' : 'heart'"></i></button>
+                    <button class="control-btn like-btn" @click.stop="toggleLike(index, item.name)"><kv-icon name="heart" :class="{ liked: item.metadata.liked }"></kv-icon></button>
                     <button class="control-btn edit-btn" @click.stop="handleEditName(item)"><i data-lucide="pencil"></i></button>
-                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><i :class="item.selected ? 'square-check selected' : 'square'"></i></button>
+                    <button class="control-btn select-btn" @click.stop="toggleSelect(index, item.name)"><kv-icon :name="item.selected ? 'square-check' : 'square'" :class="{ selected: item.selected }"></kv-icon></button>
                     <button class="control-btn" @click.stop="handleCopy(index, item.name)"><i data-lucide="copy"></i></button>
                     <button class="control-btn" @click.stop="handleDelete(index, item.name)"><i data-lucide="trash"></i></button>
                   </div>
@@ -294,492 +295,6 @@
      只作用于之后创建的实例。放在后面的话 v-if 里的图标永远不会被替换。 -->
 <script src="/icons-subset.js?v=a139a660aa"></script>
 <script src="/icons.js?v=fc3fc216e0"></script>
-<script src="/admin-shared.js?v=278244fd7d"></script>
-<script>
-  new Vue({
-    el: '#app',
-    data: {
-      baseURL: document.location.origin,
-      Number: 0,
-      totalCount: 0,
-      fileConfig: {
-        image: {
-          name: '图片',
-          exts: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'ico', 'svg', 'heic', 'heif', 'avif'],
-          icon: 'image',
-          count: 0
-        },
-        video: {
-          name: '视频',
-          exts: ['mp4', 'webm', 'ogg', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'm4v', '3gp', 'ts'],
-          icon: 'video',
-          count: 0
-        },
-        audio: {
-          name: '音频',
-          exts: ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'ape', 'opus'],
-          icon: 'music',
-          count: 0
-        },
-        document: {
-          name: '文件',
-          exts: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'md', 'zip', 'rar', '7z', 'tar', 'gz', 'exe', 'apk', 'dmg', 'iso', 'msi', 'deb', 'rpm', 'json', 'xml', 'csv', 'sql', 'html', 'css', 'js', 'py', 'java', 'go', 'rs', 'cpp', 'c', 'h'],
-          icon: 'folder-open',
-          count: 0
-        }
-      },
-      uploadConfig: {
-        maxSize: 20 * 1024 * 1024,  // 最大上传20MB
-        maxConcurrent: 3
-      },
-        tableData: [],
-        nextCursor: null,
-      isLoadingMore: false,
-      search: '',
-      currentPage: 1,
-      pageSize: 15,
-      selectedFiles: [],
-      sortOption: 'dateDesc',
-      filterOption: 'all',
-      fileType: 'image',
-      // 失效检测（checkBrokenFiles）所需状态；pageDisposed 在 beforeDestroy 置位
-      pageDisposed: false,
-      brokenCheckSeq: 0,
-      brokenCheckController: null,
-      brokenCheckMessage: null,
-      quickWebsites: [
-        { name: '上传中心', url: './', icon: 'cloud-upload' },
-        { name: '图片浏览', url: './gallery.html', icon: 'images' },
-        { name: 'Movavi', url: 'https://www.movavi.com/zh/movavi-video-converter.html', icon: 'file-video-camera' },
-        { name: 'FreeConvert', url: 'https://www.freeconvert.com/zh/video-compressor', icon: 'file' },
-        { name: 'YouCompress', url: 'https://www.youcompress.com/zh-cn/', icon: 'file-archive' },
-        { name: 'Cloudinary', url: 'https://console.cloudinary.com/', icon: 'cloud' },
-      ],
-    },
-    computed: Object.assign({}, window.KVAdminShared.computed, {
-      filteredTableData() {
-        return this.tableData.filter(data => {
-          // 搜索匹配
-          const searchLower = this.search.toLowerCase();
-          const matchesSearch = !searchLower || [
-            (data.metadata.fileName || '').toLowerCase(),
-            data.name?.toLowerCase(),
-          ].some(field => field?.includes(searchLower));
-
-          // 筛选匹配
-          const matchesFilter = {
-            'all': true,
-            'favorites': data.metadata.liked,
-            'blocked': data.metadata.ListType === 'Block',
-            'unblocked': data.metadata.ListType === 'White',
-            'adult': data.metadata.Label?.toLowerCase() === 'adult',
-          }[this.filterOption] ?? true;
-
-          // 文件类型匹配
-          const ext = data.name.split('.').pop().toLowerCase();
-          // 用 fileConfig 里的实际键来判断，不要直接索引 this.fileType：
-          // 后者可能被 localStorage 带进越界值（历史版本存过 "all"），
-          // fileConfig[越界值] 是 undefined，取 .exts 会整段抛错、列表渲染不出来。
-          const config = this.fileConfig[this.fileType];
-          const matchesType = this.fileType === 'document' ?
-          !Object.keys(this.fileConfig).some(type =>
-            type !== 'document' && this.fileConfig[type].exts.includes(ext) // 匹配其他所有文件
-          ) :
-          !config || config.exts.includes(ext);
-          return matchesSearch && matchesFilter && matchesType;
-        });
-      },
-                        fileTypeIcon() {
-        return this.fileType === 'image' ? 'image' :
-        this.fileType === 'video' ? 'video' :
-        this.fileType === 'audio' ? 'music' :
-        this.fileType === 'document' ? 'folder-open' : '';
-      }
-    }),
-    watch: Object.assign({}, window.KVAdminShared.watch, {  // 监听数据变化
-      tableData: {
-        handler(newData) {
-          this.selectedFiles = newData.filter(file => file.selected);
-        },
-        deep: true
-      },
-            filterOption(newOption) { localStorage.setItem('filterOption', newOption); }
-    }),
-    methods: Object.assign({}, window.KVAdminShared.methods, {
-      refreshDashboard() {location.reload();},  // 刷新页面
-      async handleLogout() {  // 退出登录
-        try {
-          await fetch('./api/auth/logout', { method: 'POST', credentials: 'include' });
-        } catch (e) {}
-        window.location.href = './login.html';
-      },
-      handlePageChange(page) { this.currentPage = page; },  // 切换页面
-                  // 切换排序方式
-      // 切换筛选方式
-      async loadMore() {
-        if (this.isLoadingMore || !this.nextCursor) return;
-        this.isLoadingMore = true;
-        try {
-          const result = await fetch(`./api/manage/list?cursor=${encodeURIComponent(this.nextCursor)}`, {
-            method: 'GET',
-            credentials: 'include',
-          }).then((r) => r.json());
-
-          const mapped = (result.keys || []).map((file) => this.normalizeListItem(file));
-          this.mergeListData(mapped);
-          this.nextCursor = result.list_complete ? null : result.cursor;
-          if (Number.isFinite(result?.stats?.total)) {
-            this.totalCount = result.stats.total;
-          }
-          this.updateStats();
-        } catch {
-          this.$message.error('加载更多失败，请稍后重试');
-        } finally {
-          this.isLoadingMore = false;
-        }
-      },
-              formattedFileDetails(item) {
-        const metadata = item.metadata;
-        const timestamp = new Date(metadata.TimeStamp).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
-        // 详情走 v-html 注入：文件名等元数据来自外部输入，必须转义，
-        // 否则一个带 <img onerror=…> 的文件名就能在后台执行脚本（admin.html 版有转义，此处此前漏了）。
-        const esc = (v) => String(v == null ? '' : v)
-          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-        return `
-          <div style="text-align: left; padding: 5px;">
-            <div><strong>ID：</strong>${esc(item.name)}</div>
-            <div><strong>文件名：</strong>${esc(metadata.fileName || item.name)}</div>
-            <div><strong>上传时间：</strong>${esc(timestamp)}</div>
-            <div><strong>元数据：</strong>${esc(JSON.stringify(metadata))}</div>
-          </div>
-        `;
-      },
-      calculatePageSize() {  // 设置页面大小
-        const config = {
-          minSize: 15, // 最小页面卡片数
-          cardWidth: 240,
-          ratio: 3/4, // 卡片高宽比
-          gap: 20, // 卡片间距
-          defaultWidth: 800,
-          defaultHeaderHeight: 60 // 默认Dashboard高度
-        };
-        // 获取容器尺寸
-        const content = document.querySelector('.content');
-        const header = document.querySelector('.header-content');
-        const width = content?.clientWidth || config.defaultWidth;
-        const height = window.innerHeight - (header?.offsetHeight || config.defaultHeaderHeight);
-        // 计算行列数
-        const cols = Math.floor(width / (config.cardWidth + config.gap));
-        const cardHeight = (width / cols - config.gap) * config.ratio;
-        const rows = Math.floor(height / (cardHeight + config.gap));
-        // 设置页面大小
-        this.pageSize = Math.max(rows * cols, config.minSize);
-      },
-            updateStats() {
-        this.Number = this.tableData.length;
-        if (!Number.isFinite(this.totalCount) || this.totalCount < this.Number) {
-          this.totalCount = this.Number;
-        }
-        let fileCount = {image: 0, video: 0, audio: 0, document: 0};
-        this.tableData.forEach(file => {
-          const ext = file.name.split('.').pop().toLowerCase();
-          const type = Object.keys(this.fileConfig).find(t =>
-            this.fileConfig[t].exts.includes(ext)
-          ) || 'document';
-          fileCount[type]++;
-        });
-        ['image', 'video', 'audio', 'document'].forEach((type) => {
-          this.fileConfig[type].count = fileCount[type] || 0;
-        });
-      },
-      // 文件操作
-            async refreshFileList() {  // 不刷新页面，仅更新数据
-        try {
-          const result = await fetch("./api/manage/list?limit=100&includeStats=1", { method: 'GET', credentials: 'include' })
-            .then(response => response.json());
-          const mapped = (result.keys || []).map((file) => this.normalizeListItem(file));
-          this.tableData = mapped;
-          this.nextCursor = result.list_complete ? null : result.cursor;
-          this.totalCount = Number.isFinite(result?.stats?.total) ? result.stats.total : mapped.length;
-          this.updateStats();
-          this.sortData(this.tableData);
-        } catch {
-          this.$message.error('刷新文件列表失败，请检查网络连接');
-        }
-      },
-                  handleDelete(index, key) {
-        this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          fetch(`./api/manage/delete/${key}`, { method: 'GET', credentials: 'include' })
-            .then(response => response.ok ? this.tableData.splice(index, 1) : Promise.reject())
-            .then(() => {
-              this.updateStats();
-              this.$message.success('删除成功！');
-            })
-            .catch(() => this.$message.error('删除失败，请检查网络连接'));
-        }).catch(() => this.$message.info('已取消删除'));
-      },
-                        // 批处理相关
-      selectAllInPage() {  // 全选当前页
-        const selected = !this.paginatedTableData.every(file => file.selected);
-        this.paginatedTableData.forEach(file => file.selected = selected);
-      },
-      clearSelection() {  // 取消全部选择
-        // 必须清底层的 file.selected，不能只写 this.selectedFiles = []：
-        // 模板上的勾选态绑定的是 item.selected（el-checkbox 的 v-model、
-        // 卡片的 :class="{ selected: item.selected }"），而 selectedFiles 只是
-        // 由 watch:tableData(deep) 回填出来的派生副本。只清副本的话勾选标记还在，
-        // 而且 tableData 下次有任何深层变动，watch 会按底层 true 值把它重新填回来
-        // ——表现就是「取消选择后又自己选上了」。
-        this.tableData.forEach(file => { file.selected = false; });
-      },
-      handleBatchDelete() {  // 批量删除
-        this.$confirm('此操作将永久删除这 ' + this.selectedFiles.length + ' 个文件, 是否继续?', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          const promises = this.selectedFiles.map(file => fetch(`./api/manage/delete/${file.name}`, { method: 'GET', credentials: 'include' }));
-
-          Promise.all(promises)
-            .then(results => {
-              results.forEach((response, index) => {
-                if (response.ok) {
-                  const fileIndex = this.tableData.findIndex(file => file.name === this.selectedFiles[index].name);
-                  if (fileIndex !== -1) {
-                    this.tableData.splice(fileIndex, 1);
-                  }
-                }
-              });
-              this.clearSelection();
-              this.updateStats();
-              this.$message.success('批量删除成功!');
-            })
-            .catch(() => this.$message.error('批量删除失败，请检查网络连接'));
-        }).catch(() => this.$message.info('已取消批量删除'));
-      },
-                        handleBatchDownload() {  // 批量下载
-        this.$message.info(`正在下载 ${this.selectedFiles.length} 个文件`, { duration: 1000 });
-        this.selectedFiles.forEach((file, index) => {
-          setTimeout(() => {
-            const link = document.createElement('a');
-            link.href = `/file/${file.name}`;
-            link.download = file.metadata.fileName || file.name;
-            link.click();
-          }, index * 800);
-        });
-        this.clearSelection();
-      },
-      handleBatchBlockOrUnblock(type) {  // 批量加入黑/白名单
-        if (type !== 'Block' && type !== 'White') { this.$message.error('无效的操作类型'); return; }
-        const typeToName = { Block: '黑名单', White: '白名单' };
-        this.$confirm(`确定要将这 ${this.selectedFiles.length} 个文件加入${typeToName[type]}吗?`, '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          const promises = this.selectedFiles.map(file => fetch(`./api/manage/${type.toLowerCase()}/${file.name}`, { method: 'GET', credentials: 'include' }));
-
-          Promise.all(promises)
-            .then(responses => {
-              responses.forEach((response, index) => {
-                if (response.ok) {
-                  const fileIndex = this.tableData.findIndex(item => item.name === this.selectedFiles[index].name);
-                  if (fileIndex !== -1) {
-                    this.tableData[fileIndex].metadata.ListType = type;
-                  }
-                }
-              });
-              this.$message.success(`批量加入${typeToName[type]}成功`);
-              this.clearSelection();
-            })
-            .catch(() => this.$message.error(`操作失败，请检查网络连接`));
-        });
-      },
-      handleBatchOperation(command) {
-        if (this.selectedFiles.length === 0) { this.$message.warning('请先选择文件'); return; }
-        switch (command) {
-          case 'copy': this.handleBatchCopy(); break;
-          case 'copyMarkdown': this.handleBatchCopyMarkdown(); break;
-          case 'copyHtml': this.handleBatchCopyHtml(); break;
-          case 'delete': this.handleBatchDelete(); break;
-          case 'download': this.handleBatchDownload(); break;
-          case 'block': this.handleBatchBlockOrUnblock('Block'); break;
-          case 'unblock': this.handleBatchBlockOrUnblock('White'); break;
-        }
-      },
-      // 工具相关
-      handleToolkit(command) {
-        switch (command) {
-          case 'selectAllInPage': this.selectAllInPage(); break;
-          case 'checkBrokenFiles': this.checkBrokenFiles(); break;
-          case 'editWebsites': this.editWebsites(); break;
-          case 'openUploader': this.openUploader(); break;
-          case 'exportLinks': this.exportAllLinks(); break;
-        }
-      },
-      switchFileType(type) {  // 切换文件类型
-        // type 常来自 localStorage，而 localStorage 是长期存在的：早期版本支持过
-        // "all"，用户浏览器里可能还留着这个值。fileConfig 只有
-        // image/video/audio/document 四个键，拿越界的键取 fileConfig[type].name
-        // 会读到 undefined 上的属性而抛错，所以先把非法值挡回默认类型。
-        this.fileType = Object.prototype.hasOwnProperty.call(this.fileConfig, type) ? type : 'image';
-        this.currentPage = 1;
-        localStorage.setItem('fileType', this.fileType);
-        this.$message({
-          message: `已切换为${this.fileConfig[this.fileType].name}模式, 共${this.fileConfig[this.fileType].count}个文件`,
-          type: 'success',
-          duration: 1500
-        });
-      },
-      checkBrokenFiles() {  // 检测失效文件
-        // 与 admin.html 的重写版对齐：空列表直接提示、可取消（AbortController）、
-        // 按 item 记账。旧版用 tableData 下标去索引 selectedFiles[index].name，
-        // 未全选时 selectedFiles[index] 为 undefined，点按钮即 TypeError。
-        const targets = this.tableData.slice();
-        if (targets.length === 0) {
-          this.$message.info('当前没有可检测的已加载文件');
-          return;
-        }
-        this.cancelBrokenCheck();
-        const seq = ++this.brokenCheckSeq;
-        const controller = typeof AbortController === 'function' ? new AbortController() : null;
-        this.brokenCheckController = controller;
-        this.brokenCheckMessage = this.$message({ message: '正在检测失效文件...', duration: 0 });
-
-        let brokenCount = 0;
-        const promises = targets.map((item) => new Promise((resolve) => {
-          fetch(`${this.baseURL}/file/${item.name}`, {
-            method: 'HEAD',
-            cache: 'no-cache',  // 避免缓存影响检测结果
-            signal: controller ? controller.signal : undefined
-          })
-            .then(response => {
-              if (!response.ok) {
-                brokenCount++;
-                item.selected = true;
-              }
-              resolve();
-            })
-            .catch(() => {
-              if (controller && controller.signal.aborted) { resolve(); return; }
-              brokenCount++;
-              item.selected = true;
-              resolve();
-            });
-        }));
-
-        Promise.all(promises).then(() => {
-          if (seq !== this.brokenCheckSeq || this.pageDisposed) return;
-          this.brokenCheckController = null;
-          if (this.brokenCheckMessage) {
-            this.brokenCheckMessage.close();
-            this.brokenCheckMessage = null;
-          }
-          if (brokenCount > 0) {
-            this.$message({
-              dangerouslyUseHTMLString: true,
-              message: `检测到 ${brokenCount} 个失效文件，已自动选中。<br>您可以使用批量删除功能移除它们。`,
-              type: 'warning',
-              duration: 5000
-            });
-          } else {
-            this.$message({
-              message: '未检测到失效文件',
-              type: 'success'
-            });
-          }
-        });
-      },
-      // 取消进行中的失效检测：范围切换或重新检测时调用，避免旧结果回填
-      cancelBrokenCheck() {
-        this.brokenCheckSeq += 1;
-        if (this.brokenCheckController) {
-          try { this.brokenCheckController.abort(); } catch { /* 请求已结束。 */ }
-          this.brokenCheckController = null;
-        }
-        if (this.brokenCheckMessage) {
-          this.brokenCheckMessage.close();
-          this.brokenCheckMessage = null;
-        }
-      },
-      // 处理网站点击
-            // 编辑快捷方式
-            getFileIcon(filename) {
-        const ext = filename.split('.').pop().toLowerCase();
-        const iconMap = {
-          'pdf': 'file-text',
-          'doc,docx': 'file-text',
-          'xls,xlsx,csv': 'file-spreadsheet',
-          'ppt,pptx': 'presentation',
-          'txt,md,log': 'file-text',
-          'zip,rar,7z,tar,gz': 'file-archive',
-          'html,htm,css,js,ts,jsx,tsx,vue,php,py,java,c,cpp,h,hpp,cs,go,rs,rb,pl,sh,sql': 'file-code',
-          'json,xml,yaml,yml,toml': 'file-code',
-          'mp4,avi,mov,wmv,flv,mkv,webm': 'file-video-camera',
-          'mp3,wav,ogg,flac,aac,m4a,wma': 'audio-lines',
-          'jpg,jpeg,png,gif,bmp,webp,svg,ico': 'file-image',
-          'psd,ai,eps,cdr': 'file-image',
-          'exe,msi,app,dmg,deb,rpm': 'file-down'
-        };
-        for(const [exts, icon] of Object.entries(iconMap)) {
-          if(exts.split(',').includes(ext)) {
-            return icon;
-          }
-        }
-        return 'file';
-      },
-                }),
-    async mounted() {
-      // 先检查认证状态
-      try {
-        const authResponse = await fetch('./api/auth/check', { method: 'GET', credentials: 'include' });
-        const authData = await authResponse.json();
-        
-        if (authData.authRequired && !authData.authenticated) {
-          window.location.href = './login.html?redirect=' + encodeURIComponent(window.location.pathname);
-          return;
-        }
-        this.showLogoutButton = authData.authRequired && authData.authenticated;
-      } catch (e) {
-        this.$message.error('认证检查失败，请刷新页面');
-        return;
-      }
-
-      window.addEventListener('resize', this.calculatePageSize);
-      this.updateWindowWidth();
-
-      // 获取文件列表数据
-      try {
-        const result = await fetch("./api/manage/list?limit=100&includeStats=1", { method: 'GET', credentials: 'include' })
-          .then(response => response.json());
-        const mapped = (result.keys || []).map((file) => this.normalizeListItem(file));
-        this.tableData = mapped;
-        this.nextCursor = result.list_complete ? null : result.cursor;
-        this.totalCount = Number.isFinite(result?.stats?.total) ? result.stats.total : mapped.length;
-        this.updateStats();
-        // 恢复设置
-        this.sortOption = localStorage.getItem('sortOption') || this.sortOption;
-        this.sortData(this.tableData);
-        this.fileType = localStorage.getItem('fileType') || this.fileType;
-        this.switchFileType(this.fileType);
-      } catch {
-        this.$message.error('同步数据时出错，请检查网络连接');
-      }
-
-      if (localStorage.getItem('quickWebsites')) {
-        this.quickWebsites = JSON.parse(localStorage.getItem('quickWebsites'));
-      }
-    },
-    beforeDestroy() {
-      this.pageDisposed = true;
-      this.cancelBrokenCheck();
-      window.removeEventListener('resize', this.calculatePageSize);
-    }
-  });
-</script>
+<script src="/admin-shared.js?v=44f1a15913"></script>
+<script src="/admin-imgtc-app.js?v=ddc5c3c2de"></script>
 </html>

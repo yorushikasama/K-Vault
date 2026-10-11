@@ -21,7 +21,8 @@ const path = require('node:path');
  */
 describe('admin-imgtc file type filter tolerates out-of-range values', function () {
   const root = path.resolve(__dirname, '..');
-  const src = fs.readFileSync(path.join(root, 'admin-imgtc.html'), 'utf8');
+  // Vue 选项随模块化搬进了 admin-imgtc-app.js
+  const src = fs.readFileSync(path.join(root, 'admin-imgtc-app.js'), 'utf8');
   const vueAt = src.search(/\bnew Vue\s*\(/);
   const options = vueAt === -1 ? src : src.slice(vueAt);
 
@@ -90,7 +91,8 @@ describe('admin-imgtc file type filter tolerates out-of-range values', function 
   describe('admin.html keeps its own "all" support', function () {
     // 两页共用 localStorage 的 fileType 键，但键集不同。admin.html 确实支持
     // "all"，改动前先读这段注释，别为了「统一」把它的能力削掉。
-    const admin = fs.readFileSync(path.join(root, 'admin.html'), 'utf8');
+    // fileConfig 定义在 admin-app.js（模块化拆分）
+    const admin = fs.readFileSync(path.join(root, 'admin-app.js'), 'utf8');
     it('still declares all in fileConfig', function () {
       assert.match(admin, /^\s{8}all:\s*\{/m, 'admin.html 的 fileConfig 少了 all 键；它依赖这个键支持「全部」筛选');
     });

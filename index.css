@@ -49,10 +49,6 @@
         background: color-mix(in srgb, var(--ui-brand) 20%, transparent);
       }
 
-      html[data-theme="dark"] .toast {
-        border: 1px solid var(--surface-border);
-      }
-
       html[data-theme="dark"] .url-input-container input::placeholder,
       html[data-theme="dark"] .batch-links::placeholder {
         color: var(--text-muted);
@@ -1333,12 +1329,6 @@
          只有上传页是紫滑块，其余是浏览器默认灰。定义收口到权威层。 */
 
       /* Toast 通知 */
-      .toast-container {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-      }
 
       .toast {
         padding: 12px 20px;
@@ -1350,16 +1340,6 @@
         display: flex;
         align-items: center;
         gap: 10px;
-      }
-
-      .toast.success {
-        border-left: 4px solid #67c23a;
-      }
-      .toast.error {
-        border-left: 4px solid #f56c6c;
-      }
-      .toast.info {
-        border-left: 4px solid var(--primary-color);
       }
 
       .paste-upload-notice {
@@ -1734,3 +1714,5 @@
           transition-duration: 0.01ms !important;
         }
       }
+/* UI 设计面板的隐藏文件输入（原内联 style="display:none" 收口） */
+.hidden-file-input { display: none; }

@@ -28,3 +28,4 @@ test-login.json
 *.chrome-profile/
 .chrome-*/
 .pb-chrome/
+.deploy-tmp/

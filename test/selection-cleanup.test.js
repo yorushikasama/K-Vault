@@ -24,20 +24,23 @@ const path = require('node:path');
  */
 describe('admin-imgtc clearSelection clears the underlying state', function () {
   const root = path.resolve(__dirname, '..');
-  const src = fs.readFileSync(path.join(root, 'admin-imgtc.html'), 'utf8');
+  const src = fs.readFileSync(path.join(root, 'admin-imgtc-app.js'), 'utf8');
   const vueAt = src.search(/\bnew Vue\s*\(/);
   const options = vueAt === -1 ? src : src.slice(vueAt);
+  // clearSelection 与两个批量方法已升格进 admin-shared.js（两页逐字相同），
+  // 「取消选择清底层状态」的守护要查共享模块本体。
+  const shared = fs.readFileSync(path.join(root, 'admin-shared.js'), 'utf8');
 
   it('defines clearSelection', function () {
     assert.match(
-      options,
+      shared,
       /^[ \t]+clearSelection\(\)\s*\{/m,
-      'admin-imgtc.html 缺少 clearSelection 方法'
+      'admin-shared.js 缺少 clearSelection 方法'
     );
   });
 
   it('makes clearSelection reset the underlying items, not just the derived array', function () {
-    const m = /^[ \t]+clearSelection\(\)\s*\{([\s\S]*?)\n[ \t]{6}\}/m.exec(options);
+    const m = /^[ \t]+clearSelection\(\)\s*\{([\s\S]*?)\n[ \t]{2}\}/m.exec(shared);
     assert.ok(m, '找不到 clearSelection 的函数体');
     const body = m[1];
     // 必须遍历底层数据把 selected 置 false
@@ -50,14 +53,15 @@ describe('admin-imgtc clearSelection clears the underlying state', function () {
 
   describe('batch operations clean up through clearSelection', function () {
     // 这三处原本写成 this.selectedFiles = []，是实际出问题的地方。
+    // handleBatchDelete 仍在页面 app 文件；另外两个已并入共享模块。
     const callSites = [
-      ['handleBatchDelete', /handleBatchDelete\(\)\s*\{[\s\S]*?\n[ \t]{6}\}/],
-      ['handleBatchDownload', /handleBatchDownload\(\)\s*\{[\s\S]*?\n[ \t]{6}\}/],
-      ['handleBatchBlockOrUnblock', /handleBatchBlockOrUnblock\([\s\S]*?\n[ \t]{6}\}/],
+      ['handleBatchDelete', /handleBatchDelete\(\)\s*\{[\s\S]*?\n[ \t]{6}\}/, options],
+      ['handleBatchDownload', /handleBatchDownload\(\)\s*\{[\s\S]*?\n[ \t]{2}\}/, shared],
+      ['handleBatchBlockOrUnblock', /handleBatchBlockOrUnblock\([\s\S]*?\n[ \t]{2}\}/, shared],
     ];
-    for (const [name, re] of callSites) {
+    for (const [name, re, haystack] of callSites) {
       it(`${name} calls clearSelection`, function () {
-        const m = re.exec(options);
+        const m = re.exec(haystack);
         assert.ok(m, `找不到 ${name}`);
         assert.match(m[0], /this\.clearSelection\(\)/, `${name} 没有调用 clearSelection`);
       });

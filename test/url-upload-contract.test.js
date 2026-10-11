@@ -22,7 +22,10 @@ const path = require('node:path');
  */
 describe('URL upload share-link detection matches the server contract', function () {
   const root = path.resolve(__dirname, '..');
-  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  // isMediaShareLink 在 upload-media.js；mediaResolve 状态字段在 upload-app.js。
+  // html 变量保持旧名（多处断言引用它），指向两份拼接后的内容。
+  const html = fs.readFileSync(path.join(root, 'upload-media.js'), 'utf8')
+    + fs.readFileSync(path.join(root, 'upload-app.js'), 'utf8');
   const server = fs.readFileSync(
     path.join(root, 'server/lib/services/media-resolve-service.js'), 'utf8');
 

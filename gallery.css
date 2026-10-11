@@ -333,28 +333,6 @@
     }
 
     /* Toast */
-    .toast-container {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 9999;
-    }
-
-    .toast {
-      padding: 12px 20px;
-      background: white;
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-2);
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      animation: slideIn 0.2s ease-out;
-    }
-
-    .toast.success { border-left: 4px solid #67c23a; }
-    .toast.error { border-left: 4px solid #f56c6c; }
-    .toast.info { border-left: 4px solid var(--primary); }
 
     @keyframes slideIn {
       from { transform: translateX(100%); opacity: 0; }

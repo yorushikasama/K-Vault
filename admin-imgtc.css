@@ -1120,3 +1120,10 @@ body {
     row-gap: 8px !important;
   }
 }
+
+/* ===== 卡片图标改由 kv-icon 渲染 SVG 后的适配 =====
+   头像图标放大到原字号对应的尺寸；lucide 是描边图标，
+   收藏/点赞选中态用 CSS fill 恢复实心观感（覆盖 SVG 的 fill="none" 属性）。 */
+.file-avatar svg.lucide { width: 32px; height: 32px; }
+.like-btn svg.liked,
+.collect-icon svg.liked { fill: currentColor; }
