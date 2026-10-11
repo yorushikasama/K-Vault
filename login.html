@@ -7,16 +7,16 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/logo.png">
   <link rel="shortcut icon" href="/favicon.ico">
-  <link rel="stylesheet" href="/theme.css?v=74c7ad38da">
+  <link rel="stylesheet" href="/theme.css?v=55e76fa69d">
   <script src="/theme-core.js?v=4cb852886e"></script>
   <script defer src="/theme-effects.js?v=9dbb416bad"></script>
-  <link rel="stylesheet" href="/login.css?v=a6bf90960b">
+  <link rel="stylesheet" href="/login.css?v=56f21c772f">
   <link rel="stylesheet" href="/mobile-refactor.css?v=545252aefa">
 </head>
 <body class="login-page">
   <!-- 背景图层 (通过JS动态控制) -->
-  <div class="bg-image-layer" id="bgImageLayer" style="display: none;"></div>
-  <div class="bg-overlay" id="bgOverlay" style="display: none;"></div>
+  <div class="bg-image-layer" id="bgImageLayer"></div>
+  <div class="bg-overlay" id="bgOverlay"></div>
   
   <div class="login-container">
     <div class="login-card">
@@ -94,8 +94,8 @@
 
         if (bgMode === 'image' && bgUrl) {
           bgLayer.style.backgroundImage = `url(${bgUrl})`;
-          bgLayer.style.display = 'block';
-          overlay.style.display = 'block';
+          bgLayer.classList.add('is-visible');
+          overlay.classList.add('is-visible');
           document.body.classList.add('has-bg-image');
         } else if (bgMode === 'bing') {
           // 使用 Bing 每日壁纸 API
@@ -105,8 +105,8 @@
               if (data.status && data.data && data.data.length > 0) {
                 const bingUrl = 'https://cn.bing.com' + data.data[0].url;
                 bgLayer.style.backgroundImage = `url(${bingUrl})`;
-                bgLayer.style.display = 'block';
-                overlay.style.display = 'block';
+                bgLayer.classList.add('is-visible');
+                overlay.classList.add('is-visible');
                 document.body.classList.add('has-bg-image');
               }
             })

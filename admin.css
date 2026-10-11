@@ -257,6 +257,8 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      /* 层级缩进：页面只绑定 --folder-depth，公式统一在这里 */
+      padding-left: calc(var(--folder-depth, 0) * 14px + 6px);
     }
     .folder-node-count {
       font-size: 12px;
@@ -1028,4 +1030,88 @@
       .kv-files .preview-modal .preview-toolbar { max-width: 100%; box-sizing: border-box; flex-wrap: wrap; }
       .kv-files .preview-modal .preview-filename { overflow-wrap: anywhere; min-width: 0; }
     }
+
+/* ===== 从 admin.html 内联样式收口 =====
+   存储后端品牌色此前散落在 storageColor 三元表达式和状态弹窗模板里，
+   现统一为 token；弹窗/拖拽幽灵节点挂在 body 下，故 token 定义在
+   body.kv-workbench 上以便弹出层继承。 */
+    .kv-workbench {
+      --storage-color-telegram: var(--success-color, #67c23a);
+      --storage-color-r2: #409eff;
+      --storage-color-s3: var(--warning-color, #e6a23c);
+      --storage-color-discord: #7289da;
+      --storage-color-huggingface: #ff9d00;
+      --storage-color-webdav: #8f65ff;
+      --storage-color-github: #24292f;
+    }
+    .kv-files .list-view-card .el-table { width: 100%; }
+    .kv-files .file-name-blocked { color: #999; }
+    .kv-workbench .text-btn-danger { color: var(--danger-color, #f56c6c); }
+    .kv-workbench .text-btn-warning { color: var(--warning-color, #e6a23c); }
+    .token-manager-dialog .el-switch__core {
+      background-color: var(--danger-color, #f56c6c);
+      border-color: var(--danger-color, #f56c6c);
+    }
+    .token-manager-dialog .el-switch.is-checked .el-switch__core {
+      background-color: var(--success-color, #67c23a);
+      border-color: var(--success-color, #67c23a);
+    }
+    .token-create-dialog .el-select,
+    .token-create-dialog .el-input-number,
+    .token-create-dialog .el-date-editor { width: 100%; }
+    .token-manager-dialog .api-example {
+      margin-top: 14px;
+      padding: 10px 12px;
+      background: #f5f7fa;
+      border-radius: 6px;
+      border: 1px solid #ebeef5;
+    }
+    .token-manager-dialog .api-example-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #606266;
+      margin-bottom: 6px;
+    }
+    .token-manager-dialog .api-example pre {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.7;
+      color: #476582;
+      background: #fafbfc;
+      border-radius: 4px;
+      padding: 10px;
+      overflow-x: auto;
+    }
+    .hidden-file-input { display: none; }
+    .kv-workbench .ui-design-inline.is-disabled { opacity: 0.52; pointer-events: none; }
+    .drag-ghost {
+      position: fixed;
+      top: -9999px;
+      left: -9999px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(19, 29, 48, 0.92);
+      color: #fff;
+      font-size: 12px;
+      pointer-events: none;
+      z-index: 9999;
+    }
+    .status-dialog { line-height: 2; }
+    .status-dialog .status-icon { width: 20px; }
+    .status-dialog .status-icon--s3 { color: var(--storage-color-s3, #e6a23c); }
+    .status-dialog .status-icon--discord { color: var(--storage-color-discord, #7289da); }
+    .status-dialog .status-icon--huggingface { color: var(--storage-color-huggingface, #ff9d00); }
+    .status-dialog .status-icon--github { color: var(--storage-color-github, #24292f); }
+    .status-dialog .status-ok { color: var(--success-color, #67c23a); }
+    .status-dialog .status-fail { color: var(--danger-color, #f56c6c); }
+    .status-dialog .status-unset { color: var(--info-color, #909399); }
+    .file-detail-card { text-align: left; padding: 5px; }
+    .file-detail-card .file-detail-storage { font-weight: bold; color: var(--storage-color-telegram, #67c23a); }
+    .file-detail-storage.storage-r2 { color: var(--storage-color-r2, #409eff); }
+    .file-detail-storage.storage-s3 { color: var(--storage-color-s3, #e6a23c); }
+    .file-detail-storage.storage-discord { color: var(--storage-color-discord, #7289da); }
+    .file-detail-storage.storage-huggingface { color: var(--storage-color-huggingface, #ff9d00); }
+    .file-detail-storage.storage-webdav { color: var(--storage-color-webdav, #8f65ff); }
+    .file-detail-storage.storage-github { color: var(--storage-color-github, #24292f); }
+    .website-edit-dialog .msg-link { color: #409eff; text-decoration: underline; }
   

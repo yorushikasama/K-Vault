@@ -175,6 +175,10 @@
       color: #6b7280;
     }
 
+    /* 显隐由 JS 切 class 控制，不直接写 style.display */
+    .empty-state.is-visible { display: block; }
+    .load-btn.is-hidden { display: none; }
+
     .empty-state i,
     .empty-state svg.lucide {
       font-size: 1.8rem;

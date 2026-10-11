@@ -11,12 +11,19 @@
  * 为什么用 acorn 而不是正则：手写括号配平在「正则字面量」上会翻车——
  * /}/ 里的花括号会被当成代码里的括号，模板字符串的 ${} 也会算错。
  * 位置信息必须来自语法树。
+ *
+ * 2026-10 起两页的 Vue 应用已从 HTML 内联脚本拆到 admin-app.js /
+ * admin-imgtc-app.js，本脚本的「页面内联 <script> 解析」随之改为直接解析
+ * 这两个 app 文件；<script src> 的引用数仍查页面 HTML。
  */
 const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
-const PAGES = ['admin.html', 'admin-imgtc.html'];
+const PAGES = [
+  { page: 'admin.html', app: 'admin-app.js' },
+  { page: 'admin-imgtc.html', app: 'admin-imgtc-app.js' },
+];
 const SHARED_FILE = 'admin-shared.js';
 const SHARED_GLOBAL = 'window.KVAdminShared';
 const SECTIONS = ['methods', 'computed', 'watch'];
@@ -27,6 +34,8 @@ const SHARED_NAMES = [
   'toggleSelect', 'getFileType', 'openUploader', 'filter', 'handleWebsite', 'sort',
   'editWebsites', 'toggleLike', 'handleEditName', 'handleQuickCopy', 'exportAllLinks',
   'handleBatchCopyHtml', 'handleBatchCopyMarkdown', 'handleBatchCopy', 'handleCopy',
+  'handleBatchDownload', 'handleBatchBlockOrUnblock', 'clearSelection',
+  'checkBrokenFiles', 'cancelBrokenCheck',
   'updateWindowWidth',
   'filterIcon', 'paginatedTableData', 'sortIcon',
   'sortOption',
@@ -48,23 +57,15 @@ try {
 
 // ---------- 工具 ----------
 
-/** 把整份 HTML 里的内联 <script> 逐个解析，返回 {code, base, ast}。 */
-function parseInlineScripts(src) {
-  const out = [];
-  const re = /<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g;
-  let m;
-  while ((m = re.exec(src))) {
-    const code = m[1];
-    const base = m.index + m[0].indexOf('>') + 1;
-    let ast;
-    try {
-      ast = acorn.parse(code, { ecmaVersion: 2022, sourceType: 'script' });
-    } catch (err) {
-      throw new Error(`内联 <script> 解析失败: ${err.message}`);
-    }
-    out.push({ code, base, ast });
+/** 解析一段 JS 源码。app 文件本身就是脚本，不再有内联 <script> 包裹。 */
+function parseAppScripts(src) {
+  let ast;
+  try {
+    ast = acorn.parse(src, { ecmaVersion: 2022, sourceType: 'script' });
+  } catch (err) {
+    throw new Error(`app 脚本解析失败: ${err.message}`);
   }
-  return out;
+  return [{ code: src, base: 0, ast }];
 }
 
 /** 在 AST 里找 `new Vue({...})` 的选项对象。 */
@@ -103,7 +104,7 @@ function sectionObject(options, name) {
  * 无解析器时的校验实现。
  *
  * 只用字符串匹配，因为要判断的三件事都是「文本形状」：
- *   1. admin-shared.js 的 <script> 引用出现几次；
+ *   1. admin-shared.js 的 <script> 引用在页面 HTML 里出现几次；
  *   2. 三个 section 是否写成了 Object.assign({}, window.KVAdminShared.xxx, {
  *   3. 共享方法名是否又出现在 Vue 选项区（重复定义会覆盖共享版本）。
  *
@@ -111,9 +112,11 @@ function sectionObject(options, name) {
  * 和 this.handleCopy(...) 都是调用，只有 `name(...) {` 这种行首形态才是定义。
  * 这一点用正则足够可靠，不需要语法树。
  */
-function inspectByText(page) {
-  const src = fs.readFileSync(path.join(ROOT, page), 'utf8');
-  const loaded = (src.match(/src="\/admin-shared\.js/g) || []).length;
+function inspectByText(entry) {
+  const html = fs.readFileSync(path.join(ROOT, entry.page), 'utf8');
+  const src = fs.readFileSync(path.join(ROOT, entry.app), 'utf8');
+  const loaded = (html.match(new RegExp(`src="/${entry.app}`, 'g')) || []).length;
+  const sharedLoaded = (html.match(/src="\/admin-shared\.js/g) || []).length;
 
   const merged = {};
   for (const sec of SECTIONS) {
@@ -131,28 +134,28 @@ function inspectByText(page) {
     const defRe = new RegExp(`^[ \\t]+(?:async\\s+)?${name}\\s*\\([^)]*\\)\\s*\\{`, 'm');
     if (defRe.test(options)) dupes.push(name);
   }
-  return { loaded, merged, dupes };
+  return { loaded, sharedLoaded, merged, dupes };
 }
 
 function inspect() {
   const report = { loaded: {}, merged: {}, dupes: {} };
   if (!acorn) {
     // 无解析器：走文本校验
-    for (const page of PAGES) {
-      const r = inspectByText(page);
-      report.loaded[page] = r.loaded;
-      report.merged[page] = r.merged;
-      report.dupes[page] = r.dupes;
+    for (const entry of PAGES) {
+      const r = inspectByText(entry);
+      report.loaded[entry.page] = r.sharedLoaded;
+      report.merged[entry.page] = r.merged;
+      report.dupes[entry.page] = r.dupes;
     }
     return report;
   }
-  for (const page of PAGES) {
-    const src = fs.readFileSync(path.join(ROOT, page), 'utf8');
-    report.loaded[page] = (src.match(/src="\/admin-shared\.js/g) || []).length;
-    const scripts = parseInlineScripts(src);
+  for (const entry of PAGES) {
+    const html = fs.readFileSync(path.join(ROOT, entry.page), 'utf8');
+    const src = fs.readFileSync(path.join(ROOT, entry.app), 'utf8');
+    report.loaded[entry.page] = (html.match(/src="\/admin-shared\.js/g) || []).length;
     let merged = { methods: false, computed: false, watch: false };
     const dupes = [];
-    for (const { ast } of scripts) {
+    for (const { ast } of parseAppScripts(src)) {
       const options = findVueOptions(ast);
       if (!options) continue;
       for (const sec of SECTIONS) {
@@ -175,8 +178,8 @@ function inspect() {
         }
       }
     }
-    report.merged[page] = merged;
-    report.dupes[page] = dupes;
+    report.merged[entry.page] = merged;
+    report.dupes[entry.page] = dupes;
   }
   return report;
 }
@@ -184,22 +187,22 @@ function inspect() {
 if (process.argv.includes('--check')) {
   const r = inspect();
   let bad = 0;
-  for (const page of PAGES) {
-    if (r.loaded[page] !== 1) { console.error(`${page}: admin-shared.js 引用 ${r.loaded[page]} 次（应为 1）`); bad++; }
+  for (const entry of PAGES) {
+    if (r.loaded[entry.page] !== 1) { console.error(`${entry.page}: admin-shared.js 引用 ${r.loaded[entry.page]} 次（应为 1）`); bad++; }
     for (const sec of SECTIONS) {
-      if (!r.merged[page][sec]) { console.error(`${page}: ${sec} 没有合并共享模块`); bad++; }
+      if (!r.merged[entry.page][sec]) { console.error(`${entry.page}: ${sec} 没有合并共享模块`); bad++; }
     }
-    if (r.dupes[page].length) {
-      console.error(`${page}: 又内联了共享方法 -> ${r.dupes[page].join(', ')}`);
+    if (r.dupes[entry.page].length) {
+      console.error(`${entry.page}: 又内联了共享方法 -> ${r.dupes[entry.page].join(', ')}`);
       bad++;
     }
   }
-  if (bad) { console.error('\n请运行 node scripts/extract-admin-shared.cjs'); process.exit(1); }
+  if (bad) { console.error('\n请检查 ' + PAGES.map((e) => e.app).join(' / ')); process.exit(1); }
   console.log('共享模块契约满足');
   process.exit(0);
 }
 
-// ---------- 执行 ----------
+// ---------- 执行（一次性改写；应用拆分后主要供复核，常规路径是 --check） ----------
 
 if (!acorn) {
   console.error('改写模式需要解析器：npm install --no-save acorn');
@@ -219,13 +222,13 @@ if (missing.length) {
 }
 console.log(`1. 共享模块包含全部 ${SHARED_NAMES.length} 个方法`);
 
-// 2) 删除页面里的重复定义
-for (const page of PAGES) {
-  const file = path.join(ROOT, page);
+// 2) 删除 app 文件里的重复定义
+for (const entry of PAGES) {
+  const file = path.join(ROOT, entry.app);
   let src = fs.readFileSync(file, 'utf8');
   const before = src.length;
   const edits = [];
-  for (const { code, base, ast } of parseInlineScripts(src)) {
+  for (const { code, base, ast } of parseAppScripts(src)) {
     const options = findVueOptions(ast);
     if (!options) continue;
     for (const sec of SECTIONS) {
@@ -242,7 +245,7 @@ for (const page of PAGES) {
       }
     }
   }
-  if (!edits.length) { console.log(`2. ${page}: 没有重复定义（已是目标状态）`); continue; }
+  if (!edits.length) { console.log(`2. ${entry.app}: 没有重复定义（已是目标状态）`); continue; }
   edits.sort((a, b) => b[0] - a[0]);
   let prev = Infinity;
   for (const [s, e] of edits) {
@@ -252,15 +255,15 @@ for (const page of PAGES) {
   let out = src;
   for (const [s, e] of edits) out = out.slice(0, s) + out.slice(e);
   fs.writeFileSync(file, out);
-  console.log(`2. ${page}: 删除 ${edits.length} 个重复定义，${before} -> ${out.length} 字节`);
+  console.log(`2. ${entry.app}: 删除 ${edits.length} 个重复定义，${before} -> ${out.length} 字节`);
 }
 
 // 3) 把三个 section 包装成 Object.assign({}, SHARED.xxx, { ...页面自己的... })
-for (const page of PAGES) {
-  const file = path.join(ROOT, page);
+for (const entry of PAGES) {
+  const file = path.join(ROOT, entry.app);
   let src = fs.readFileSync(file, 'utf8');
   const edits = [];
-  for (const { code, base, ast } of parseInlineScripts(src)) {
+  for (const { code, base, ast } of parseAppScripts(src)) {
     const options = findVueOptions(ast);
     if (!options) continue;
     for (const sec of SECTIONS) {
@@ -281,36 +284,34 @@ for (const page of PAGES) {
   edits.sort((a, b) => b[0] - a[0]);
   for (const [at, text] of edits) src = src.slice(0, at) + text + src.slice(at);
   fs.writeFileSync(file, src);
-  console.log(`3. ${page}: 包装 ${edits.length / 2} 个 section`);
+  console.log(`3. ${entry.app}: 包装 ${edits.length / 2} 个 section`);
 }
 
-// 4) 确保只加载一次，且位置在 new Vue 之前
-for (const page of PAGES) {
-  const file = path.join(ROOT, page);
+// 4) 确保页面只加载一次 admin-shared.js，且位置在应用脚本之前
+for (const entry of PAGES) {
+  const file = path.join(ROOT, entry.page);
   let src = fs.readFileSync(file, 'utf8');
   const refs = [...src.matchAll(/<script src="\/admin-shared\.js[^"]*"><\/script>\n?/g)];
   // 先全部摘掉
   for (let i = refs.length - 1; i >= 0; i--) {
     src = src.slice(0, refs[i].index) + src.slice(refs[i].index + refs[i][0].length);
   }
-  // 插到内联 <script> 之前（也就是最后一个带 src 的本地脚本之后）
-  const anchor = /(<script src="\/icons\.js\?v=[a-f0-9]+"><\/script>\n)/;
-  if (!anchor.test(src)) { console.error(`!! ${page}: 找不到 icons.js 作为插入锚点`); process.exit(5); }
+  // 插到应用脚本之前（也就是最后一个带 src 的本地脚本之后）
+  const anchor = new RegExp(`(<script src="/kv-shared\\.js\\?v=[a-z0-9]+"></script>\\n)`);
+  if (!anchor.test(src)) { console.error(`!! ${entry.page}: 找不到 kv-shared.js 作为插入锚点`); process.exit(5); }
   src = src.replace(anchor, `$1<script src="/admin-shared.js"></script>\n`);
   fs.writeFileSync(file, src);
-  console.log(`4. ${page}: 摘掉 ${refs.length} 处引用，重新插入 1 处`);
+  console.log(`4. ${entry.page}: 摘掉 ${refs.length} 处引用，重新插入 1 处`);
 }
 
 // 5) 语法校验：用 V8 编译（语义与浏览器 <script> 一致）
-for (const page of PAGES) {
-  const src = fs.readFileSync(path.join(ROOT, page), 'utf8');
-  const js = [...src.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)]
-    .map((m) => m[1]).join('\n');
+for (const entry of PAGES) {
+  const js = fs.readFileSync(path.join(ROOT, entry.app), 'utf8');
   try {
     new Function(js);
-    console.log(`5. ${page}: 语法 OK`);
+    console.log(`5. ${entry.app}: 语法 OK`);
   } catch (e) {
-    console.error(`!! ${page}: 语法错误 -> ${e.message}`);
+    console.error(`!! ${entry.app}: 语法错误 -> ${e.message}`);
     process.exit(6);
   }
 }
@@ -318,9 +319,9 @@ for (const page of PAGES) {
 // 6) 最终校验
 const r = inspect();
 let ok = true;
-for (const page of PAGES) {
-  if (r.loaded[page] !== 1) { console.error(`${page}: 引用数 ${r.loaded[page]}`); ok = false; }
-  if (r.dupes[page].length) { console.error(`${page}: 仍内联 ${r.dupes[page].join(',')}`); ok = false; }
+for (const entry of PAGES) {
+  if (r.loaded[entry.page] !== 1) { console.error(`${entry.page}: 引用数 ${r.loaded[entry.page]}`); ok = false; }
+  if (r.dupes[entry.page].length) { console.error(`${entry.page}: 仍内联 ${r.dupes[entry.page].join(',')}`); ok = false; }
 }
 console.log(ok ? '\n完成。记得跑 npm run assets:stamp 重新打版本串。' : '\n有问题，请检查。');
 process.exit(ok ? 0 : 1);

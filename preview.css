@@ -695,6 +695,13 @@
       background: #fff;
     }
 
+    /* 归档条目内的图片预览（原为 JS 内联样式） */
+    .archive-entry-image {
+      max-width: 100%;
+      display: block;
+      background: #111827;
+    }
+
     .table-preview {
       width: 100%;
       border-collapse: collapse;

@@ -49,10 +49,6 @@
         background: rgba(154, 169, 255, 0.2);
       }
 
-      html[data-theme="dark"] .toast {
-        border: 1px solid var(--surface-border);
-      }
-
       html[data-theme="dark"] .url-input-container input::placeholder,
       html[data-theme="dark"] .batch-links::placeholder {
         color: var(--text-muted);
@@ -1347,35 +1343,7 @@
         background: var(--primary-color);
       }
 
-      /* Toast 通知 */
-      .toast-container {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-      }
-
-      .toast {
-        padding: 12px 20px;
-        background: var(--surface-1);
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        margin-bottom: 10px;
-        animation: slideIn 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .toast.success {
-        border-left: 4px solid #67c23a;
-      }
-      .toast.error {
-        border-left: 4px solid #f56c6c;
-      }
-      .toast.info {
-        border-left: 4px solid var(--primary-color);
-      }
+      /* Toast 通知已收口到 theme.css（KVShared.toast 注入） */
 
       .paste-upload-notice {
         position: fixed;
@@ -1483,19 +1451,7 @@
         }
       }
 
-      @keyframes slideIn {
-        from {
-          transform: translateX(100%);
-          opacity: 0;
-        }
-        to {
-          transform: translateX(0);
-          opacity: 1;
-        }
-      }
-
-      /* 响应式适配 */
-      @media (max-width: 900px) {
+      /* 响应式适配 */      @media (max-width: 900px) {
         .header {
           position: relative;
           top: 0;

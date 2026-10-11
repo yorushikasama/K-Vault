@@ -31,15 +31,9 @@
   /** 与页面状态配合的方法。this 指向调用它的 Vue 实例。 */
   var methods = {
   copyToClipboardFallback(text) {
-    const textarea = document.createElement('textarea');
-    document.body.appendChild(textarea);
-    textarea.style.position = 'fixed';
-    textarea.style.clip = 'rect(0 0 0 0)';
-    textarea.style.top = '10px';
-    textarea.value = text;
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
+    // 具体实现收口在 kv-shared.js（Clipboard API 优先、隐藏 textarea 回退）；
+    // 这里保留方法名是因为两个后台页的既有调用点都走 this.copyToClipboardFallback。
+    return KVShared.copyToClipboard(text);
   },
   mergeListData(files) {
     const map = new Map(this.tableData.map((item) => [item.name, item]));
@@ -98,7 +92,7 @@
       message: `
         <div>
           每行一个网站，格式：名称|网址|图标类名<br>
-          图标需在 <a href="https://lucide.dev/icons/" target="_blank" style="color: #409EFF; text-decoration: underline">Lucide</a> 中选择
+          图标需在 <a href="https://lucide.dev/icons/" target="_blank" class="msg-link">Lucide</a> 中选择
         </div>
       `,
       inputValidator: (value) => {
@@ -180,21 +174,7 @@
     const url = `${this.baseURL}/file/${key}`;
     const file = this.tableData.find(f => f.name === key);
     const name = file?.metadata?.fileName || key;
-    let link = url;
-
-    switch (format) {
-      case 'markdown':
-        link = `![${name}](${url})`;
-        break;
-      case 'html':
-        link = `<img src="${url}" alt="${name}">`;
-        break;
-      case 'bbcode':
-        link = `[img]${url}[/img]`;
-        break;
-      default:
-        link = url;
-    }
+    const link = KVShared.formatLink(url, name, format);
 
     (navigator.clipboard?.writeText(link) || this.copyToClipboardFallback(link))
       .then(() => this.$message.success(`${format.toUpperCase()} 格式链接已复制~`))
@@ -221,7 +201,7 @@
     const links = this.selectedFiles.map(file => {
       const url = `${document.location.origin}/file/${file.name}`;
       const name = file.metadata?.fileName || file.name;
-      return `<img src="${url}" alt="${name}">`;
+      return KVShared.formatLink(url, name, 'html');
     }).join('\n');
     (navigator.clipboard?.writeText(links) || this.copyToClipboardFallback(links))
       .then(() => this.$message.success('HTML格式链接已复制~'));
@@ -230,7 +210,7 @@
     const links = this.selectedFiles.map(file => {
       const url = `${document.location.origin}/file/${file.name}`;
       const name = file.metadata?.fileName || file.name;
-      return `![${name}](${url})`;
+      return KVShared.formatLink(url, name, 'markdown');
     }).join('\n');
     (navigator.clipboard?.writeText(links) || this.copyToClipboardFallback(links))
       .then(() => this.$message.success('Markdown格式链接已复制~'));
@@ -245,6 +225,123 @@
     (navigator.clipboard?.writeText(link) || this.copyToClipboardFallback(link))
       .then(() => this.$message.success('复制文件链接成功~'))
       .catch(() => this.$message.error('自动复制失败，请手动复制链接：' + link));
+  },
+  handleBatchDownload() {  // 批量下载
+    this.$message.info(`正在下载 ${this.selectedFiles.length} 个文件`, { duration: 1000 });
+    this.selectedFiles.forEach((file, index) => {
+      setTimeout(() => {
+        KVShared.downloadFile(`/file/${file.name}`, file.metadata.fileName || file.name);
+      }, index * 800);
+    });
+    this.clearSelection();
+  },
+  handleBatchBlockOrUnblock(type) {  // 批量加入黑/白名单
+    if (type !== 'Block' && type !== 'White') { this.$message.error('无效的操作类型'); return; }
+    const typeToName = { Block: '黑名单', White: '白名单' };
+    this.$confirm(`确定要将这 ${this.selectedFiles.length} 个文件加入${typeToName[type]}吗?`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(() => {
+      const promises = this.selectedFiles.map(file => fetch(`./api/manage/${type.toLowerCase()}/${file.name}`, { method: 'GET', credentials: 'include' }));
+
+      Promise.all(promises)
+        .then(responses => {
+          responses.forEach((response, index) => {
+            if (response.ok) {
+              const fileIndex = this.tableData.findIndex(item => item.name === this.selectedFiles[index].name);
+              if (fileIndex !== -1) {
+                this.tableData[fileIndex].metadata.ListType = type;
+              }
+            }
+          });
+          this.$message.success(`批量加入${typeToName[type]}成功`);
+          this.clearSelection();
+        })
+        .catch(() => this.$message.error(`操作失败，请检查网络连接`));
+    });
+  },
+  clearSelection() {  // 取消全部选择
+    // 必须清底层的 file.selected，不能只写 this.selectedFiles = []：
+    // 模板上的勾选态绑定的是 item.selected（el-checkbox 的 v-model、
+    // 卡片的 :class="{ selected: item.selected }"），而 selectedFiles 只是
+    // 由 watch:tableData(deep) 回填出来的派生副本。只清副本的话勾选标记还在，
+    // 而且 tableData 下次有任何深层变动，watch 会按底层 true 值把它重新填回来
+    // ——表现就是「取消选择后又自己选上了」。
+    this.tableData.forEach(file => { file.selected = false; });
+  },
+  checkBrokenFiles() {  // 检测失效文件
+    // 依赖的 data 字段：tableData、baseURL、pageDisposed、brokenCheckSeq/
+    // brokenCheckController/brokenCheckMessage（后三者两页 data 都要声明）。
+    // 采用 admin.html 的重写版：空列表直接提示、可取消（AbortController）、
+    // 正确按 item 记账——admin-imgtc 的旧版用 tableData 下标去索引
+    // selectedFiles[index].name，未全选时必然 TypeError。
+    const targets = this.tableData.slice();
+    if (targets.length === 0) {
+      this.$message.info('当前没有可检测的已加载文件');
+      return;
+    }
+    this.cancelBrokenCheck();
+    const seq = ++this.brokenCheckSeq;
+    const controller = typeof AbortController === 'function' ? new AbortController() : null;
+    this.brokenCheckController = controller;
+    this.brokenCheckMessage = this.$message({ message: '正在检测失效文件...', duration: 0 });
+
+    let brokenCount = 0;
+    const promises = targets.map((item) => new Promise((resolve) => {
+      fetch(`${this.baseURL}/file/${item.name}`, {
+        method: 'HEAD',
+        cache: 'no-cache',  // 避免缓存影响检测结果
+        signal: controller ? controller.signal : undefined
+      })
+        .then(response => {
+          if (!response.ok) {
+            brokenCount++;
+            item.selected = true;
+          }
+          resolve();
+        })
+        .catch(() => {
+          if (controller && controller.signal.aborted) { resolve(); return; }
+          brokenCount++;
+          item.selected = true;
+          resolve();
+        });
+    }));
+
+    Promise.all(promises).then(() => {
+      if (seq !== this.brokenCheckSeq || this.pageDisposed) return;
+      this.brokenCheckController = null;
+      if (this.brokenCheckMessage) {
+        this.brokenCheckMessage.close();
+        this.brokenCheckMessage = null;
+      }
+      if (brokenCount > 0) {
+        this.$message({
+          dangerouslyUseHTMLString: true,
+          message: `检测到 ${brokenCount} 个失效文件，已自动选中。<br>您可以使用批量删除功能移除它们。`,
+          type: 'warning',
+          duration: 5000
+        });
+      } else {
+        this.$message({
+          message: '未检测到失效文件',
+          type: 'success'
+        });
+      }
+    });
+  },
+  // 取消进行中的失效检测：范围切换或重新检测时调用，避免旧结果回填
+  cancelBrokenCheck() {
+    this.brokenCheckSeq += 1;
+    if (this.brokenCheckController) {
+      try { this.brokenCheckController.abort(); } catch { /* 请求已结束。 */ }
+      this.brokenCheckController = null;
+    }
+    if (this.brokenCheckMessage) {
+      this.brokenCheckMessage.close();
+      this.brokenCheckMessage = null;
+    }
   },
   updateWindowWidth() {  // 动态调整页面大小
     this.windowWidth = window.innerWidth;

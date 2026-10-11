@@ -1,0 +1,90 @@
+/* 全站统一的页头：品牌 + 四页标签导航 + 工具区。
+   规则自 workbench.css 平移而来，供 index / admin / gallery / webdav 四页共用；
+   工作台其余样式仍在 workbench.css（仅 index / admin 加载）。
+   依赖 body 上的 .kv-workbench 类提供 --wb-* token 作用域；页头自身携带字体
+   与配色，不依赖页面基座，因此在旧页面上也能渲染出与工作台一致的观感。 */
+.kv-workbench {
+  --wb-surface: rgb(var(--ui-surface-rgb));
+  --wb-subtle: #f2f4f7;
+  --wb-border: #d7dce4;
+  --wb-ink: #2f3243;
+  --wb-muted: #555d72;
+  --wb-accent: #8a4bff;
+  --wb-accent-ink: #6c3ce0;
+  --wb-accent-soft: #f3edff;
+  --wb-on-accent: #fff;
+  --wb-danger: #b43434;
+  --wb-success: #346b22;
+}
+.kv-workbench.kv-files { --wb-accent: #0f766e; --wb-accent-ink: #0f766e; --wb-accent-soft: #e8f4f2; }
+html[data-theme="dark"] .kv-workbench {
+  --wb-subtle: #1b2433; --wb-border: #46536b; --wb-ink: #e8eeff; --wb-muted: #b9c4dc;
+  --wb-accent: #9aa9ff; --wb-accent-ink: #b5bdf8; --wb-accent-soft: #252b47;
+  --wb-on-accent: #101318; --wb-danger: #ffacac; --wb-success: #b0d98f;
+}
+html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-accent-ink: #85d7d1; --wb-accent-soft: #17332f; --wb-on-accent: #fff; }
+
+.kv-workbench .workspace-header {
+  display: flex; align-items: center; gap: 28px; position: sticky; top: 0; left: auto; right: auto;
+  width: 100%; height: auto; min-height: 68px; padding: 12px 28px; margin: 0; z-index: 100;
+  background: var(--wb-surface) !important; border: 0 !important; border-bottom: 1px solid var(--wb-border) !important;
+  border-radius: 0 !important; box-shadow: none !important; backdrop-filter: none; will-change: auto;
+  font: 14px/1.6 system-ui, -apple-system, "Segoe UI", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif;
+  color: var(--wb-ink);
+}
+.kv-workbench .workspace-brand { display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; color: var(--wb-ink); font-size: 1.125rem; font-weight: 650; }
+.kv-workbench .workspace-brand img { width: 30px; height: 30px; border-radius: var(--radius-sm); }
+.kv-workbench .workspace-nav { display: flex; align-items: center; gap: 4px; }
+.kv-workbench .workspace-nav a { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px 14px; border-radius: var(--radius-sm); color: var(--wb-muted); font-weight: 500; white-space: nowrap; }
+.kv-workbench .workspace-nav a[aria-current] { background: var(--wb-accent-soft); color: var(--wb-accent-ink); font-weight: 600; }
+.kv-workbench .workspace-tools { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-left: auto; min-width: 0; }
+.kv-workbench .workspace-tool { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 8px 10px; color: var(--wb-muted); background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm); white-space: nowrap; line-height: 1.3; }
+.kv-workbench .workspace-tool:hover, .kv-workbench .workspace-nav a:hover { background: var(--wb-subtle); color: var(--wb-ink); text-decoration: none; }
+.kv-workbench .workspace-tool-icon { width: 40px; padding: 8px; }
+.kv-workbench .header-content .actions :is(i, svg.lucide) { margin: 0; width: 18px; height: 18px; color: inherit; font-size: 18px; transform: none; transition: none; }
+.kv-workbench .workspace-tool > .kv-icon:last-child:not(:first-child) { width: 14px; height: 14px; }
+/* gallery / webdav 的主题切换按钮走 data-lucide（非 kv-icon 组件），尺寸对齐工作台 */
+.kv-workbench .workspace-tool svg.lucide { width: 18px; height: 18px; }
+
+@media (max-width: 900px) {
+  /* 页头在窄屏放不下：桌面端的 nowrap + 大 padding 会把导航推出屏幕，
+     窄屏要允许换行，导航单独成行并允许横向滚动（比换行整齐，
+     scrollbar 隐藏是刻意的——用户能从内容截断的边缘看出可以滑）。 */
+  .kv-workbench .workspace-header {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 10px 14px;
+    row-gap: 6px;
+  }
+  .kv-workbench .workspace-nav {
+    order: 3;
+    flex: 1 1 100%;
+    gap: 2px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .kv-workbench .workspace-nav::-webkit-scrollbar { display: none; }
+
+  /* 触摸目标抬到 44px（WCAG 2.5.5 / Apple HIG 的下限），桌面端的 40px 是给鼠标的 */
+  .kv-workbench .workspace-nav a,
+  .kv-workbench .workspace-tool { min-height: 44px; }
+  .kv-workbench .workspace-nav a { padding: 8px 12px; }
+  .kv-workbench .workspace-tool-icon { width: 44px; min-width: 44px; }
+
+  /* 工具区靠右，品牌靠左，二者共用第一行 */
+  .kv-workbench .workspace-tools { margin-left: auto; }
+  .kv-workbench .workspace-brand { min-height: 44px; min-width: 44px; }
+}
+
+@media (max-width: 480px) {
+  /* 极窄屏保留 logo 但收起文字品牌名：省下约 62px，导航和工具不用挤成两行 */
+  .kv-workbench .workspace-brand span { display: none; }
+  .kv-workbench .workspace-brand { gap: 0; }
+
+  .kv-workbench .workspace-header { padding: 8px 12px; }
+
+  /* 主题按钮只留图标：文字标签在 430px 以下会挤占导航空间 */
+  .kv-workbench .workspace-tool > span { display: none; }
+  .kv-workbench .workspace-tool { padding: 8px 10px; width: 44px; }
+}

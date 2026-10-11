@@ -35,92 +35,6 @@
     }
 
     /* 头部 */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 18px 28px;
-      background: var(--card-bg);
-      border-radius: var(--radius-md);
-      margin-bottom: 24px;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      flex-wrap: wrap;
-      gap: 16px;
-      position: sticky;
-      top: 20px;
-      z-index: 100;
-    }
-
-    .header-title {
-      font-size: 1.5em;
-      font-weight: 700;
-      color: #333;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .header-title i { color: var(--primary); font-size: 1.1em; }
-
-    .header-search {
-      flex: 1;
-      max-width: 400px;
-      min-width: 200px;
-    }
-
-    .header-search input {
-      width: 100%;
-      padding: 10px 16px;
-      border: 2px solid #eee;
-      border-radius: var(--radius-sm);
-      font-size: 0.95em;
-      transition: all 0.2s ease-out;
-    }
-
-    .header-search input:focus {
-      border-color: var(--primary-light);
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(138, 75, 255, 0.1);
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: flex-end;
-    }
-
-    .header-actions .gallery-theme-toggle {
-      margin-left: 2px;
-      border: 1.5px solid rgba(138, 75, 255, 0.25);
-      background: rgba(138, 75, 255, 0.16);
-      color: #2f3243;
-      font-weight: 600;
-    }
-
-    .header-actions .gallery-theme-toggle i,
-    .header-actions .gallery-theme-toggle svg.lucide {
-      color: var(--primary);
-      width: 14px;
-      text-align: center;
-    }
-
-    .header-actions .gallery-theme-toggle:hover {
-      border-color: var(--primary-light);
-    }
-
-    html[data-theme="dark"] .header-actions .gallery-theme-toggle {
-      border-color: rgba(154, 169, 255, 0.45);
-      background: rgba(154, 169, 255, 0.2);
-      color: #e8eeff;
-    }
-
-    html[data-theme="dark"] .header-actions .gallery-theme-toggle i,
-    html[data-theme="dark"] .header-actions .gallery-theme-toggle svg.lucide {
-      color: #c4d4ff;
-    }
 
     .nav-btn {
       padding: 8px 16px;
@@ -147,6 +61,28 @@
       background: var(--primary);
       color: var(--ui-brand-ink);
       border-color: var(--primary);
+    }
+
+    /* 搜索框：自页头迁入工具栏（页头已统一为全站 workspace-header） */
+    .toolbar-search {
+      flex: 1 1 180px;
+      max-width: 320px;
+      min-width: 160px;
+    }
+
+    .toolbar-search input {
+      width: 100%;
+      padding: 9px 14px;
+      border: 1px solid #eee;
+      border-radius: var(--radius-sm);
+      font-size: 0.95em;
+      transition: border-color 0.2s ease-out;
+    }
+
+    .toolbar-search input:focus {
+      border-color: var(--primary-light);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(138, 75, 255, 0.1);
     }
 
     /* 工具栏 */
@@ -469,6 +405,12 @@
 
     .empty-state i { font-size: 4em; margin-bottom: 20px; color: var(--ui-line-strong); }
 
+    .empty-state-title { font-size: 1.2em; margin-bottom: 8px; }
+    .empty-state .nav-btn { margin-top: 20px; display: inline-flex; }
+
+    /* 工具栏右侧「链接格式:」标签 */
+    .toolbar-label { font-size: 0.85em; color: #666; }
+
     /* 加载状态 */
     .loading-state {
       text-align: center;
@@ -486,66 +428,12 @@
       margin: 0 auto 16px;
     }
 
-    /* Toast */
-    .toast-container {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 9999;
-    }
-
-    .toast {
-      padding: 12px 20px;
-      background: white;
-      border-radius: var(--radius-md);
-      box-shadow: var(--shadow-2);
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      animation: slideIn 0.2s ease-out;
-    }
-
-    .toast.success { border-left: 4px solid #67c23a; }
-    .toast.error { border-left: 4px solid #f56c6c; }
-    .toast.info { border-left: 4px solid var(--primary); }
-
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
+    /* Toast 已收口到 theme.css（KVShared.toast 注入） */
 
     /* 响应式 */
     @media (max-width: 768px) {
       body { padding: 12px; }
-      
-      .header { 
-        flex-direction: column; 
-        align-items: stretch;
-        gap: 12px;
-        padding: 14px 18px;
-      }
-      
-      .header-title {
-        font-size: 1.2em;
-        justify-content: center;
-      }
-      
-      .header-search { 
-        max-width: none;
-        order: 3;
-      }
-      
-      .header-actions {
-        justify-content: center;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
 
-      .header-actions .gallery-theme-toggle {
-        order: 4;
-      }
-      
       .nav-btn {
         padding: 8px 14px;
         font-size: 0.85em;
@@ -639,38 +527,7 @@
 
     @media (max-width: 480px) {
       body { padding: 8px; }
-      
-      .header {
-        padding: 12px 14px;
-        border-radius: var(--radius-md);
-        gap: 10px;
-      }
-      
-      .header-title {
-        font-size: 1.05em;
-        gap: 8px;
-      }
-      
-      .header-search input {
-        height: 36px;
-        font-size: 0.9em;
-        padding: 0 12px;
-      }
-      
-      .header-actions {
-        gap: 6px;
-      }
 
-      .header-actions .gallery-theme-toggle {
-        padding: 6px 9px;
-        min-width: 38px;
-        justify-content: center;
-      }
-
-      .header-actions .gallery-theme-toggle [data-theme-label] {
-        display: none;
-      }
-      
       .nav-btn {
         padding: 6px 10px;
         font-size: 0.78em;
@@ -749,14 +606,7 @@
         justify-content: center;
         padding: 10px 16px;
       }
-      
-      .toast {
-        max-width: 90%;
-        right: 5%;
-        padding: 12px 16px;
-        font-size: 0.85em;
-      }
-      
+
       /* 加载状态 */
       .loading-indicator {
         padding: 30px;
@@ -768,11 +618,6 @@
       }
 
       /* 移动端禁用高消耗效果 */
-      .header {
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-        background: #ffffff;
-      }
 
       .toolbar {
         backdrop-filter: none;

@@ -1,26 +1,10 @@
-/* 首版工作台：仅作用于新版上传与文件页，保留旧入口的样式。 */
+/* 首版工作台：仅作用于新版上传与文件页，保留旧入口的样式。
+   --wb-* token 与页头（品牌/标签导航/工具区）已平移到 workspace-header.css
+   （index / admin / gallery / webdav 四页共用），本文件假定它先于自己加载。 */
 .kv-workbench {
-  --wb-surface: rgb(var(--ui-surface-rgb));
-  --wb-subtle: #f2f4f7;
-  --wb-border: #d7dce4;
-  --wb-ink: #2f3243;
-  --wb-muted: #555d72;
-  --wb-accent: #8a4bff;
-  --wb-accent-ink: #6c3ce0;
-  --wb-accent-soft: #f3edff;
-  --wb-on-accent: #fff;
-  --wb-danger: #b43434;
-  --wb-success: #346b22;
   margin: 0; padding: 0; color: var(--wb-ink);
   font: 14px/1.6 system-ui, -apple-system, "Segoe UI", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif;
 }
-.kv-workbench.kv-files { --wb-accent: #0f766e; --wb-accent-ink: #0f766e; --wb-accent-soft: #e8f4f2; }
-html[data-theme="dark"] .kv-workbench {
-  --wb-subtle: #1b2433; --wb-border: #46536b; --wb-ink: #e8eeff; --wb-muted: #b9c4dc;
-  --wb-accent: #9aa9ff; --wb-accent-ink: #b5bdf8; --wb-accent-soft: #252b47;
-  --wb-on-accent: #101318; --wb-danger: #ffacac; --wb-success: #b0d98f;
-}
-html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-accent-ink: #85d7d1; --wb-accent-soft: #17332f; --wb-on-accent: #fff; }
 .kv-workbench *, .kv-workbench *::before, .kv-workbench *::after { box-sizing: border-box; }
 .kv-workbench #app { width: 100%; max-width: none; margin: 0; padding: 0 !important; }
 .kv-workbench h1, .kv-workbench h2, .kv-workbench h3, .kv-workbench p, .kv-workbench dl { margin: 0; }
@@ -34,23 +18,6 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
 .kv-workbench a:hover { text-decoration: underline; text-underline-offset: 4px; }
 .kv-workbench :is(button, a, input, select, textarea, summary, [tabindex]):focus-visible { outline: 2px solid var(--wb-accent-ink); outline-offset: 3px; }
 .kv-workbench .kv-icon { display: inline-block; width: 18px; height: 18px; flex-shrink: 0; vertical-align: -.2em; }
-.kv-workbench .workspace-header {
-  display: flex; align-items: center; gap: 28px; position: sticky; top: 0; left: auto; right: auto;
-  width: 100%; height: auto; min-height: 68px; padding: 12px 28px; margin: 0; z-index: 100;
-  background: var(--wb-surface) !important; border: 0 !important; border-bottom: 1px solid var(--wb-border) !important;
-  border-radius: 0 !important; box-shadow: none !important; backdrop-filter: none; will-change: auto;
-}
-.kv-workbench .workspace-brand { display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; color: var(--wb-ink); font-size: 1.125rem; font-weight: 650; }
-.kv-workbench .workspace-brand img { width: 30px; height: 30px; border-radius: var(--radius-sm); }
-.kv-workbench .workspace-nav { display: flex; align-items: center; gap: 4px; }
-.kv-workbench .workspace-nav a { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px 14px; border-radius: var(--radius-sm); color: var(--wb-muted); font-weight: 500; white-space: nowrap; }
-.kv-workbench .workspace-nav a[aria-current] { background: var(--wb-accent-soft); color: var(--wb-accent-ink); font-weight: 600; }
-.kv-workbench .workspace-tools { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-left: auto; min-width: 0; }
-.kv-workbench .workspace-tool { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 8px 10px; color: var(--wb-muted); background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm); white-space: nowrap; line-height: 1.3; }
-.kv-workbench .workspace-tool:hover, .kv-workbench .workspace-nav a:hover { background: var(--wb-subtle); color: var(--wb-ink); text-decoration: none; }
-.kv-workbench .workspace-tool-icon { width: 40px; padding: 8px; }
-.kv-workbench .header-content .actions :is(i, svg.lucide) { margin: 0; width: 18px; height: 18px; color: inherit; font-size: 18px; transform: none; transition: none; }
-.kv-workbench .workspace-tool > .kv-icon:last-child:not(:first-child) { width: 14px; height: 14px; }
 .kv-workbench .upload-sr-only, .kv-workbench .files-search-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .kv-workbench .upload-skip-link { position: fixed; top: 8px; left: 12px; z-index: 12000; transform: translateY(-160%); background: var(--wb-surface); color: var(--wb-ink); border: 1px solid var(--wb-border); padding: 10px 16px; }
 .kv-workbench .upload-skip-link:focus { transform: none; }
@@ -182,17 +149,8 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
   .kv-workbench .upload-dialog { width: 100%; max-height: 92dvh; padding: 18px 16px; }
   .kv-workbench .upload-dialog-actions .upload-btn { flex: 1 1 auto; min-height: 44px; }
 
-  /* 页头在窄屏放不下：品牌 107 + 导航 268 + 工具 75 ≈ 450px，加上两侧
-     28px 内边距和 28px 间隙，390px 视口横向溢出 68px（导航被推出屏幕）。
-     桌面端的 nowrap + 大 padding 是为宽屏留白设计的，窄屏要允许换行。
-     admin.html 的页头早有这套处理（它加载 mobile-refactor.css），
-     首页改用 workbench.css 后漏了，这里补齐。 */
-  .kv-workbench .workspace-header {
-    flex-wrap: wrap;
-    gap: 8px 12px;
-    padding: 10px 14px;
-    row-gap: 6px;
-  }
+  /* 页头的窄屏适配（换行、导航横滚、44px 触摸目标）已随页头规则平移到
+     workspace-header.css，四个带页头的页面共用同一份。这里只管上传流程。 */
 
   /* 窄屏正文留白收一收：桌面端 28px 侧边距在 320–430px 上吃掉近 1/5 宽度，
      内容区被压得太窄。与页头用同一组数值，视觉上对齐。 */
@@ -203,15 +161,11 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
   /* 触摸目标统一抬到 44px（WCAG 2.5.5 / Apple HIG 的下限）。
      首页不加载 mobile-refactor.css（那份规则放在那里统一约束其余 9 页），
      所以这里要自己写一份，否则页面上所有按钮都停留在桌面端的 38px。
-     只调 min-height 与必要处的 min-width，不改 padding/字号，避免改布局。 */
-  .kv-workbench :is(.upload-btn, .workspace-nav a, .workspace-tool, .upload-storage-option) {
+     只调 min-height 与必要处的 min-width，不改 padding/字号，避免改布局。
+     （workspace-nav / workspace-tool 的 44px 在 workspace-header.css。） */
+  .kv-workbench :is(.upload-btn, .upload-storage-option) {
     min-height: 44px;
   }
-  /* 只含图标的按钮还要保证宽度，否则是个 44×30 的瘦条 */
-  .kv-workbench .workspace-tool-icon { min-width: 44px; }
-  /* 品牌 logo 链接：logo 本身 30×30，链接的可点区也就只有那么大。
-     抬到 44px 见方，手指才点得准。 */
-  .kv-workbench .workspace-brand { min-height: 44px; min-width: 44px; }
   /* <summary> 是"选择已有目录"的可点行，桌面端 40px，手机上补齐 */
   .kv-workbench summary { min-height: 44px; }
 
@@ -259,43 +213,6 @@ html[data-theme="dark"] .kv-workbench.kv-files { --wb-accent: #0f8f8a; --wb-acce
   }
   .kv-workbench .upload-field-row > input { grid-column: 1 / -1; width: 100%; min-height: 44px; }
   .kv-workbench .upload-field-row > .upload-btn { min-height: 44px; justify-content: center; }
-
-  /* 导航单独占一行并允许横向滚动：比换行更整齐，链接多时也不会把页头
-     撑得过高。scrollbar 隐藏是刻意的——移动端横向滚动条会很显眼，
-     而用户能从内容被截断的边缘看出可以滑。 */
-  .kv-workbench .workspace-nav {
-    order: 3;
-    flex: 1 1 100%;
-    gap: 2px;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-  }
-  .kv-workbench .workspace-nav::-webkit-scrollbar { display: none; }
-
-  /* 触摸目标抬到 44px（WCAG 2.5.5 / Apple HIG 的下限），
-     桌面端的 40px 是给鼠标的。 */
-  .kv-workbench .workspace-nav a,
-  .kv-workbench .workspace-tool { min-height: 44px; }
-  .kv-workbench .workspace-tool-icon { width: 44px; }
-  .kv-workbench .workspace-nav a { padding: 8px 12px; }
-
-  /* 工具区靠右，品牌靠左，二者共用第一行 */
-  .kv-workbench .workspace-tools { margin-left: auto; }
-}
-
-@media (max-width: 480px) {
-  /* 极窄屏（320–430）保留 logo 但收起文字品牌名：省下约 62px，
-     让导航和工具不用挤成两行文字。logo 本身已能表达品牌。 */
-  .kv-workbench .workspace-brand span { display: none; }
-  .kv-workbench .workspace-brand { gap: 0; }
-
-  .kv-workbench .workspace-header { padding: 8px 12px; }
-
-  /* 主题按钮只留图标：文字标签（夜间/亮色）在 430px 以下会挤占导航空间，
-     图标本身含义明确，且 aria-label 已经提供了可访问名称。 */
-  .kv-workbench .workspace-tool > span { display: none; }
-  .kv-workbench .workspace-tool { padding: 8px 10px; width: 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

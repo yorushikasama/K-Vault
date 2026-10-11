@@ -7,10 +7,10 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/logo.png">
   <link rel="shortcut icon" href="/favicon.ico">
-  <link rel="stylesheet" href="/theme.css?v=74c7ad38da">
+  <link rel="stylesheet" href="/theme.css?v=55e76fa69d">
   <script src="/theme-core.js?v=4cb852886e"></script>
   <script defer src="/theme-effects.js?v=9dbb416bad"></script>
-  <link rel="stylesheet" href="/admin-waterfall.css?v=8e85e7ddec">
+  <link rel="stylesheet" href="/admin-waterfall.css?v=acd247aaf3">
   <link rel="stylesheet" href="/mobile-refactor.css?v=545252aefa">
 </head>
 <body>
@@ -50,6 +50,7 @@
     </div>
   </aside>
 
+  <script src="/kv-shared.js?v=5901ac7854"></script>
   <script>
     (function () {
       "use strict";
@@ -70,12 +71,7 @@
       var imageExts = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico", "avif"];
 
       function escapeHtml(text) {
-        return String(text || "")
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;")
-          .replaceAll("'", "&#39;");
+        return KVShared.escapeHtml(text);
       }
 
       function getDisplayName(file) {
@@ -89,7 +85,7 @@
       }
 
       function updateEmptyState() {
-        emptyStateEl.style.display = state.loadedCount > 0 ? "none" : "block";
+        emptyStateEl.classList.toggle("is-visible", state.loadedCount === 0);
       }
 
       function setLoading(loading) {
@@ -105,7 +101,7 @@
 
       function hideLoadButtonIfDone() {
         if (!state.cursor) {
-          loadMoreBtn.style.display = "none";
+          loadMoreBtn.classList.add("is-hidden");
         }
       }
 
@@ -183,20 +179,8 @@
         }
       }
 
-      async function ensureAuth() {
-        try {
-          var response = await fetch("./api/auth/check", { credentials: "include" });
-          var data = await response.json();
-          if (data.authRequired && !data.authenticated) {
-            var redirect = encodeURIComponent(window.location.pathname + window.location.search);
-            window.location.href = "./login.html?redirect=" + redirect;
-            return false;
-          }
-          return true;
-        } catch (err) {
-          console.error("Auth check failed:", err);
-          return true;
-        }
+      function ensureAuth() {
+        return KVShared.ensureAuth();
       }
 
       loadMoreBtn.addEventListener("click", loadMore);

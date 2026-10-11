@@ -38,6 +38,8 @@
       background-position: center;
       background-repeat: no-repeat;
       z-index: -1;
+      /* 默认隐藏，由 JS 在确有背景图时加 is-visible */
+      display: none;
     }
 
     .bg-overlay {
@@ -48,7 +50,11 @@
       height: 100%;
       background: rgba(0, 0, 0, 0.3);
       z-index: -1;
+      display: none;
     }
+
+    .bg-image-layer.is-visible,
+    .bg-overlay.is-visible { display: block; }
 
     .login-container {
       width: 100%;

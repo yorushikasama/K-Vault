@@ -45,84 +45,6 @@
         padding: var(--ui-page-pad);
       }
 
-      .header {
-        position: sticky;
-        top: 20px;
-        z-index: 50;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 16px 24px;
-        border-radius: var(--radius-lg);
-        background: var(--wf-surface);
-        border: 1px solid var(--wf-border);
-        box-shadow: var(--shadow-2);
-        margin-bottom: 16px;
-      }
-
-      .header-title {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-family: "Sora", "Manrope", "Noto Sans SC", sans-serif;
-        font-size: 1.38rem;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-        color: inherit;
-        margin: 0;
-      }
-
-            .header-title i,
-      .header-title svg.lucide {
-        color: var(--wf-primary);
-      }
-
-      .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-      }
-
-      .header-logo {
-        width: 30px;
-        height: 30px;
-        border-radius: 8px;
-        object-fit: cover;
-        background: rgba(255, 255, 255, 0.92);
-      }
-
-      .action-link,
-      .action-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        border: 1px solid var(--wf-border);
-        border-radius: 999px;
-        padding: 9px 13px;
-        min-height: 40px;
-        background: var(--wf-surface);
-        color: inherit;
-        text-decoration: none;
-        cursor: pointer;
-        transition: background 0.18s ease-out, border-color 0.18s ease-out;
-        font-weight: 600;
-      }
-
-      .action-link:hover,
-      .action-btn:hover {
-        border-color: rgba(138, 75, 255, 0.4);
-        background: var(--wf-primary-soft);
-      }
-
-      .action-link.active {
-        border-color: rgba(138, 75, 255, 0.5);
-        background: var(--wf-primary-soft);
-      }
-
       .layout {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -670,34 +592,6 @@
           padding: 10px;
         }
 
-        .header {
-          top: 8px;
-          padding: 10px 12px;
-          flex-wrap: wrap;
-        }
-
-        .header-title {
-          width: 100%;
-          font-size: 1rem;
-        }
-
-        .header-actions {
-          width: 100%;
-          justify-content: flex-start;
-          overflow-x: auto;
-          scrollbar-width: none;
-        }
-
-        .header-actions::-webkit-scrollbar {
-          display: none;
-        }
-
-        .action-link,
-        .action-btn {
-          flex: 0 0 auto;
-          font-size: 0.82rem;
-        }
-
         .toolbar-row {
           flex-direction: column;
           align-items: flex-start;
@@ -722,3 +616,9 @@
           text-overflow: clip;
         }
       }
+
+/* ===== 从 webdav.html 内联样式收口 =====
+   上传队列与结果空态的显隐改由 JS 切 class，不再直接写 style.display。 */
+.file-queue-wrap { display: none; }
+.file-queue-wrap.is-visible { display: block; }
+.result-empty.is-hidden { display: none; }

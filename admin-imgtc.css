@@ -1110,3 +1110,18 @@ body {
     row-gap: 8px !important;
   }
 }
+
+/* ===== 从 admin-imgtc.html 内联样式收口 =====
+   卡片标题文件名：未封禁为白色、封禁降为灰；卡脚是深色条，
+   白色必须显式声明，不能依赖继承。 */
+.file-name { color: #fff; }
+.file-name.is-blocked { color: #aaa; }
+.video-cover { width: 100%; height: 100%; object-fit: cover; }
+/* 卡片头像图标改由 kv-icon 渲染 SVG（属性宽高 20px），这里放大到原字号对应的尺寸。 */
+.file-avatar svg.lucide { width: 32px; height: 32px; }
+/* lucide 是描边图标；收藏/点赞选中态恢复实心观感（CSS fill 覆盖 SVG 的 fill="none" 属性）。 */
+.like-btn svg.liked,
+.collect-icon svg.liked { fill: currentColor; }
+.load-more-wrap { text-align: center; margin-top: 16px; }
+.file-detail-card { text-align: left; padding: 5px; }
+.website-edit-dialog .msg-link { color: #409eff; text-decoration: underline; }
