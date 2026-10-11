@@ -156,6 +156,10 @@ function sizeOfFormat(format) {
 
 // Lower is better: preferred codec first, then the larger file.
 function compareVariants(a, b) {
+  // 水印优先于编码与体积：同一分辨率若同时有带水印与无水印两路，
+  // 必须留住无水印的（抖音的 download_addr 更大，按体积排会把它选走）。
+  const watermarkDiff = Number(isWatermarkedFormat(a)) - Number(isWatermarkedFormat(b));
+  if (watermarkDiff !== 0) return watermarkDiff;
   const rankDiff = codecRank(a.vcodec) - codecRank(b.vcodec);
   if (rankDiff !== 0) return rankDiff;
   return sizeOfFormat(b) - sizeOfFormat(a);
@@ -336,9 +340,31 @@ function buildChildEnv(proxy) {
   return env;
 }
 
+/**
+ * 这一路源是否带水印。
+ *
+ * 抖音对同一个作品同时给出两路视频：play_addr（无水印，「Playback video」）
+ * 与 download_addr（`format_note` 里明写 watermarked）。带水印那路码率更高、
+ * 文件更大——实测 720p 水印版 1.39 MiB vs 无水印版最大 741 KiB。而下面的
+ * 挑流规则原本「只比大小」，于是必然选中水印版，用户拿到的每个清晰度都带水印。
+ *
+ * yt-dlp 官方对 download_addr 的处理也是这个立场（tiktok extractor 里给
+ * has_watermark 的格式 preference -2），所以判据跟着它的 format_note/format_id 走，
+ * 而不是自己另造一套。
+ */
+function isWatermarkedFormat(format) {
+  const note = String((format && format.format_note) || '').toLowerCase();
+  if (note.includes('watermark')) return true;
+  const id = String((format && format.format_id) || '').toLowerCase();
+  return id.startsWith('download_addr') || id.startsWith('download-addr');
+}
+
 function pickBestFormat(formats) {
   if (!formats.length) return null;
   const bySize = formats.slice().sort((a, b) => {
+    // 无水印优先于一切：同样 720p 的水印版大 2 倍，不能让「更大」的规则赢。
+    const watermarkDiff = Number(isWatermarkedFormat(a)) - Number(isWatermarkedFormat(b));
+    if (watermarkDiff !== 0) return watermarkDiff;
     const sizeDiff = (toByteCount(b.filesize) || toByteCount(b.filesize_approx))
       - (toByteCount(a.filesize) || toByteCount(a.filesize_approx));
     if (sizeDiff !== 0) return sizeDiff;
@@ -2325,4 +2351,8 @@ module.exports = {
   isStreamTargetUrl,
   extractHtmlTitle,
   looksLikeStreamFileTitle,
+  // 挑流规则（水印优先）单独导出，供测试直接钉住抖音两路源的取舍。
+  isWatermarkedFormat,
+  pickBestFormat,
+  buildVariants,
 };
