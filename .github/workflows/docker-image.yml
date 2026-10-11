@@ -15,7 +15,7 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: k-vault
+  IMAGE_NAME: yoruvault
 
 jobs:
   build:

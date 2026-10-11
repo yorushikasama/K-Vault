@@ -74,7 +74,7 @@ install -d -m 700 -o "$SERVICE_USER" -g "$SERVICE_USER" "$DATA_DIR_VALUE/cookies
 
 cat > /tmp/kv-douyin.service <<UNIT
 [Unit]
-Description=K-Vault - refresh Douyin guest cookies for media resolve
+Description=YoruVault - refresh Douyin guest cookies for media resolve
 After=network-online.target
 
 [Service]
@@ -85,7 +85,7 @@ TimeoutStartSec=600
 UNIT
 cat > /tmp/kv-douyin.timer <<UNIT
 [Unit]
-Description=K-Vault - refresh Douyin guest cookies daily at 04:30
+Description=YoruVault - refresh Douyin guest cookies daily at 04:30
 
 [Timer]
 OnCalendar=*-*-* 04:30:00
@@ -98,7 +98,7 @@ WantedBy=timers.target
 UNIT
 cat > /tmp/kv-ytdlp.service <<UNIT
 [Unit]
-Description=K-Vault - self-update yt-dlp
+Description=YoruVault - self-update yt-dlp
 After=network-online.target
 
 [Service]
@@ -108,7 +108,7 @@ TimeoutStartSec=300
 UNIT
 cat > /tmp/kv-ytdlp.timer <<UNIT
 [Unit]
-Description=K-Vault - refresh yt-dlp weekly
+Description=YoruVault - refresh yt-dlp weekly
 
 [Timer]
 OnCalendar=Mon *-*-* 05:10:00

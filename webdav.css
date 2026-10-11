@@ -3,12 +3,12 @@
         --wf-border: rgba(255, 255, 255, 0.58);
         --wf-shadow: var(--shadow-2);
         --wf-shadow-soft: var(--shadow-1);
-        /* 同一个紫兼任"文字色"和"实心按钮底色"时必然有一头不达标：
-           做文字够亮，做按钮底色压白字只有 3.4:1。所以拆成两档 ——
-           -solid 专供实心按钮（更深，配白字），前者用于文字与描边。 */
-        --wf-primary: #8a4bff;
-        --wf-primary-solid: #6d28d9;
-        --wf-primary-soft: rgba(138, 75, 255, 0.13);
+        /* 曾经这里另有 --wf-primary-solid 一档：同一个紫既要当文字色又要当
+           实心按钮底，做文字够亮时压白字只有 3.4:1，只能拆成两个值。
+           现在的品牌蓝同一档就能兼顾（文字对白底 6.5:1、白字压其上 6.5:1），
+           所以拆出来的那份是多余的，删掉——同一个语义不再有两套值。 */
+        --wf-primary: var(--ui-brand);
+        --wf-primary-soft: color-mix(in srgb, var(--ui-brand) 13%, transparent);
       }
 
       html[data-theme="dark"] {
@@ -16,9 +16,9 @@
         --wf-border: rgba(120, 145, 192, 0.32);
         --wf-shadow: var(--shadow-2-dark);
         --wf-shadow-soft: var(--shadow-1-dark);
-        --wf-primary: #9aa9ff;
-        --wf-primary-solid: #4f46e5;
-        --wf-primary-soft: rgba(154, 169, 255, 0.2);
+        /* --wf-primary 在夜间无需重写：它别名到 --ui-brand，那个 token 自己
+           会翻档。这里只留夜间独有的表面色。 */
+        --wf-primary-soft: color-mix(in srgb, var(--ui-brand) 20%, transparent);
       }
 
       * {
@@ -45,82 +45,27 @@
         padding: var(--ui-page-pad);
       }
 
-      .header {
-        position: sticky;
-        top: 20px;
-        z-index: 50;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 16px 24px;
-        border-radius: var(--radius-lg);
-        background: var(--wf-surface);
-        border: 1px solid var(--wf-border);
-        box-shadow: var(--shadow-2);
-        margin-bottom: 16px;
+      /* 页头（.header / .header-title / .header-actions / .header-logo）已删除：
+         顶栏由 app-shell.css 提供，四个分区共用同一段标记。
+         这一页原本自带一套（标题「WebDAV 上传中心」+ 首页/图片浏览/管理后台/WebDAV），
+         导航项文字与其它页不同，切换时像跳到了别处。 */
+
+      /* 页内标题。此前页面标题挂在顶栏上，顶栏统一后标题归内容区。 */
+      .page-heading {
+        margin-bottom: 18px;
       }
 
-      .header-title {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-family: "Sora", "Manrope", "Noto Sans SC", sans-serif;
-        font-size: 1.38rem;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-        color: inherit;
+      .page-heading h1 {
+        font-size: 1.5rem;
+        font-weight: 650;
+        letter-spacing: -0.01em;
         margin: 0;
       }
 
-            .header-title i,
-      .header-title svg.lucide {
-        color: var(--wf-primary);
-      }
-
-      .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-      }
-
-      .header-logo {
-        width: 30px;
-        height: 30px;
-        border-radius: 8px;
-        object-fit: cover;
-        background: rgba(255, 255, 255, 0.92);
-      }
-
-      .action-link,
-      .action-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        border: 1px solid var(--wf-border);
-        border-radius: 999px;
-        padding: 9px 13px;
-        min-height: 40px;
-        background: var(--wf-surface);
-        color: inherit;
-        text-decoration: none;
-        cursor: pointer;
-        transition: background 0.18s ease-out, border-color 0.18s ease-out;
-        font-weight: 600;
-      }
-
-      .action-link:hover,
-      .action-btn:hover {
-        border-color: rgba(138, 75, 255, 0.4);
-        background: var(--wf-primary-soft);
-      }
-
-      .action-link.active {
-        border-color: rgba(138, 75, 255, 0.5);
-        background: var(--wf-primary-soft);
+      .page-heading p {
+        margin: 6px 0 0;
+        color: var(--ui-ink-secondary);
+        font-size: 0.9rem;
       }
 
       .layout {
@@ -236,15 +181,35 @@
       .upload-file-row {
         display: flex;
         gap: 10px;
-        align-items: stretch;
+        /* 允许换行：文件选择区有个「不被压缩」的下限（里面的按钮与计数徽章
+           不收缩，标题又需要约 108px 才读得全），挤不下时让「开始上传」
+           整块换到下一行，而不是把文件选择区压到标题截断。
+           窄屏（≤640px）另有 flex-direction: column 的强规则，这里管的是
+           中间那档宽度（如 1024px 的两列布局，卡片内容区只有约 481px）。 */
+        flex-wrap: wrap;
+        /* 原来是 stretch，于是「开始上传」被拉成和整块文件选择区一样高，
+           变成一个顶着大空白的方法块。按钮该按自身高度居中。 */
+        align-items: center;
       }
 
       .file-picker {
         position: relative;
-        flex: 1;
+        /* flex-basis 取 340px：这是「标题能完整显示」所需的最小宽度，
+           低于它就该让按钮换行而不是继续压。仍保留可伸缩以便占满宽屏。 */
+        flex: 1 1 340px;
+        /* min-width: 0 是必需的，不是保险起见：flex 子项的 min-width 默认是
+           auto，不允许缩到内容最小宽度以下。而这块里的标题与说明都是
+           nowrap（靠 ellipsis 截断），最小宽度就约等于整行文字宽 ——
+           实测 1280px 下这块要 478px，加上 10px 间隙与 124px 的
+           「开始上传」，共 612px，而卡片内容区只有 576px，
+           于是按钮被顶出卡片右边缘（溢出 19px）。
+           min-width: 0 允许它被压缩，文字交给已有的省略号处理。
+           同一个坑这个仓库在 .layout 的 grid 轨道上踩过（见下方
+           @media (max-width: 980px) 的注释）。 */
+        min-width: 0;
         min-height: 74px;
         border-radius: var(--radius-md);
-        border: 1px dashed rgba(138, 75, 255, 0.45);
+        border: 1px dashed color-mix(in srgb, var(--ui-brand) 45%, transparent);
         background: #ffffff;
         padding: 12px 14px;
         display: flex;
@@ -254,7 +219,7 @@
       }
 
       .file-picker:hover {
-        border-color: rgba(138, 75, 255, 0.68);
+        border-color: color-mix(in srgb, var(--ui-brand) 68%, transparent);
       }
 
       .file-picker.is-dragover {
@@ -275,18 +240,6 @@
         overflow: hidden;
         clip: rect(0, 0, 0, 0);
         border: 0;
-      }
-
-      .file-choose-btn {
-        border-radius: var(--radius-sm);
-        border: 1px solid rgba(138, 75, 255, 0.36);
-        background: #ffffff;
-        min-height: 42px;
-        padding: 9px 14px;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        white-space: nowrap;
       }
 
       .file-picker-meta {
@@ -317,14 +270,16 @@
       .file-count-badge {
         flex: 0 0 auto;
         border-radius: 999px;
-        border: 1px solid rgba(138, 75, 255, 0.25);
-        background: rgba(138, 75, 255, 0.12);
-        color: #5b35b5;
+        border: 1px solid color-mix(in srgb, var(--ui-brand) 25%, transparent);
+        background: color-mix(in srgb, var(--ui-brand) 12%, transparent);
+        color: color-mix(in srgb, var(--ui-brand) 68%, var(--ui-ink));
         font-size: 0.8rem;
         font-weight: 700;
         padding: 6px 10px;
       }
 
+      /* 上传按钮是这一页的主操作，给它一个最小宽度免得窄屏下比
+         「选择文件」还窄。高度与配色由 ui-buttons.css 的 .btn-lg 负责。 */
       #uploadFilesBtn {
         min-width: 124px;
       }
@@ -354,15 +309,6 @@
         color: #405072;
       }
 
-      .file-queue-clear {
-        border-radius: var(--radius-sm);
-        padding: 6px 10px;
-        font-size: 0.8rem;
-        border: 1px solid rgba(245, 108, 108, 0.42);
-        background: #fff5f5;
-        color: #d74b4b;
-      }
-
       .file-queue-list {
         margin: 0;
         padding: 0;
@@ -375,7 +321,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        border: 1px solid rgba(138, 75, 255, 0.18);
+        border: 1px solid color-mix(in srgb, var(--ui-brand) 18%, transparent);
         border-radius: var(--radius-md);
         padding: 7px 8px;
         background: #ffffff;
@@ -388,8 +334,8 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: rgba(138, 75, 255, 0.14);
-        color: #6b3be7;
+        background: color-mix(in srgb, var(--ui-brand) 14%, transparent);
+        color: color-mix(in srgb, var(--ui-brand) 72%, var(--ui-ink));
         flex: 0 0 auto;
       }
 
@@ -421,8 +367,13 @@
         padding: 4px 0 2px;
       }
 
-      input,
-      button {
+      /* 按钮的视觉定义已统一到 ui-buttons.css。本文件只保留页面特有的
+         布局约束 —— 通用的 border-radius / padding / 配色不再在这里重复，
+         否则同一批属性会有两处来源，改一处不生效。 */
+
+      /* 输入框仍留在本页：全站只有这一页用裸 input 做目录路径与 URL 输入。
+         按钮的高度由 .btn 决定，这里不碰。 */
+      input {
         border: 1px solid var(--wf-border);
         border-radius: 10px;
         background: var(--wf-surface);
@@ -430,46 +381,29 @@
         padding: 10px 12px;
       }
 
+      input:focus-visible {
+        outline: 2px solid var(--ui-focus-ring);
+        outline-offset: 1px;
+      }
+
+      /* 输入框的最小宽度在窄屏下会成为溢出来源：260px 加上内边距，
+         320px 视口里放不下。改为只在大屏生效。 */
+      @media (min-width: 641px) {
+        input[type="text"] {
+          min-width: 260px;
+        }
+      }
+
       input[type="text"] {
-        min-width: 260px;
         flex: 1;
       }
 
       .input-label {
         display: block;
         margin-bottom: 8px;
-        color: #5f6678;
+        color: var(--ui-ink-secondary);
         font-size: 0.85rem;
         font-weight: 600;
-      }
-
-      button {
-        font-weight: 600;
-        cursor: pointer;
-      }
-
-      button:hover {
-        border-color: rgba(138, 75, 255, 0.45);
-      }
-
-      .btn-primary {
-        /* 白字压在 #8a4bff 上只有约 3.4:1，低于 WCAG AA 的 4.5:1。
-           底色改用 --wf-primary-solid（更深一档），白字才够读。 */
-        background: var(--wf-primary-solid);
-        border-color: transparent;
-        color: #fff;
-      }
-
-      .btn-primary:hover {
-        border-color: transparent;
-      }
-
-      .btn-danger {
-        /* 原先 #f56c6c 配白字只有 2.9:1。改用语义危险色的深色档，
-           与全站 --ui-danger 保持同源。 */
-        background: var(--ui-danger-strong);
-        border-color: transparent;
-        color: #fff;
       }
 
       .result-tools {
@@ -477,11 +411,6 @@
         align-items: center;
         gap: 8px;
         flex-wrap: wrap;
-      }
-
-      button[disabled] {
-        opacity: 0.6;
-        cursor: wait;
       }
 
       .hint {
@@ -508,7 +437,7 @@
       }
 
       html[data-theme="dark"] .file-picker:hover {
-        border-color: rgba(154, 169, 255, 0.72);
+        border-color: color-mix(in srgb, var(--ui-brand) 72%, transparent);
         box-shadow: var(--shadow-2-dark);
       }
 
@@ -516,12 +445,6 @@
         border-color: rgba(52, 211, 153, 0.76);
         box-shadow: var(--shadow-2-dark);
         background: #123b37;
-      }
-
-      html[data-theme="dark"] .file-choose-btn {
-        border-color: rgba(154, 169, 255, 0.45);
-        background: rgba(26, 37, 63, 0.94);
-        color: #e4ecff;
       }
 
       html[data-theme="dark"] .file-picker-title {
@@ -533,8 +456,8 @@
       }
 
       html[data-theme="dark"] .file-count-badge {
-        border-color: rgba(154, 169, 255, 0.34);
-        background: rgba(154, 169, 255, 0.22);
+        border-color: color-mix(in srgb, var(--ui-brand) 34%, transparent);
+        background: color-mix(in srgb, var(--ui-brand) 22%, transparent);
         color: #d9e4ff;
       }
 
@@ -547,19 +470,13 @@
         color: #cbd8f4;
       }
 
-      html[data-theme="dark"] .file-queue-clear {
-        border-color: rgba(244, 114, 114, 0.5);
-        background: rgba(66, 25, 34, 0.7);
-        color: #fecaca;
-      }
-
       html[data-theme="dark"] .file-queue-item {
-        border-color: rgba(154, 169, 255, 0.26);
+        border-color: color-mix(in srgb, var(--ui-brand) 26%, transparent);
         background: rgba(28, 40, 64, 0.9);
       }
 
       html[data-theme="dark"] .file-queue-icon {
-        background: rgba(154, 169, 255, 0.2);
+        background: color-mix(in srgb, var(--ui-brand) 20%, transparent);
         color: #dbe5ff;
       }
 
@@ -670,33 +587,7 @@
           padding: 10px;
         }
 
-        .header {
-          top: 8px;
-          padding: 10px 12px;
-          flex-wrap: wrap;
-        }
-
-        .header-title {
-          width: 100%;
-          font-size: 1rem;
-        }
-
-        .header-actions {
-          width: 100%;
-          justify-content: flex-start;
-          overflow-x: auto;
-          scrollbar-width: none;
-        }
-
-        .header-actions::-webkit-scrollbar {
-          display: none;
-        }
-
-        .action-link,
-        .action-btn {
-          flex: 0 0 auto;
-          font-size: 0.82rem;
-        }
+        /* 顶栏的窄屏处理在 app-shell.css（四个分区共用），这里不用再管。 */
 
         .toolbar-row {
           flex-direction: column;
@@ -705,10 +596,51 @@
 
         .upload-file-row {
           flex-direction: column;
+          align-items: stretch;
+        }
+
+        /* 文件选择区内部改为上下排：320–375px 下「选择文件」按钮 + 两行
+           说明 + 计数徽章横向挤在一行，说明文字只剩几十像素宽。 */
+        .file-picker {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 10px;
+          min-height: 0;
+        }
+
+        .file-picker .btn {
+          width: 100%;
+        }
+
+        /* 计数徽章从行尾挪到选择按钮下方，靠左对齐，不再和文字抢宽度。 */
+        .file-count-badge {
+          align-self: flex-start;
+        }
+
+        /* 状态药丸里的文案较长（「WebDAV 当前不可用：Not configured」），
+           窄屏必须允许换行，否则整条撑破容器。 */
+        .status-pill {
+          white-space: normal;
+          align-items: flex-start;
+          line-height: 1.4;
+        }
+
+        .status-pill .status-dot {
+          margin-top: 6px;
+        }
+
+        /* 操作行整宽堆叠，按钮各自撑满，点按目标最大。 */
+        .toolbar-right {
+          width: 100%;
+        }
+
+        .toolbar-right .btn {
+          flex: 1 1 auto;
         }
 
         #uploadFilesBtn {
           width: 100%;
+          min-width: 0;
         }
 
         /* 文件选择区的两行文字是 nowrap + ellipsis，宽屏下截断得好看，

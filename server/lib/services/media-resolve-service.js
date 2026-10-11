@@ -463,9 +463,13 @@ function classifyFailure(stderr, exitCode, { cookiesConfigured = false } = {}) {
     // Douyin's extractor raises "Fresh cookies ..." for every failure it hits:
     // measured on 2026-09-30, a deleted video and an empty cookie jar produce
     // byte-identical stderr on the same request. Once a cookie jar is configured
-    // the message therefore cannot mean "you need cookies" — it usually means
-    // the video is gone. AUTH_REQUIRED stays only for the no-jar case, where
-    // configuring one really is the remedy.
+    // the message therefore cannot mean "you need cookies".
+    //
+    // 2026-10-10: the same wording is also what the Argus gateway produces when
+    // it rejects the detail request (body: "Blocked by ArgusSecurityPlugin Uifid
+    // Not Found"). That case is handled upstream by sending the open-platform
+    // Referer/Origin, so reaching here means the gateway accepted the request —
+    // which points at the video itself rather than at credentials.
     if (cookiesConfigured && text.includes('fresh cookies')) {
       return new MediaResolveError('MEDIA_RESOLVE_UNAVAILABLE_VIDEO',
         '视频不可用或已被删除（若视频在客户端可见，也可能是 Cookie 已失效）。', {
@@ -1389,12 +1393,20 @@ class MediaResolveService {
       args.push('--max-filesize', this.maxFilesize);
     }
 
-    // Douyin's web detail endpoint answers with an empty body unless the request
-    // carries its own site as Referer — which surfaces as the misleading
-    // "Fresh cookies are needed" error even with a perfectly good cookie jar.
-    // Measured on 2026-09-29: identical request without the header returns 0 bytes
-    // and fails; with it, 16 formats. Other platforms ignore the header, so it is
-    // only sent where it matters.
+    // Douyin's web detail endpoint sits behind its Argus gateway, which demands
+    // a request signature that only the obfuscated script on www.douyin.com can
+    // compute — yt-dlp cannot, so every extraction died with HTTP 403 whose body
+    // read "Blocked by ArgusSecurityPlugin Uifid Not Found", surfacing as the
+    // misleading "Fresh cookies (not necessarily logged in) are needed".
+    //
+    // The gateway waives that signature for requests that present themselves as
+    // coming from Douyin's open platform. Sending its Referer/Origin instead of
+    // www.douyin.com turns the same request from 403 into 200 with the full
+    // detail JSON, cookie jar or not.
+    // Measured 2026-10-10 on the self-hosted (HK) server: plain Referer ->
+    // 403 "Uifid Not Found"; open-platform pair -> 200 and 36 formats.
+    // The previous Referer: https://www.douyin.com/ was the pre-Argus fix
+    // (2026-09-29) and no longer works; it is replaced, not supplemented.
     let host = '';
     try {
       host = new URL(String(url || '')).hostname;
@@ -1402,7 +1414,10 @@ class MediaResolveService {
       host = '';
     }
     if (isDouyinHost(host)) {
-      args.push('--add-header', 'Referer: https://www.douyin.com/');
+      args.push(
+        '--add-header', 'Referer: https://open.douyin.com/',
+        '--add-header', 'Origin: https://open.douyin.com',
+      );
     }
     // A stream sniffed out of a play page presents the page it came from —
     // some stream CDNs check it, and the ones that do not ignore it.

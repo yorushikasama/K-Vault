@@ -47,7 +47,7 @@ function createApp() {
     .split(/[\s,]+/)
     .map((item) => item.trim().replace(/\/+$/, ''))
     .filter(Boolean);
-  const corsAllowHeaders = 'Content-Type, Authorization, Accept, Range, Idempotency-Key, X-KVault-Client';
+  const corsAllowHeaders = 'Content-Type, Authorization, Accept, Range, Idempotency-Key, X-YoruVault-Client, X-KVault-Client';
 
   function originAllowed(origin) {
     if (!origin) return false;
@@ -151,9 +151,13 @@ function createApp() {
   }
 
   function prefersV2Envelope(c) {
-    const client = String(c.req.header('X-KVault-Client') || '').toLowerCase();
+    // 客户端标识是线上协议的一部分：改名后仍要认旧值，否则已经在发
+    // X-KVault-Client / application/vnd.kvault.v2+json 的调用方会静默退回旧信封。
+    const client = String(c.req.header('X-KVault-Client') || c.req.header('X-YoruVault-Client') || '').toLowerCase();
     const accept = String(c.req.header('accept') || '').toLowerCase();
-    return client === 'app-v2' || accept.includes('application/vnd.kvault.v2+json');
+    return client === 'app-v2'
+      || accept.includes('application/vnd.yoruvault.v2+json')
+      || accept.includes('application/vnd.kvault.v2+json');
   }
 
   // The upload handlers buffer the whole multipart body before they can check the
@@ -1193,7 +1197,7 @@ function createApp() {
         maxBytes: bufferedLimit(Math.min(maxUploadSize, 25 * mb)),
         directThreshold,
         supportsChunkUpload: true,
-        message: 'Discord 上传上限受服务器加成影响，K-Vault 默认按 25MB 保守处理。',
+        message: 'Discord 上传上限受服务器加成影响，YoruVault 默认按 25MB 保守处理。',
       },
       huggingface: {
         maxBytes: bufferedLimit(Math.min(maxUploadSize, 35 * mb)),

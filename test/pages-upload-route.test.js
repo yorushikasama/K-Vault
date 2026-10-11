@@ -11,7 +11,7 @@ describe('Cloudflare Pages upload route', function () {
         ASSETS: {
           fetch(request) {
             requestedPath = new URL(request.url).pathname;
-            return new Response('<!doctype html><title>K-Vault</title>', {
+            return new Response('<!doctype html><title>YoruVault</title>', {
               status: 200,
               headers: { 'Content-Type': 'text/html' },
             });
@@ -22,6 +22,6 @@ describe('Cloudflare Pages upload route', function () {
 
     assert.strictEqual(response.status, 200);
     assert.strictEqual(requestedPath, '/index.html');
-    assert.match(await response.text(), /K-Vault/);
+    assert.match(await response.text(), /YoruVault/);
   });
 });

@@ -161,7 +161,7 @@ class GitHubStorageAdapter {
   async uploadViaContents({ storageKey, buffer, fileName }) {
     const maxSize = 20 * 1024 * 1024;
     if (buffer.byteLength > maxSize) {
-      throw new Error('GitHub Contents mode upload limit exceeded (20MB practical cap in K-Vault).');
+      throw new Error('GitHub Contents mode upload limit exceeded (20MB practical cap in YoruVault).');
     }
 
     const pathInRepo = this.contentsPath(storageKey || fileName);

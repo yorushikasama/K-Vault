@@ -172,12 +172,12 @@ function validateDirectUpload(storageMode, fileSize) {
     discord: {
       maxBytes: 25 * MB,
       status: 413,
-      message: "Discord 上传上限受服务器加成影响，K-Vault 默认按 25MB 保守处理。",
+      message: "Discord 上传上限受服务器加成影响，YoruVault 默认按 25MB 保守处理。",
     },
     huggingface: {
       maxBytes: 35 * MB,
       status: 413,
-      message: "HuggingFace regular upload is capped at 35MB in K-Vault. Use another storage backend for larger files.",
+      message: "HuggingFace regular upload is capped at 35MB in YoruVault. Use another storage backend for larger files.",
     },
     r2: { maxBytes: 100 * MB, status: 413, message: "R2 上传上限为 100MB。" },
     s3: { maxBytes: 100 * MB, status: 413, message: "S3 上传上限为 100MB。" },

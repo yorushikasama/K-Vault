@@ -3,16 +3,23 @@ const path = require('node:path');
 const assert = require('node:assert');
 const { initDatabase } = require('../server/db');
 const { ApiTokenRepository, parseExpiryInput } = require('../server/lib/repos/api-token-repo');
+const { removeTmpDir } = require('./helpers/sweep-test-dirs');
+const { makeScratchDir } = require('./helpers/scratch-dir');
 
 describe('API token lifecycle security (Docker repo)', function () {
   let db;
   let repo;
+  let tmpDir;
 
   beforeEach(function () {
-    const tmpDir = path.join(__dirname, '..', 'data', `tmp-token-life-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    tmpDir = makeScratchDir('token-life');
     fs.mkdirSync(tmpDir, { recursive: true });
     db = initDatabase(path.join(tmpDir, 'token-life.db'));
     repo = new ApiTokenRepository(db);
+  });
+
+  afterEach(function () {
+    removeTmpDir(tmpDir);
   });
 
   function createToken(overrides = {}) {
@@ -25,7 +32,7 @@ describe('API token lifecycle security (Docker repo)', function () {
 
   it('creates a token whose secret verifies', function () {
     const { token, record } = createToken();
-    assert.ok(token.startsWith('kvault_'));
+    assert.ok(token.startsWith('yoruvault_'));
     const result = repo.verify(token, 'upload');
     assert.ok(result.ok);
     assert.strictEqual(result.token.id, record.id);
@@ -75,7 +82,7 @@ describe('API token lifecycle security (Docker repo)', function () {
   it('rotate() invalidates the old secret and issues a working new one', function () {
     const { token, record } = createToken();
     const rotated = repo.rotate(record.id);
-    assert.ok(rotated.token.startsWith('kvault_'));
+    assert.ok(rotated.token.startsWith('yoruvault_'));
     assert.notStrictEqual(rotated.token, token);
     assert.ok(!repo.verify(token, 'upload').ok);
     assert.ok(repo.verify(rotated.token, 'upload').ok);

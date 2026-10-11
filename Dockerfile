@@ -37,8 +37,8 @@ WORKDIR /app
 COPY index.html admin.html gallery.html webdav.html login.html preview.html block-img.html whitelist-on.html admin-imgtc.html admin-waterfall.html /usr/share/nginx/html/
 COPY *.css *.js *.svg *.png *.ico /usr/share/nginx/html/
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
-COPY docker/entrypoint.sh /usr/local/bin/k-vault-entrypoint
-RUN chmod +x /usr/local/bin/k-vault-entrypoint
+COPY docker/entrypoint.sh /usr/local/bin/yoruvault-entrypoint
+RUN chmod +x /usr/local/bin/yoruvault-entrypoint
 
 ENV NODE_ENV=production \
   PORT=8787 \
@@ -52,4 +52,4 @@ VOLUME ["/app/data"]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=5 \
   CMD wget -qO- http://127.0.0.1:8080/api/health >/dev/null || exit 1
 
-ENTRYPOINT ["k-vault-entrypoint"]
+ENTRYPOINT ["yoruvault-entrypoint"]

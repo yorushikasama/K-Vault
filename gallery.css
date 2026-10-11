@@ -9,7 +9,9 @@
       --primary: var(--ui-brand);
       --primary-light: var(--ui-brand-hover);
       --primary-dark: var(--ui-brand-active);
-      --accent: #ffd7e4;
+      /* 曾经是 #ffd7e4（粉色）—— 与本页主题色不是一支，是上面那处 --bg 笔误
+         的同一批残留。它唯一的用途是批量条里的计数强调，指回品牌色。 */
+      --accent: var(--ui-brand);
       --card-bg: var(--ui-surface);
       --shadow: var(--ui-elev-1);
       --shadow-hover: var(--ui-elev-2);
@@ -34,119 +36,34 @@
       padding: var(--ui-page-pad);
     }
 
-    /* 头部 */
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 18px 28px;
-      background: var(--card-bg);
-      border-radius: var(--radius-md);
-      margin-bottom: 24px;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      flex-wrap: wrap;
-      gap: 16px;
-      position: sticky;
-      top: 20px;
-      z-index: 100;
-    }
+    /* 页头（.header / .header-title / .header-actions）已删除：顶栏由
+       app-shell.css 提供，四个分区共用同一段标记。这一页原本自带一套
+       （标题「图片浏览器」+ 上传/管理/首页 + 页面级主题按钮），
+       导航项文字与其它页不同，切换时像跳到了别处。 */
 
-    .header-title {
-      font-size: 1.5em;
-      font-weight: 700;
-      color: #333;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .header-title i { color: var(--primary); font-size: 1.1em; }
-
+    /* 搜索框：原本在顶栏中央，顶栏统一后移入工具栏，功能不变。 */
     .header-search {
-      flex: 1;
-      max-width: 400px;
-      min-width: 200px;
+      flex: 1 1 200px;
+      max-width: 360px;
+      min-width: 160px;
     }
 
     .header-search input {
       width: 100%;
-      padding: 10px 16px;
-      border: 2px solid #eee;
-      border-radius: var(--radius-sm);
-      font-size: 0.95em;
-      transition: all 0.2s ease-out;
+      min-height: 40px;
+      padding: 8px 14px;
+      border: 1px solid var(--ui-line-strong);
+      border-radius: var(--ui-radius-sm);
+      background: var(--ui-surface);
+      color: var(--ui-ink);
+      font: inherit;
+      font-size: 0.9rem;
     }
 
     .header-search input:focus {
-      border-color: var(--primary-light);
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(138, 75, 255, 0.1);
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: flex-end;
-    }
-
-    .header-actions .gallery-theme-toggle {
-      margin-left: 2px;
-      border: 1.5px solid rgba(138, 75, 255, 0.25);
-      background: rgba(138, 75, 255, 0.16);
-      color: #2f3243;
-      font-weight: 600;
-    }
-
-    .header-actions .gallery-theme-toggle i,
-    .header-actions .gallery-theme-toggle svg.lucide {
-      color: var(--primary);
-      width: 14px;
-      text-align: center;
-    }
-
-    .header-actions .gallery-theme-toggle:hover {
-      border-color: var(--primary-light);
-    }
-
-    html[data-theme="dark"] .header-actions .gallery-theme-toggle {
-      border-color: rgba(154, 169, 255, 0.45);
-      background: rgba(154, 169, 255, 0.2);
-      color: #e8eeff;
-    }
-
-    html[data-theme="dark"] .header-actions .gallery-theme-toggle i,
-    html[data-theme="dark"] .header-actions .gallery-theme-toggle svg.lucide {
-      color: #c4d4ff;
-    }
-
-    .nav-btn {
-      padding: 8px 16px;
-      border-radius: var(--radius-sm);
-      text-decoration: none;
-      color: #666;
-      font-size: 0.9em;
-      transition: all 0.2s ease-out;
-      background: #ffffff;
-      border: 1px solid #eee;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .nav-btn:hover {
-      background: var(--accent);
-      border-color: var(--primary-light);
-      color: #333;
-    }
-
-    .nav-btn.active {
-      background: var(--primary);
-      color: var(--ui-brand-ink);
-      border-color: var(--primary);
+      border-color: var(--ui-brand);
+      outline: 2px solid var(--ui-focus-ring);
+      outline-offset: 1px;
     }
 
     /* 工具栏 */
@@ -168,7 +85,7 @@
 
     .stat-badge {
       padding: 8px 16px;
-      background: rgba(138, 75, 255, 0.08);
+      background: color-mix(in srgb, var(--ui-brand) 8%, transparent);
       border-radius: var(--radius-sm);
       font-size: 0.88em;
       color: #555;
@@ -177,28 +94,12 @@
 
     .stat-badge strong { color: var(--primary); margin-left: 4px; }
 
-    /* 链接格式选择器 */
-    .format-selector {
-      display: flex;
-      gap: 4px;
-      background: #f5f5f5;
-      padding: 4px;
-      border-radius: var(--radius-sm);
+    /* 链接格式选择器。控件本体是 ui-buttons.css 的 .segmented，
+       这里只定义它左侧的说明文字。 */
+    .format-label {
+      font-size: 0.85em;
+      color: var(--ui-ink-muted);
     }
-
-    .format-btn {
-      padding: 6px 12px;
-      border: none;
-      background: transparent;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      font-size: 0.8em;
-      transition: all 0.2s;
-      color: #666;
-    }
-
-    .format-btn:hover { background: rgba(138, 75, 255, 0.1); }
-    .format-btn.active { background: var(--primary); color: var(--ui-brand-ink); }
 
     /* 图片网格 */
     .image-grid {
@@ -268,28 +169,6 @@
       justify-content: center;
     }
 
-    .card-btn {
-      width: 32px;
-      height: 32px;
-      border: none;
-      border-radius: var(--radius-sm);
-      background: #ffffff;
-      color: #333;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-      font-size: 0.9em;
-    }
-
-    .card-btn:hover {
-      background: var(--primary);
-      color: var(--ui-brand-ink);
-    }
-
-    .card-btn.delete:hover { background: #f56c6c; }
-
     .image-card-checkbox {
       position: absolute;
       top: 10px;
@@ -337,26 +216,8 @@
 
     .batch-bar-count strong { color: var(--accent); }
 
-    .batch-btn {
-      padding: 8px 16px;
-      border: none;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      font-size: 0.85em;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
     /* 品牌/语义实心按钮上的文字一律用 token：--ui-brand-ink 随主题翻转，
        success/danger 用各自的 -strong 档（亮色档压白字只有 2.9:1）。 */
-    .batch-btn.primary { background: var(--primary); color: var(--ui-brand-ink); }
-    .batch-btn.success { background: var(--ui-success-strong); color: #fff; }
-    .batch-btn.danger { background: var(--ui-danger-strong); color: #fff; }
-    .batch-btn.default { background: rgba(255,255,255,0.2); color: var(--ui-ink); }
-
-    .batch-btn:hover { filter: brightness(1.1); }
 
     /* 预览弹窗 - 原生图片 / iframe */
     .preview-modal {
@@ -444,21 +305,6 @@
       gap: 8px;
     }
 
-    .page-btn {
-      width: 40px;
-      height: 40px;
-      border: none;
-      border-radius: var(--radius-sm);
-      background: #ffffff;
-      cursor: pointer;
-      transition: all 0.2s;
-      font-size: 0.9em;
-    }
-
-    .page-btn:hover { background: var(--accent); }
-    .page-btn.active { background: var(--primary); color: var(--ui-brand-ink); }
-    .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
     /* 空状态 */
     .empty-state {
       text-align: center;
@@ -517,40 +363,18 @@
 
     /* 响应式 */
     @media (max-width: 768px) {
-      body { padding: 12px; }
-      
-      .header { 
-        flex-direction: column; 
-        align-items: stretch;
-        gap: 12px;
-        padding: 14px 18px;
-      }
-      
-      .header-title {
-        font-size: 1.2em;
-        justify-content: center;
-      }
-      
-      .header-search { 
+      /* 内边距落在内容容器上，不能落在 body：顶栏在 #app 外面，
+         body 上留白会把全宽外框缩成内缩的一条（实测 390px 视口下
+         顶栏只有 374px 宽），与其它三页不一致。 */
+      #app { padding: 12px; }
+
+      /* 顶栏的窄屏处理在 app-shell.css（四个分区共用），这里不用再管。 */
+
+      .header-search {
         max-width: none;
-        order: 3;
-      }
-      
-      .header-actions {
-        justify-content: center;
-        flex-wrap: wrap;
-        gap: 8px;
+        flex: 1 1 100%;
       }
 
-      .header-actions .gallery-theme-toggle {
-        order: 4;
-      }
-      
-      .nav-btn {
-        padding: 8px 14px;
-        font-size: 0.85em;
-      }
-      
       .toolbar {
         flex-direction: column;
         gap: 12px;
@@ -575,15 +399,10 @@
         font-size: 0.82em;
       }
       
-      .format-selector {
+      .segmented {
         justify-content: center;
       }
-      
-      .format-btn {
-        padding: 6px 12px;
-        font-size: 0.82em;
-      }
-      
+
       .image-grid { 
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
         gap: 10px; 
@@ -598,15 +417,8 @@
         font-size: 0.75em;
       }
 
-      /* 卡片上的操作按钮：原来这里把它从 32px 缩到 30px，比桌面端还小，
-         手机上几乎点不中（实测 32×44 与 30×30 都出现过）。
-         四个按钮一行：4×44 + 3×6(gap) = 194px，320px 屏也放得下。
-         .card-btn 是纯图标按钮，宽度和高度都要给足。 */
-      .card-btn {
-        width: 44px;
-        height: 44px;
-        font-size: 0.8em;
-      }
+      /* 卡片操作按钮已改用 .btn .btn-icon，44px 的触摸下限由 ui-buttons.css
+         统一负责（四个一行：4×44 + 3×8(gap) = 200px，320px 屏也放得下）。 */
       .image-card-actions { gap: 8px; }
       
       .batch-bar { 
@@ -618,12 +430,7 @@
         left: 12px;
         bottom: 12px;
       }
-      
-      .batch-btn {
-        padding: 8px 14px;
-        font-size: 0.85em;
-      }
-      
+
       /* 预览弹窗优化 */
       .preview-overlay .preview-content {
         max-width: 95%;
@@ -638,50 +445,14 @@
     }
 
     @media (max-width: 480px) {
-      body { padding: 8px; }
-      
-      .header {
-        padding: 12px 14px;
-        border-radius: var(--radius-md);
-        gap: 10px;
-      }
-      
-      .header-title {
-        font-size: 1.05em;
-        gap: 8px;
-      }
-      
+      /* 同上：留白给内容容器，别给 body —— 顶栏需要保持全宽贴边。 */
+      #app { padding: 8px; }
+
       .header-search input {
-        height: 36px;
-        font-size: 0.9em;
-        padding: 0 12px;
-      }
-      
-      .header-actions {
-        gap: 6px;
+        font-size: 0.9rem;
+        padding: 8px 12px;
       }
 
-      .header-actions .gallery-theme-toggle {
-        padding: 6px 9px;
-        min-width: 38px;
-        justify-content: center;
-      }
-
-      .header-actions .gallery-theme-toggle [data-theme-label] {
-        display: none;
-      }
-      
-      .nav-btn {
-        padding: 6px 10px;
-        font-size: 0.78em;
-        border-radius: var(--radius-sm);
-      }
-      
-            .nav-btn i,
-      .nav-btn svg.lucide {
-        font-size: 0.9em;
-      }
-      
       .toolbar {
         padding: 12px;
         border-radius: var(--radius-md);
@@ -697,13 +468,7 @@
         font-size: 0.75em;
         border-radius: var(--radius-sm);
       }
-      
-      .format-btn {
-        padding: 5px 10px;
-        font-size: 0.75em;
-        min-width: 36px;
-      }
-      
+
       .image-grid { 
         grid-template-columns: repeat(2, 1fr); 
         gap: 8px; 
@@ -718,17 +483,7 @@
         height: 24px;
         font-size: 0.75em;
       }
-      
-      /* 这里原先把卡片操作按钮缩到 26px，是「小屏就更小」的旧思路——
-         实际上屏幕越小，手指的绝对误差越大，目标应该更大而不是更小。
-         改成与 768px 档一致的 44px（WCAG 2.5.5 的下限）。
-         四个按钮一行 4×44+3×8 = 194px，320px 屏放得下。 */
-      .card-btn {
-        width: 44px;
-        height: 44px;
-        font-size: 0.8em;
-      }
-      
+
       .image-card-name {
         font-size: 0.68em;
         padding: 6px 8px;
@@ -744,10 +499,9 @@
         border-radius: var(--radius-md);
       }
       
-      .batch-btn {
+      /* 批量操作在窄屏占满整行。 */
+      .batch-bar .btn {
         width: 100%;
-        justify-content: center;
-        padding: 10px 16px;
       }
       
       .toast {
@@ -768,12 +522,6 @@
       }
 
       /* 移动端禁用高消耗效果 */
-      .header {
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-        background: #ffffff;
-      }
-
       .toolbar {
         backdrop-filter: none;
         -webkit-backdrop-filter: none;

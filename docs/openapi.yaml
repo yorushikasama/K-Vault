@@ -1,12 +1,12 @@
 openapi: 3.0.3
 info:
-  title: K-Vault API
+  title: YoruVault API
   version: '1.0'
   description: |
-    K-Vault machine-facing API. Identical behavior on Docker and Cloudflare Pages
+    YoruVault machine-facing API. Identical behavior on Docker and Cloudflare Pages
     deployments (parity contract).
 
-    Authentication uses long-lived API Tokens (`kvault_<id>_<secret>`) via the
+    Authentication uses long-lived API Tokens (`yoruvault_<id>_<secret>`) via the
     `Authorization: Bearer` header. Tokens carry scopes (upload/read/delete/paste)
     and optional policies (allowedStorages / allowedMimeTypes / maxFileSize /
     folderPrefix / allowedSourceHosts).
@@ -20,7 +20,7 @@ servers:
   - url: '{baseUrl}'
     variables:
       baseUrl:
-        default: https://your-kvault.example.com
+        default: https://your-yoruvault.example.com
 security:
   - bearerAuth: []
 tags:
@@ -248,7 +248,7 @@ paths:
       responses:
         '201':
           description: |
-            `{ success, token: "kvault_...", tokenInfo }`. The full secret is
+            `{ success, token: "yoruvault_...", tokenInfo }`. The full secret is
             returned exactly once.
         '400': { $ref: '#/components/responses/ValidationError' }
         '503': { $ref: '#/components/responses/AdminAuthNotConfigured' }
@@ -317,7 +317,7 @@ components:
     bearerAuth:
       type: http
       scheme: bearer
-      description: 'API Token: kvault_<id>_<secret>'
+      description: 'API Token: yoruvault_<id>_<secret>'
   parameters:
     IdempotencyKey:
       name: Idempotency-Key

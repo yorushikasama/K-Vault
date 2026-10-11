@@ -42,33 +42,83 @@ describe('mobile layout contract', function () {
     });
   });
 
-  describe('the workbench header has mobile rules', function () {
-    // 首页改用 workbench.css 后漏了这套规则（admin.html 靠 mobile-refactor.css 兜住），
-    // 结果首页头部在 900px 以下溢出。
-    const css = read('workbench.css');
+  describe('flex items must not be sized by their content either', function () {
+    // grid 版的坑（上面那组）在 flex 里同样存在，只是写法不同：flex 子项的
+    // min-width 默认也是 auto，不允许缩到内容最小宽度以下。
+    //
+    // 实测踩到的是 WebDAV 的「开始上传」：.file-picker 是 flex:1 但没写
+    // min-width:0，而它里面的标题与说明都是 nowrap，于是它的最小宽度约等于
+    // 整行文字宽（1280px 下 478px）。加上 10px 间隙与 124px 按钮共 612px，
+    // 而卡片内容区只有 576px —— 按钮被顶出卡片右边缘 19px，看起来像从卡片
+    // 里溢出来。补上 min-width:0 之后由按钮换行兜住（见下面的 flex-wrap）。
+    it('webdav file picker carries min-width: 0', function () {
+      const css = read('webdav.css');
+      const m = /\.file-picker\s*\{[^}]*\}/.exec(css);
+      assert.ok(m, '找不到 .file-picker 规则');
+      assert.match(
+        m[0],
+        /min-width:\s*0\s*;/,
+        'webdav 的 .file-picker 缺 min-width:0；nowrap 的文字会把这块顶到内容宽度，把「开始上传」挤出卡片'
+      );
+    });
+
+    it('the upload row wraps instead of overflowing when space runs out', function () {
+      const css = read('webdav.css');
+      const m = /\.upload-file-row\s*\{[^}]*\}/.exec(css);
+      assert.ok(m, '找不到 .upload-file-row 规则');
+      assert.match(
+        m[0],
+        /flex-wrap:\s*wrap/,
+        '.upload-file-row 没有 flex-wrap:wrap；中等宽度（如 1024px 两列布局）下按钮会溢出或把标题压到截断'
+      );
+    });
+  });
+
+  describe('the app shell header has mobile rules', function () {
+    // 顶栏从 workbench.css 抽到 app-shell.css 之后（它现在是四个分区共用的
+    // 应用外壳：上传 / 文件 / 图库 / WebDAV），这套规则随之搬家。
+    // 断言跟着移到新文件，但要求不变：窄屏必须换行 + 导航可横向滚动，
+    // 否则 390px 视口会把导航推出屏幕。
+    const css = read('app-shell.css');
 
     it('lets the header wrap on narrow screens', function () {
       const block = /@media \(max-width: 900px\)[\s\S]*?\n\}/.exec(css);
-      assert.ok(block, 'workbench.css 没有 900px 媒体查询');
-      assert.match(block[0], /\.kv-workbench \.workspace-header\s*\{[^}]*flex-wrap:\s*wrap/, '页头在窄屏没有允许换行，会把导航挤出视口');
+      assert.ok(block, 'app-shell.css 没有 900px 媒体查询');
+      assert.match(
+        block[0],
+        /header\.workspace-header\s*\{[^}]*flex-wrap:\s*wrap/,
+        '页头在窄屏没有允许换行，会把导航挤出视口'
+      );
     });
 
     it('makes the nav scrollable rather than overflowing', function () {
       const block = /@media \(max-width: 900px\)[\s\S]*?\n\}/.exec(css);
-      assert.match(block[0], /\.kv-workbench \.workspace-nav\s*\{[^}]*overflow-x:\s*auto/, '导航没有横向滚动兜底');
+      assert.match(block[0], /\.workspace-nav\s*\{[^}]*overflow-x:\s*auto/, '导航没有横向滚动兜底');
     });
   });
 
   describe('touch targets meet the 44px floor', function () {
-    // 统一规则放在 mobile-refactor.css（9 个页面最后加载的那张），
-    // 首页因为不加载它，规则写在 workbench.css。
-    it('mobile-refactor covers bare buttons as a fallback', function () {
-      const css = read('mobile-refactor.css');
-      // webdav 的按钮是裸 <button> 或只挂颜色类，枚举具体类名必然漏
+    // 触摸目标现在有两个来源：已迁移到 .btn 的页面由 ui-buttons.css 负责，
+    // 尚未迁移的后台页仍靠 mobile-refactor.css 的兜底。
+    // 首页不加载 mobile-refactor.css，规则写在 workbench.css。
+    it('ui-buttons.css gives migrated buttons the 44px floor', function () {
+      const css = read('ui-buttons.css');
       assert.match(
         css,
-        /^\s*button,\s*$/m,
-        'mobile-refactor.css 没有裸 button 兜底规则；webdav 等页面会漏掉'
+        /@media \(max-width: 768px\)[\s\S]*?\.btn\s*\{[^}]*min-height:\s*44px/,
+        'ui-buttons.css 没有在窄屏把 .btn 抬到 44px；迁移后的页面会失去触摸下限'
+      );
+    });
+
+    it('mobile-refactor still covers bare buttons as a fallback', function () {
+      const css = read('mobile-refactor.css');
+      // 后台页仍有裸 <button>，枚举具体类名必然漏。
+      // 已挂 .btn 的排除在外 —— 它们的高度由 ui-buttons.css 定义，
+      // 再补一条 !important 会让两处来源互相打架。
+      assert.match(
+        css,
+        /^\s*button:not\(\.btn\),\s*$/m,
+        'mobile-refactor.css 缺少裸 button 兜底规则（应为 button:not(.btn)）；未迁移的页面会漏掉'
       );
     });
 
@@ -79,11 +129,14 @@ describe('mobile layout contract', function () {
       assert.ok(Number(touch[1]) >= 480, `触摸目标断点是 ${touch[1]}px，太小——平板竖屏（768）也会用触摸`);
     });
 
-    it('workbench defines its own targets since index.html skips mobile-refactor', function () {
+    it('the app shell carries its own touch targets for the pages that skip mobile-refactor', function () {
+      // index.html 不加载 mobile-refactor.css（避免两处规则重复），
+      // 所以它用到的页头元素必须自己带 44px 下限。顶栏现在由四个分区共用，
+      // 这份规则随之落在 app-shell.css —— 任一分区都不会漏。
       const html = read('index.html');
       assert.doesNotMatch(html, /mobile-refactor\.css/, 'index.html 现在加载了 mobile-refactor.css，两处规则会重复');
-      const css = read('workbench.css');
-      assert.match(css, /\.kv-workbench :is\(\.upload-btn[\s\S]{0,120}min-height:\s*44px/, 'workbench.css 缺少触摸目标规则');
+      const css = read('app-shell.css');
+      assert.match(css, /\.workspace-nav a,[\s\S]{0,80}\.workspace-tool\s*\{[\s\S]{0,80}min-height:\s*44px/, 'app-shell.css 缺少页头的触摸目标规则');
     });
   });
 

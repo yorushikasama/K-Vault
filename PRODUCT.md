@@ -6,11 +6,11 @@ product
 
 ## Users
 
-Self-hosters and small teams who run K-Vault as their own image/file hosting and paste service. They arrive to do one concrete job: upload a file or image, get a link, and later browse, manage, block, or delete what they stored. The admin surfaces (dashboard, WebDAV, waterfall gallery, token management) are used by the operator, not the public.
+Self-hosters and small teams who run YoruVault as their own image/file hosting and paste service. They arrive to do one concrete job: upload a file or image, get a link, and later browse, manage, block, or delete what they stored. The admin surfaces (dashboard, WebDAV, waterfall gallery, token management) are used by the operator, not the public.
 
 ## Product Purpose
 
-K-Vault is a file/image host that runs on Cloudflare Pages or as a self-hosted Node server, backed by pluggable storage (S3, R2, GitHub, Discord, Telegram, Hugging Face, WebDAV). Success is: the upload/link flow is fast and obvious, the management surfaces are legible under real data density, and the whole thing looks like a deliberate tool rather than a generated template.
+YoruVault is a file/image host that runs on Cloudflare Pages or as a self-hosted Node server, backed by pluggable storage (S3, R2, GitHub, Discord, Telegram, Hugging Face, WebDAV). Success is: the upload/link flow is fast and obvious, the management surfaces are legible under real data density, and the whole thing looks like a deliberate tool rather than a generated template.
 
 ## Brand Personality
 

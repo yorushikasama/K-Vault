@@ -6,7 +6,7 @@ This guide fixes deployments that fail after assets upload with:
 Error: Failed to publish your Function. Got error: binding R2_BUCKET of type r2_bucket contains an invalid jurisdiction
 ```
 
-The failure happens before K-Vault code runs. Cloudflare Pages is validating the `R2_BUCKET` binding metadata and rejects a bad `jurisdiction` value.
+The failure happens before YoruVault code runs. Cloudflare Pages is validating the `R2_BUCKET` binding metadata and rejects a bad `jurisdiction` value.
 
 ## Fast Fix
 
@@ -54,7 +54,7 @@ npm run pages:r2:doctor -- --check
 
 ## S3-Compatible Fallback
 
-If you cannot repair the native Pages R2 binding, remove the `R2_BUCKET` binding and use K-Vault's S3-compatible storage mode with Cloudflare R2 credentials:
+If you cannot repair the native Pages R2 binding, remove the `R2_BUCKET` binding and use YoruVault's S3-compatible storage mode with Cloudflare R2 credentials:
 
 | Variable | Value |
 | :--- | :--- |

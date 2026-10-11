@@ -3,37 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>文件预览 | K-Vault</title>
+  <title>文件预览 | YoruVault</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/logo.png">
   <link rel="shortcut icon" href="/favicon.ico">
   <!-- 增强预览引擎按需从 unpkg 加载：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
-  <link rel="stylesheet" href="/theme.css?v=74c7ad38da">
-  <link rel="stylesheet" href="/preview.css?v=8078913955">
-  <link rel="stylesheet" href="/mobile-refactor.css?v=545252aefa">
+  <link rel="stylesheet" href="/theme.css?v=4551e107c6">
+  <link rel="stylesheet" href="/ui-buttons.css?v=1b5c5edaa7">
+  <link rel="stylesheet" href="/preview.css?v=88d76789c1">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=a868ed831f">
   <!-- 预览页此前是全站唯一没加载 theme-core.js 的页面。没有它就没有
        ThemeManager，data-theme 永远是 null，于是 preview.css 里
        html[data-theme="dark"] 的规则一条都不会命中——夜间模式在这里完全
        失效（实测两模式 body 背景同色）。它必须同步放在 <head>：首帧前把
        data-theme 写到 <html> 上，延后会闪一下白屏。 -->
-  <script src="/theme-core.js?v=4cb852886e"></script>
-  <script defer src="/theme-effects.js?v=9dbb416bad"></script>
+  <script src="/theme-core.js?v=6a9f70f021"></script>
+  <script src="/accent-color.js?v=35dbe085ce"></script>
+  <script defer src="/theme-effects.js?v=3df8ef36e3"></script>
 </head>
 <body>
   <div class="shell">
     <header class="topbar">
       <div class="title-group">
         <h1>文件预览</h1>
-        <p id="subtitle">K-Vault 本地预览器</p>
+        <p id="subtitle">YoruVault 本地预览器</p>
       </div>
       <div class="actions">
-        <button class="btn" type="button" data-theme-toggle aria-label="切换主题">
+        <button class="btn btn-ghost" type="button" data-theme-toggle aria-label="切换主题">
           <i data-lucide="moon" data-theme-icon aria-hidden="true"></i><span data-theme-label>夜间</span>
         </button>
-        <button class="btn" type="button" id="copyBtn">复制直链</button>
-        <button class="btn" type="button" id="openBtn">新标签打开</button>
-        <button class="btn primary" type="button" id="downloadBtn">下载文件</button>
+        <button class="btn btn-ghost" type="button" id="copyBtn">复制直链</button>
+        <button class="btn btn-ghost" type="button" id="openBtn">新标签打开</button>
+        <button class="btn btn-primary" type="button" id="downloadBtn">下载文件</button>
       </div>
     </header>
 
@@ -350,7 +352,7 @@
       }
 
       function updateHeader() {
-        document.title = `${state.fileName} | K-Vault`;
+        document.title = `${state.fileName} | YoruVault`;
         els.fileName.textContent = state.fileName;
         els.fileType.textContent = displayTypeName(state.kind, state.extension);
         els.subtitle.textContent = state.fileUrl;
@@ -931,7 +933,7 @@
         if (!LOCAL_ARCHIVE_EXTS.has(ext)) {
           renderCapabilitySummary({
             title: "压缩包已识别",
-            detail: "此压缩格式已进入增强预览候选。增强引擎不可用时，K-Vault 不会在本地回退模式整包下载解析，避免大文件阻塞浏览器。",
+            detail: "此压缩格式已进入增强预览候选。增强引擎不可用时，YoruVault 不会在本地回退模式整包下载解析，避免大文件阻塞浏览器。",
             category: "归档容器",
             notes: [["策略", "ZIP/JAR/TAR/TAR.GZ 可本地读取目录。"], ["建议", "RAR、7Z、XZ、ZST 等格式使用增强预览或下载到本地工具打开。"]]
           });
@@ -1136,7 +1138,7 @@
         if (!response.ok) throw new Error(`字体读取失败：HTTP ${response.status}`);
         const blob = await response.blob();
         const objectUrl = URL.createObjectURL(blob);
-        const family = `KVaultPreviewFont${Date.now()}`;
+        const family = `YoruVaultPreviewFont${Date.now()}`;
 
         try {
           const face = new FontFace(family, `url(${objectUrl})`);
@@ -1154,7 +1156,7 @@
         page.appendChild(createDataSummary([
           ["格式", state.extension.toUpperCase()],
           ["大小", state.fileSize > 0 ? formatSize(state.fileSize) : "未知"],
-          ["来源", "K-Vault 文件直链"],
+          ["来源", "YoruVault 文件直链"],
           ["状态", "已加载"]
         ]));
 
@@ -1163,7 +1165,7 @@
         sample.style.fontFamily = `"${family}", sans-serif`;
         const large = document.createElement("p");
         large.className = "font-large";
-        large.textContent = "K-Vault 文件预览 0123456789";
+        large.textContent = "YoruVault 文件预览 0123456789";
         const body = document.createElement("p");
         body.className = "font-body";
         body.textContent = "中文样张：轻量、清晰、可审阅。英文字符样张：Aa Bb Cc 0123456789。";
@@ -1431,7 +1433,7 @@
             match: ["dwg", "dxf", "dwf", "dwfx", "xps"],
             title: "工程图纸已识别",
             category: "工程图纸（CAD/DWF）",
-            detail: "K-Vault 已识别工程图纸类型。当前轻量预览提供安全摘要，完整矢量/图层渲染建议后续接入专用 CAD 渲染器。",
+            detail: "YoruVault 已识别工程图纸类型。当前轻量预览提供安全摘要，完整矢量/图层渲染建议后续接入专用 CAD 渲染器。",
             notes: [["边界", "不在浏览器里执行不可信二进制指令。"], ["建议", "业务侧优先提供 PDF、DXF 或受控 CAD 预览服务。"]]
           },
           {
@@ -1503,7 +1505,7 @@
         return found || {
           title: "文件类型已识别",
           category: "其他文件",
-          detail: "当前格式暂未提供高保真在线渲染，K-Vault 会保留下载和直链能力。",
+          detail: "当前格式暂未提供高保真在线渲染，YoruVault 会保留下载和直链能力。",
           notes: [["下一步", "可按真实业务样本补充专用预览链路。"], ["安全", "未知格式不会在预览页执行。"]]
         };
       }

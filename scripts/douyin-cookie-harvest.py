@@ -1,4 +1,4 @@
-"""K-Vault 抖音游客 Cookie 抓取器。
+"""YoruVault 抖音游客 Cookie 抓取器。
 
 以服务器自身 IP 访问 douyin.com 抓游客 Cookie（无需登录账号），写成 Netscape
 cookies.txt 供 MEDIA_RESOLVE_COOKIES_FILE 使用。写入采用"验证通过才原子替换"：
@@ -6,7 +6,7 @@ cookies.txt 供 MEDIA_RESOLVE_COOKIES_FILE 使用。写入采用"验证通过才
 
 环境变量：
   DATA_DIR        Cookie 输出根目录（默认 /opt/k-vault/data）
-  KV_PROBE_URL    用于验证的抖音链接（默认本仓库 README 里的示例）
+  YV_PROBE_URL    用于验证的抖音链接（默认本仓库 README 里的示例）
 """
 
 import asyncio
@@ -26,7 +26,7 @@ CHROME_UA = (
 )
 DATA_DIR = os.environ.get("DATA_DIR", "/opt/k-vault/data")
 OUT = os.path.join(DATA_DIR, "cookies", "douyin.cookies.txt")
-PROBE_URL = os.environ.get("KV_PROBE_URL", "https://v.douyin.com/Mo-sO_XEbyg")
+PROBE_URL = os.environ.get("YV_PROBE_URL", "https://v.douyin.com/Mo-sO_XEbyg") or os.environ.get("KV_PROBE_URL", "https://v.douyin.com/Mo-sO_XEbyg")
 REQUIRED_COOKIES = {"ttwid", "s_v_web_id", "__ac_signature"}
 
 
@@ -123,7 +123,12 @@ def verify(path):
     r = subprocess.run(
         ["yt-dlp", "--no-playlist", "--no-config", "--no-warnings", "--no-progress",
          "--socket-timeout", "20", "--retries", "1", "--dump-single-json", "--skip-download",
-         "--add-header", "Referer: https://www.douyin.com/",
+         # 必须与 media-resolve-service 发出的请求头一致：详情接口在 Argus 网关后面，
+         # 它只对自称来自开放平台的请求免签名。这里若沿用 www.douyin.com 的 Referer，
+         # 验证会永远失败（网关返回 403 "Uifid Not Found"），于是每次续期都保留旧文件、
+         # 好 Cookie 永远换不上 —— 2026-10-10 实测就是这个症状。
+         "--add-header", "Referer: https://open.douyin.com/",
+         "--add-header", "Origin: https://open.douyin.com",
          "--cookies", path, probe],
         capture_output=True, text=True, timeout=120,
     )

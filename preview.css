@@ -12,8 +12,6 @@
       --brand: var(--ui-brand);
       --brand-dark: var(--ui-brand-active);
       --danger: var(--ui-danger);
-      --code-bg: #101828;
-      --code-text: #e6edf3;
       --shadow: var(--ui-elev-1);
       /* 放映台底色：嵌入模式专用，不随主题翻转 */
       --ui-stage: #070b12;
@@ -83,43 +81,16 @@
       justify-content: flex-end;
     }
 
-    .btn {
-      appearance: none;
-      border: 1px solid var(--line);
-      /* 原先写死 #fff：夜间模式下白底配浅色文字，对比度只有 1.2:1，
-         按钮几乎读不出来。改用面板色，随主题一起翻。 */
-      background: var(--panel);
-      color: var(--text);
-      min-height: 36px;
-      padding: 7px 12px;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      white-space: nowrap;
+    /* 按钮视觉定义已统一到 ui-buttons.css。
+
+       本页原先自带一套 .btn / .btn.primary —— 与统一层的类名撞了。
+       两套同名规则里，通用层负责外观（配色、尺寸、圆角、悬停、焦点环），
+       页面只保留自己的布局：这一页的按钮排在一行工具栏里，不撑满宽度。 */
+    .actions .btn {
+      flex: 0 0 auto;
     }
 
-    .btn:hover {
-      border-color: #b8c2cc;
-      background: #f8fafc;
-    }
-
-    .btn.primary {
-      background: var(--brand);
-      /* 品牌实心按钮上的文字用 --ui-brand-ink：它随主题翻转（亮色下白字、
-         夜间青绿底配深字）。写死 #fff 会在夜间变成浅底浅字。 */
-      color: var(--ui-brand-ink);
-      border-color: var(--brand);
-    }
-
-    .btn.primary:hover {
-      background: var(--brand-dark);
-      border-color: var(--brand-dark);
-    }
-
+    /* 文件面板下方的次要动作区，窄屏时按钮各占一行。 */
     .file-panel {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
@@ -404,13 +375,6 @@
       min-height: 100vh;
     }
 
-    /* 预览器自己的私有 token（代码块配色），底色/文字/线条一律引用全局权威层。 */
-    :root {
-      --code-bg: #0c1220;
-      --code-text: #e7eef8;
-      --accent: #f59e0b;
-    }
-
     body {
       background: var(--ui-canvas);
     }
@@ -436,12 +400,6 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-    }
-
-    .btn {
-      border-radius: var(--radius-sm);
-      font-weight: 650;
-      box-shadow: none;
     }
 
     .file-panel {
@@ -865,34 +823,23 @@
       --brand: var(--ui-brand);
       --brand-dark: var(--ui-brand-hover);
       --danger: var(--ui-danger);
-      --code-bg: #101828;
-      --code-text: #e6edf3;
       --shadow: var(--ui-elev-1);
-      --accent: var(--ui-brand-soft);
     }
 
-    /* 预览页的品牌是青绿而非主站的紫：只改品牌这几个 token，语义色、表面、
-       文字全部沿用全局。两套主题都成立，所以放在 :root 里。 */
+    /* 预览器自己的私有 token 只有代码块配色（它跟正文底色无关，属于内容
+       语义，不跟着壁纸走）。底色/文字/线条一律引用全局权威层，见文件顶部。
+       这里原先还有一条 --accent: #f59e0b（琥珀）—— 本页从未消费它，而它
+       与"品牌强调色"同名却是完全无关的语义。同名两义正是配色分叉的起点，
+       删掉；需要强调色时用 --ui-brand*。
+       本页也曾自己钉一套青绿品牌色（亮 #0f8f8a / 夜间 #5eead4），理由是
+       "预览页与主站要区分开"。但全站现在没有主题色 —— 强调色是壁纸算出来
+       的，页面之间共用同一套推导才能保证跳转时观感连续。 */
     :root {
-      --ui-brand: #0f8f8a;
-      --ui-brand-hover: #0a6f6b;
-      --ui-brand-active: #085c58;
-      --ui-brand-ink: #ffffff;
-      --ui-brand-soft: rgba(15, 143, 138, 0.12);
-      --ui-brand-soft-hover: rgba(15, 143, 138, 0.2);
-      --ui-brand-ring: rgba(15, 143, 138, 0.4);
+      --code-bg: #f6f8fa;
+      --code-text: #1f2328;
     }
 
-    /* 夜间：只换值、不换规则。这是本文件第一处深色支持。 */
     html[data-theme="dark"] {
-      --ui-brand: #5eead4;
-      --ui-brand-hover: #99f6e4;
-      --ui-brand-active: #2dd4bf;
-      --ui-brand-ink: #04211f;
-      --ui-brand-soft: rgba(94, 234, 212, 0.14);
-      --ui-brand-soft-hover: rgba(94, 234, 212, 0.22);
-      --ui-brand-ring: rgba(94, 234, 212, 0.5);
-
       --code-bg: #010409;
       --code-text: #e6edf3;
     }
@@ -914,21 +861,6 @@
       min-height: 64px;
       border-bottom-color: rgba(15, 143, 138, 0.16);
       background: var(--ui-surface);
-    }
-
-    .btn {
-      border-radius: var(--radius-sm);
-      box-shadow: none;
-    }
-
-    .btn.primary {
-      background: var(--brand);
-      border-color: var(--brand);
-    }
-
-    .btn.primary:hover {
-      background: var(--brand-dark);
-      border-color: var(--brand-dark);
     }
 
     .file-panel,
@@ -1118,8 +1050,8 @@
         justify-content: stretch;
       }
 
-      .btn {
-        flex: 1;
+      .actions .btn {
+        flex: 1 1 auto;
         min-width: 0;
       }
 

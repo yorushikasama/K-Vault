@@ -55,7 +55,7 @@ ensure_secret() {
   generated="$(node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))")"
   export "$key=$generated"
   save_runtime_value "$key" "$generated"
-  echo "[k-vault] Generated persistent ${key} in ${RUNTIME_ENV}."
+  echo "[yoruvault] Generated persistent ${key} in ${RUNTIME_ENV}."
 }
 
 ensure_secret CONFIG_ENCRYPTION_KEY

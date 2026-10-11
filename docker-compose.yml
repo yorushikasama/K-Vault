@@ -1,7 +1,7 @@
 services:
-  k-vault:
-    image: ${KVAULT_IMAGE:-ghcr.io/katelya77/k-vault:latest}
-    container_name: kvault
+  yoruvault:
+    image: ${YORUVAULT_IMAGE:-${KVAULT_IMAGE:-ghcr.io/katelya77/k-vault:latest}}
+    container_name: yoruvault
     env_file:
       - path: .env
         required: false
@@ -19,7 +19,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: kvault-redis
+    container_name: yoruvault-redis
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - kvault_redis:/data

@@ -5,22 +5,22 @@ remote-ssh.py executes as the login user, so anything that needs root
 (journalctl for the service unit, the deploy script) fails with
 "sudo: a password is required" unless the password is piped in.
 
-Password comes from KV_SSH_PASSWORD only, never argv.
+Password comes from YV_SSH_PASSWORD only, never argv.
 """
 import os
 import sys
 
 import paramiko
 
-HOST = os.environ.get("KV_SSH_HOST", "103.117.139.31")
-USER = os.environ.get("KV_SSH_USER", "wbadmin")
-PASSWORD = os.environ.get("KV_SSH_PASSWORD", "")
-PORT = int(os.environ.get("KV_SSH_PORT", "22"))
+HOST = os.environ.get("YV_SSH_HOST", "103.117.139.31") or os.environ.get("KV_SSH_HOST", "103.117.139.31")
+USER = os.environ.get("YV_SSH_USER", "wbadmin") or os.environ.get("KV_SSH_USER", "wbadmin")
+PASSWORD = os.environ.get("YV_SSH_PASSWORD", "") or os.environ.get("KV_SSH_PASSWORD", "")
+PORT = int(os.environ.get("YV_SSH_PORT", "22") or os.environ.get("KV_SSH_PORT", "22"))
 
 
 def main() -> int:
     command = sys.argv[1] if len(sys.argv) > 1 else "echo ok"
-    timeout = int(os.environ.get("KV_SSH_TIMEOUT", "180"))
+    timeout = int(os.environ.get("YV_SSH_TIMEOUT", "180") or os.environ.get("KV_SSH_TIMEOUT", "180"))
 
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())

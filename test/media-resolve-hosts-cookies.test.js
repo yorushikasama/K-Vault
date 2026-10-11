@@ -118,3 +118,56 @@ describe('selectCookiesFile', function () {
     assert.strictEqual(service.selectCookiesFile('m.youtube.com'), '/jars/yt-suffix.txt');
   });
 });
+
+// Douyin's detail endpoint sits behind the Argus gateway, which demands a
+// signature only the obfuscated script on www.douyin.com can compute. It waives
+// that for requests presenting themselves as Douyin's open platform, so the
+// Referer/Origin pair is what decides between 403 and a working extraction.
+// Measured 2026-10-10 on the self-hosted server: plain www Referer -> 403
+// "Blocked by ArgusSecurityPlugin Uifid Not Found"; the open-platform pair ->
+// 200 with the full detail JSON and 36 formats.
+describe('douyin requests present as the open platform', function () {
+  const service = serviceWith({});
+
+  function headersFor(url) {
+    const args = service.buildCommonArgs(url);
+    return args.reduce((acc, arg, i) => {
+      if (args[i - 1] === '--add-header') acc.push(arg);
+      return acc;
+    }, []);
+  }
+
+  it('sends the open-platform Referer and Origin for douyin hosts', function () {
+    for (const url of [
+      'https://www.douyin.com/video/7694243067632565219',
+      'https://v.douyin.com/MBWZgG2rNWE/',
+      'https://www.iesdouyin.com/share/video/7694243067632565219/',
+    ]) {
+      const headers = headersFor(url);
+      assert.ok(
+        headers.includes('Referer: https://open.douyin.com/'),
+        `${url} 缺少 open.douyin.com Referer —— 详情接口会撞 Argus 网关 403`
+      );
+      assert.ok(
+        headers.includes('Origin: https://open.douyin.com'),
+        `${url} 缺少 open.douyin.com Origin —— 网关只认这一对`
+      );
+    }
+  });
+
+  it('no longer sends the www.douyin.com Referer that the gateway now blocks', function () {
+    // 2026-09-29 的旧修法（Referer: www.douyin.com）在当时有效，Argus 上线后
+    // 反而会触发 403。它是被替换掉的，不是叠加的。
+    const headers = headersFor('https://www.douyin.com/video/7694243067632565219');
+    assert.ok(
+      !headers.includes('Referer: https://www.douyin.com/'),
+      '旧的 www.douyin.com Referer 又回来了，它会撞 Argus 网关 403'
+    );
+  });
+
+  it('leaves other hosts untouched', function () {
+    for (const url of ['https://www.bilibili.com/video/BV1GJ411x7h7', 'https://example.com/v/1']) {
+      assert.deepStrictEqual(headersFor(url), [], `${url} 不该带上抖音专用请求头`);
+    }
+  });
+});

@@ -2,13 +2,15 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert');
 const { createApp } = require('../server/app');
+const { removeTmpDir } = require('./helpers/sweep-test-dirs');
+const { makeScratchDir } = require('./helpers/scratch-dir');
 
 describe('Admin API fail-closed security (Docker)', function () {
   const originalEnv = { ...process.env };
   let tmpDir;
 
   beforeEach(function () {
-    tmpDir = path.join(__dirname, '..', 'data', `tmp-admin-sec-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    tmpDir = makeScratchDir('admin-sec');
     fs.mkdirSync(tmpDir, { recursive: true });
 
     process.env.CONFIG_ENCRYPTION_KEY = 'admin_sec_key_123456';
@@ -31,6 +33,7 @@ describe('Admin API fail-closed security (Docker)', function () {
     for (const [key, value] of Object.entries(originalEnv)) {
       process.env[key] = value;
     }
+    removeTmpDir(tmpDir);
   });
 
   const adminRoutes = [
@@ -77,7 +80,7 @@ describe('Admin API fail-closed security (Docker)', function () {
     }));
     assert.strictEqual(createResponse.status, 201);
     const createPayload = await createResponse.json();
-    assert.ok(String(createPayload.token || '').startsWith('kvault_'));
+    assert.ok(String(createPayload.token || '').startsWith('yoruvault_'));
 
     const listResponse = await app.fetch(new Request('http://localhost/api/admin/tokens', {
       headers: { Authorization: authHeader },

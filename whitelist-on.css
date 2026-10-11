@@ -76,23 +76,6 @@
     text-decoration: underline;
   }
   
-  .back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 24px;
-    background: var(--ui-brand);
-    color: white;
-    border: none;
-    border-radius: var(--ui-radius-sm);
-    font-size: 0.95em;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 180ms ease-out;
-    text-decoration: none;
-    margin-bottom: 24px;
-  }
-  
-  .back-btn:hover {
-    background: var(--ui-brand-active);
-  }
+  /* 按钮已改用 ui-buttons.css 的 .btn .btn-primary。
+     原先这里写死 color: white —— 统一层的 --ui-brand-ink 会在夜间
+     翻成深色，因为暗色下 --ui-brand 是浅紫。 */

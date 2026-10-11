@@ -3,19 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>K-Vault | 管理后台</title>
+  <title>YoruVault | 管理后台</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/logo.png">
   <link rel="shortcut icon" href="/favicon.ico">
   <!-- Vue / Element / Sentry 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://js.sentry-cdn.com" crossorigin>
-  <link rel="stylesheet" href="/theme.css?v=74c7ad38da">
-  <script src="/theme-core.js?v=4cb852886e"></script>
-  <script defer src="/theme-effects.js?v=9dbb416bad"></script>
+  <link rel="stylesheet" href="/theme.css?v=4551e107c6">
+  <script src="/theme-core.js?v=6a9f70f021"></script>
+  <script src="/accent-color.js?v=35dbe085ce"></script>
+  <script defer src="/theme-effects.js?v=3df8ef36e3"></script>
   <!-- Import CSS -->
-  <link rel="stylesheet" href="./admin-imgtc.css?v=3cfcf78f74">
-  <link rel="stylesheet" href="/mobile-refactor.css?v=545252aefa">
+  <link rel="stylesheet" href="./admin-imgtc.css?v=714197462d">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=a868ed831f">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css" integrity="sha384-ZUOUQ+hNJ+DV4HfNwHNFq4PcclqayiUDpCMsWD1lOpUQZ/go0ofwD/GLaYdzOcdx" crossorigin="anonymous" referrerpolicy="no-referrer">
   <!-- Sentry loader 故意不加 SRI：这个脚本内容随项目配置变化（采样率、集成项），钉死哈希会在后台改配置时把它整个拦掉。 -->
   <script src="https://js.sentry-cdn.com/219f636ac7bde5edab2c3e16885cb535.min.js" crossorigin="anonymous"></script>
@@ -278,9 +279,9 @@
     </div>
   </div>
   <el-footer class="footer">
-          <div>Powered By K-Vault</div>
+          <div>Powered By YoruVault</div>
           <a href="https://github.com/katelya77/K-Vault" target="_blank" rel="noopener noreferrer">
-            <div><kv-icon name="fab fa-github"></kv-icon> K-Vault</div>
+            <div><kv-icon name="fab fa-github"></kv-icon> YoruVault</div>
           </a>
         </el-footer>
       </el-main>

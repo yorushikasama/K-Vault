@@ -149,6 +149,7 @@ function applyCorsToResponse(response, corsHeaders) {
 }
 
 function extractTokenId(tokenValue) {
-  const match = /^kvault_([A-Za-z0-9_-]{6,128})_/.exec(String(tokenValue || '').trim());
+  // 新旧前缀都收：旧令牌（kvault_…）在轮换前仍需正常鉴权。
+  const match = /^(?:yoruvault|kvault)_([A-Za-z0-9_-]{6,128})_/.exec(String(tokenValue || '').trim());
   return match ? match[1] : '';
 }

@@ -2,6 +2,8 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
 const { createApp } = require('../server/app');
+const { removeTmpDir } = require('./helpers/sweep-test-dirs');
+const { makeScratchDir } = require('./helpers/scratch-dir');
 const { initDatabase } = require('../server/db');
 const { loadConfig } = require('../server/lib/config');
 const { FileRepository } = require('../server/lib/repos/file-repo');
@@ -12,7 +14,7 @@ describe('Docker runtime API v1 parity', function () {
   let tmpDir;
 
   beforeEach(function () {
-    tmpDir = path.join(__dirname, '..', 'data', `tmp-docker-api-v1-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    tmpDir = makeScratchDir('docker-api-v1');
     fs.mkdirSync(tmpDir, { recursive: true });
 
     process.env.CONFIG_ENCRYPTION_KEY = 'docker_api_v1_key_123456';
@@ -35,6 +37,7 @@ describe('Docker runtime API v1 parity', function () {
     for (const [key, value] of Object.entries(originalEnv)) {
       process.env[key] = value;
     }
+    removeTmpDir(tmpDir);
   });
 
   async function expectStatus(response, status) {

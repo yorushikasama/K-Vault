@@ -170,7 +170,7 @@ function renderJsonc(config, options) {
   }
 
   const lines = [
-    '// Cloudflare Pages configuration for K-Vault.',
+    '// Cloudflare Pages configuration for YoruVault.',
     '// Keep this file in sync with the Pages dashboard. When present, it becomes the source of truth for these settings.',
   ];
 
@@ -257,7 +257,7 @@ function validateConfig(config) {
 
   const kvBindings = Array.isArray(config.kv_namespaces) ? config.kv_namespaces : [];
   if (!kvBindings.some((binding) => binding && binding.binding === 'img_url')) {
-    issues.push('img_url KV binding is not present. K-Vault image metadata and UI config need this binding.');
+    issues.push('img_url KV binding is not present. YoruVault image metadata and UI config need this binding.');
   }
 
   return issues;

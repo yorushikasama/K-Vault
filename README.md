@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="logo.png" alt="K-Vault Logo" width="140">
+<img src="logo.png" alt="YoruVault Logo" width="140">
 
-# K-Vault
+# YoruVault
 
 > 免费图片/文件托管解决方案，支持 Cloudflare Pages + Docker 双模部署，并兼容多种存储后端
 
@@ -58,7 +58,7 @@
 
 ## 部署方式
 
-K-Vault 只保留两类正式部署方式：
+YoruVault 只保留两类正式部署方式：
 
 1. **Cloudflare Pages 部署**：使用 Cloudflare Pages 静态页面 + Pages Functions，适合免费额度、边缘函数、Cloudflare KV/R2 场景。
 2. **Docker 部署**：使用单镜像 `ghcr.io/katelya77/k-vault:latest`，适合 VPS/NAS/内网部署，也适合 WebDAV、S3、GitHub、HuggingFace 等多存储后端长期自托管。
@@ -137,7 +137,7 @@ npm run pages:deploy -- --project-name <你的 Pages 项目名>
 - `The detected framework ("Hono") cannot be automatically configured`：把 Pages 项目误配成了 `npx wrangler deploy`。删除 Deploy command，使用上表的 Pages 构建设置。
 - 部署后出现旧版 landing 首页或进不了上传页：确认 Build command 和 Build output directory 都是留空，不要填 `npm run build` 或 `frontend/dist`。
 - 构建成功但页面 404：Build output directory 不应填写 `dist` 或 `frontend/dist`，留空即可发布仓库根目录页面。
-- R2 `invalid jurisdiction`：这是 Cloudflare 绑定元数据问题，不是 K-Vault 上传代码问题，按 [Cloudflare Pages R2 绑定排查](docs/cloudflare-pages-r2.md) 处理。
+- R2 `invalid jurisdiction`：这是 Cloudflare 绑定元数据问题，不是 YoruVault 上传代码问题，按 [Cloudflare Pages R2 绑定排查](docs/cloudflare-pages-r2.md) 处理。
 
 ### 方式二：Docker 部署
 
@@ -150,7 +150,7 @@ npm run pages:deploy -- --project-name <你的 Pages 项目名>
 ```bash
 docker volume create kvault_data
 docker run -d \
-  --name kvault \
+  --name yoruvault \
   --restart unless-stopped \
   -p 8080:8080 \
   -v kvault_data:/app/data \
@@ -170,7 +170,7 @@ docker run -d \
 
 ```bash
 docker run -d \
-  --name kvault \
+  --name yoruvault \
   --restart unless-stopped \
   -p 8080:8080 \
   -v kvault_data:/app/data \
@@ -311,7 +311,7 @@ curl -X POST "http://127.0.0.1:8081/bot<YOUR_BOT_TOKEN>/setWebhook" \
 curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 ```
 
-3. 在群/频道发送图片或文件后，查看 Cloudflare Pages Functions 日志。K-Vault 的 webhook POST 响应会包含：
+3. 在群/频道发送图片或文件后，查看 Cloudflare Pages Functions 日志。YoruVault 的 webhook POST 响应会包含：
    - `directLink`：生成的 `/file/...` 链接
    - `reply.ok`：是否成功调用 `sendMessage`
    - `reply.reason`：失败时的 Telegram API 描述或跳过原因
@@ -519,7 +519,7 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 1. 在你的 WebDAV 服务端准备一个可写目录，并确认具备 `PUT/GET/DELETE/MKCOL` 权限。
 2. 在 Cloudflare Pages 项目中添加上述 `WEBDAV_*` 变量（认证方式二选一：`用户名+密码` 或 `Bearer Token`）。
 3. 重新部署后，访问 `/api/status` 检查 `webdav.connected` 与 `webdav.enabled`，或直接打开 `/webdav.html` 测试上传。
-4. Docker 自托管场景下，可以在管理后台新增 WebDAV 配置；如果通过 `.env` 填写变量，则重启容器（`docker compose up -d` 或 `docker restart kvault`）。
+4. Docker 自托管场景下，可以在管理后台新增 WebDAV 配置；如果通过 `.env` 填写变量，则重启容器（`docker compose up -d` 或 `docker restart yoruvault`）。
 
 **常见问题：**
 
@@ -958,13 +958,13 @@ curl -u admin:your_password -X POST http://127.0.0.1:8787/api/resolve-url \
 **Admin API 方式**（未配置 `BASIC_USER`/`BASIC_PASS` 时 admin API fail-closed，返回 503）：
 
 ```bash
-curl -X POST "https://your-kvault-domain/api/admin/tokens" \
+curl -X POST "https://your-yoruvault-domain/api/admin/tokens" \
   -u "$BASIC_USER:$BASIC_PASS" \
   -H "Content-Type: application/json" \
   -d '{"name":"blog-bot","scopes":["upload","read"],"policies":{"folderPrefix":"blog"}}'
 ```
 
-> ⚠️ **密钥仅此一次返回**：响应中的 `token` 字段即完整密钥（`kvault_<id>_<secret>`），创建后无法再次查看，请立即妥善保存。轮换（rotate）后旧密钥立即失效。
+> ⚠️ **密钥仅此一次返回**：响应中的 `token` 字段即完整密钥（`yoruvault_<id>_<secret>`），创建后无法再次查看，请立即妥善保存。轮换（rotate）后旧密钥立即失效。
 
 ### 2. 常用示例
 
@@ -1000,7 +1000,7 @@ curl -X POST https://your-kvault.com/api/v1/paste \
 ```bash
 kvault() {
   curl -s -X POST "https://your-kvault.com/api/v1/upload" \
-    -H "Authorization: Bearer $KVAULT_TOKEN" \
+    -H "Authorization: Bearer $YORUVAULT_TOKEN" \
     -F "file=@$1" | jq -r '.links.share'
 }
 # 使用: kvault screenshot.png
@@ -1031,7 +1031,7 @@ kvault() {
 
 ### 5. Token 体系与安全特性
 
-K-Vault 内置面向机器客户端（GitHub Actions、Coze Agent、ShareX、自动化脚本、未来 MCP Agent）的长期 API Token 体系，与网页登录态完全隔离。完整接入指南见 [docs/agent-integration.md](docs/agent-integration.md)，机器可读接口定义见 [docs/openapi.yaml](docs/openapi.yaml)。
+YoruVault 内置面向机器客户端（GitHub Actions、Coze Agent、ShareX、自动化脚本、未来 MCP Agent）的长期 API Token 体系，与网页登录态完全隔离。完整接入指南见 [docs/agent-integration.md](docs/agent-integration.md)，机器可读接口定义见 [docs/openapi.yaml](docs/openapi.yaml)。
 
 | 能力 | 说明 |
 | --- | --- |
@@ -1060,25 +1060,25 @@ K-Vault 内置面向机器客户端（GitHub Actions、Coze Agent、ShareX、自
 
 ### 7. 进阶示例：幂等与 URL 导入
 
-以下示例假设已导出环境变量 `KVAULT_API_TOKEN`（值为创建 Token 时保存的密钥），幂等键建议使用业务唯一标识（如内容哈希或文章编号）：
+以下示例假设已导出环境变量 `YORUVAULT_API_TOKEN`（值为创建 Token 时保存的密钥），幂等键建议使用业务唯一标识（如内容哈希或文章编号）：
 
 ```bash
 # 上传文件（≤25MB 重复内容自动去重）
-curl -X POST "https://your-kvault-domain/api/v1/upload" \
-  -H "Authorization: Bearer $KVAULT_API_TOKEN" \
+curl -X POST "https://your-yoruvault-domain/api/v1/upload" \
+  -H "Authorization: Bearer $YORUVAULT_API_TOKEN" \
   -H "Idempotency-Key: post-42-cover" \
   -F "file=@./photo.png" -F "storage=telegram" -F "folderPath=blog/2026"
 
 # 远程 URL 导入（内置 SSRF 防护）
-curl -X POST "https://your-kvault-domain/api/v1/import" \
-  -H "Authorization: Bearer $KVAULT_API_TOKEN" \
+curl -X POST "https://your-yoruvault-domain/api/v1/import" \
+  -H "Authorization: Bearer $YORUVAULT_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"url":"https://cdn.example.com/cover.jpg","storage":"r2"}'
 
 # 列出 / 查询 / 删除
-curl -H "Authorization: Bearer $KVAULT_API_TOKEN" "https://your-kvault-domain/api/v1/files?limit=50"
-curl -H "Authorization: Bearer $KVAULT_API_TOKEN" "https://your-kvault-domain/api/v1/file/<id>/info"
-curl -X DELETE -H "Authorization: Bearer $KVAULT_API_TOKEN" "https://your-kvault-domain/api/v1/file/<id>"
+curl -H "Authorization: Bearer $YORUVAULT_API_TOKEN" "https://your-yoruvault-domain/api/v1/files?limit=50"
+curl -H "Authorization: Bearer $YORUVAULT_API_TOKEN" "https://your-yoruvault-domain/api/v1/file/<id>/info"
+curl -X DELETE -H "Authorization: Bearer $YORUVAULT_API_TOKEN" "https://your-yoruvault-domain/api/v1/file/<id>"
 ```
 
 > 💡 重复携带同一 `Idempotency-Key` 的上传/导入会在 **24 小时内返回首次响应**（响应头 `Idempotency-Replayed: true`），网络抖动重试不会产生重复文件。
@@ -1111,13 +1111,13 @@ API_CORS_ORIGINS=https://app.example.com,https://dashboard.example.com
 
 ## 致谢 / Acknowledgements
 
-K-Vault 的早期实现与功能演进参考并受益于多个开源项目、社区讨论与用户反馈。
+YoruVault 的早期实现与功能演进参考并受益于多个开源项目、社区讨论与用户反馈。
 
-- [Telegraph-Image](https://github.com/cf-pages/Telegraph-Image)：K-Vault 早期 Serverless 图床形态的重要上游参考之一。
+- [Telegraph-Image](https://github.com/cf-pages/Telegraph-Image)：YoruVault 早期 Serverless 图床形态的重要上游参考之一。
 - [CloudFlare-ImgBed](https://github.com/MarSeventh/CloudFlare-ImgBed)：优秀的同类开源图床项目，对社区图床方案、多存储后端设计方向以及相关项目生态具有参考价值。
-- Linux.do 社区用户反馈：K-Vault 的多存储后端、Docker 部署形态、WebDAV 等功能方向，均受社区讨论与实际使用需求推动。
+- Linux.do 社区用户反馈：YoruVault 的多存储后端、Docker 部署形态、WebDAV 等功能方向，均受社区讨论与实际使用需求推动。
 
-K-Vault 并非对上述项目的简单复制，而是在相关开源生态、社区反馈和实际使用需求的基础上，逐步整理、扩展和实现的个人项目。感谢所有开源项目作者与社区用户的贡献和建议。
+YoruVault 并非对上述项目的简单复制，而是在相关开源生态、社区反馈和实际使用需求的基础上，逐步整理、扩展和实现的个人项目。感谢所有开源项目作者与社区用户的贡献和建议。
 
 ---
 

@@ -3,32 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>K-Vault | 文件工作台</title>
+  <title>YoruVault | 文件工作台</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/logo.png">
   <link rel="shortcut icon" href="/favicon.ico">
   <!-- Vue / Element / Sentry 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://js.sentry-cdn.com" crossorigin>
-  <link rel="stylesheet" href="/theme.css?v=74c7ad38da">
-  <script src="/theme-core.js?v=4cb852886e"></script>
-  <script defer src="/theme-effects.js?v=9dbb416bad"></script>
+  <link rel="stylesheet" href="/theme.css?v=4551e107c6">
+  <script src="/theme-core.js?v=6a9f70f021"></script>
+  <script src="/accent-color.js?v=35dbe085ce"></script>
+  <script defer src="/theme-effects.js?v=3df8ef36e3"></script>
+  <!-- 应用外壳（顶栏）四个分区共用，因此排在页面私有样式之前：
+       上传/文件/图库/WebDAV 的顶栏必须逐字一样，页面样式只负责内容区。 -->
+  <link rel="stylesheet" href="/app-shell.css?v=140b992d46">
   <!-- Import CSS -->
-  <link rel="stylesheet" href="./admin-imgtc.css?v=3cfcf78f74">
+  <link rel="stylesheet" href="./admin-imgtc.css?v=714197462d">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css" integrity="sha384-ZUOUQ+hNJ+DV4HfNwHNFq4PcclqayiUDpCMsWD1lOpUQZ/go0ofwD/GLaYdzOcdx" crossorigin="anonymous" referrerpolicy="no-referrer">
   <!-- Sentry loader 故意不加 SRI：这个脚本内容随项目配置变化（采样率、集成项），钉死哈希会在后台改配置时把它整个拦掉。 -->
   <script src="https://js.sentry-cdn.com/219f636ac7bde5edab2c3e16885cb535.min.js" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="/mobile-refactor.css?v=545252aefa">
-  <link rel="stylesheet" href="/admin.css?v=9b93a7fcc9">
-  <link rel="stylesheet" href="/workbench.css?v=c2b9e27113">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=a868ed831f">
+  <link rel="stylesheet" href="/admin.css?v=aa2cd75e81">
+  <link rel="stylesheet" href="/workbench.css?v=54e5bdb207">
 </head>
 <body class="kv-workbench kv-files">
   <div id="app" v-cloak>
     <el-container direction="vertical" class="files-shell">
-      <header class="workspace-header header-content" :inert="folderDrawerOpen && isMobileViewport ? '' : null">
-        <a class="workspace-brand" href="./" @click.prevent="goHome" aria-label="K-Vault 上传首页">
+      <header class="workspace-header" :inert="folderDrawerOpen && isMobileViewport ? '' : null">
+        <a class="workspace-brand" href="./" @click.prevent="goHome" aria-label="YoruVault 上传首页">
           <img src="/logo.png" alt="" width="32" height="32">
-          <span>K-Vault</span>
+          <span>YoruVault</span>
         </a>
         <nav class="workspace-nav" aria-label="全局导航">
           <a href="./">上传</a>
@@ -36,7 +40,7 @@
           <a href="./gallery.html">图库</a>
           <a href="./webdav.html">WebDAV</a>
         </nav>
-        <div class="workspace-tools actions">
+        <div class="workspace-tools">
           <el-dropdown @command="handleWebsite" trigger="click">
             <button type="button" class="workspace-tool"><kv-icon name="external-link"></kv-icon><span>快捷入口</span><kv-icon name="chevron-down"></kv-icon></button>
             <el-dropdown-menu slot="dropdown" class="files-menu">
@@ -397,9 +401,9 @@
           </section>
         </div>
   <el-footer class="footer">
-          <div>Powered By K-Vault</div>
+          <div>Powered By YoruVault</div>
           <a href="https://github.com/katelya77/K-Vault" target="_blank" rel="noopener noreferrer">
-            <div><kv-icon name="fab fa-github"></kv-icon> K-Vault</div>
+            <div><kv-icon name="fab fa-github"></kv-icon> YoruVault</div>
           </a>
         </el-footer>
       </el-main>
@@ -1519,7 +1523,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
           return;
         }
 
-        const header = (this.$el && this.$el.querySelector('.header-content')) || document.querySelector('.header-content');
+        const header = (this.$el && this.$el.querySelector('.workspace-header')) || document.querySelector('.workspace-header');
         if (!header) return;
 
         const rect = header.getBoundingClientRect();
@@ -1536,7 +1540,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         if (typeof ResizeObserver !== 'function') return;
         this.unobserveMobileNavHeight();
 
-        const header = (this.$el && this.$el.querySelector('.header-content')) || document.querySelector('.header-content');
+        const header = (this.$el && this.$el.querySelector('.workspace-header')) || document.querySelector('.workspace-header');
         if (!header) return;
 
         this.headerResizeObserver = new ResizeObserver(() => {
@@ -2387,7 +2391,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         document.body.classList.add('is-dragging-files');
         if (event && event.dataTransfer) {
           event.dataTransfer.effectAllowed = 'move';
-          event.dataTransfer.setData('application/x-kvault-files', JSON.stringify(ids));
+          event.dataTransfer.setData('application/x-yoruvault-files', JSON.stringify(ids));
           event.dataTransfer.setData('text/plain', ids.join(','));
           const dragGhost = document.createElement('div');
           dragGhost.textContent = ids.length > 1 ? `移动 ${ids.length} 个文件` : (item?.metadata?.fileName || item?.name || '移动文件');
@@ -2462,7 +2466,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
       },
       extractDragIds(event) {
         if (this.dragState.fileIds.length > 0) return this.dragState.fileIds;
-        const raw = event?.dataTransfer?.getData('application/x-kvault-files') || '';
+        const raw = event?.dataTransfer?.getData('application/x-yoruvault-files') || '';
         if (!raw) {
           const plain = event?.dataTransfer?.getData('text/plain') || '';
           return plain
@@ -2906,7 +2910,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
           : storageType === 's3' ? '#e6a23c'
           : storageType === 'discord' ? '#7289da'
           : storageType === 'huggingface' ? '#ff9d00'
-          : storageType === 'webdav' ? '#8f65ff'
+          : storageType === 'webdav' ? 'var(--ui-brand)'
           : storageType === 'github' ? '#24292f'
           : '#67c23a';
         const fileSize = metadata.fileSize ? this.formatFileSize(metadata.fileSize) : '未知';
@@ -2945,7 +2949,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
         };
         // 获取容器尺寸
         const content = document.querySelector('.disk-content') || document.querySelector('.content');
-        const header = document.querySelector('.header-content');
+        const header = document.querySelector('.workspace-header');
         const width = content?.clientWidth || config.defaultWidth;
         const height = window.innerHeight - (header?.offsetHeight || config.defaultHeaderHeight);
         // 计算行列数

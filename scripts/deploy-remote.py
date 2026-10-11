@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Deploy K-Vault to a remote host over SSH/SFTP.
+"""Deploy YoruVault to a remote host over SSH/SFTP.
 
 Used for updating the self-hosted instance. The password is read from the
-KV_SSH_PASSWORD environment variable, never argv, so it does not land in the
+YV_SSH_PASSWORD environment variable, never argv, so it does not land in the
 process table or shell history.
 
 Two modes:
 
     # Upload a local directory tree to a remote directory (recursive).
-    KV_SSH_PASSWORD=... python scripts/deploy-remote.py put <local> <remote>
+    YV_SSH_PASSWORD=... python scripts/deploy-remote.py put <local> <remote>
 
     # Run a command on the remote host.
-    KV_SSH_PASSWORD=... python scripts/deploy-remote.py run "<command>"
+    YV_SSH_PASSWORD=... python scripts/deploy-remote.py run "<command>"
 
 The upload preserves file permissions (so executables stay executable) and
 creates the remote directory if it does not exist. It never deletes anything on
@@ -25,10 +25,10 @@ import sys
 
 import paramiko
 
-HOST = os.environ.get("KV_SSH_HOST", "103.117.139.31")
-USER = os.environ.get("KV_SSH_USER", "wbadmin")
-PASSWORD = os.environ.get("KV_SSH_PASSWORD", "")
-PORT = int(os.environ.get("KV_SSH_PORT", "22"))
+HOST = os.environ.get("YV_SSH_HOST", "103.117.139.31") or os.environ.get("KV_SSH_HOST", "103.117.139.31")
+USER = os.environ.get("YV_SSH_USER", "wbadmin") or os.environ.get("KV_SSH_USER", "wbadmin")
+PASSWORD = os.environ.get("YV_SSH_PASSWORD", "") or os.environ.get("KV_SSH_PASSWORD", "")
+PORT = int(os.environ.get("YV_SSH_PORT", "22") or os.environ.get("KV_SSH_PORT", "22"))
 
 
 def connect() -> paramiko.SSHClient:
