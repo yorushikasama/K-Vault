@@ -342,6 +342,11 @@
       sortOption: 'dateDesc',
       filterOption: 'all',
       fileType: 'image',
+      // 失效检测（checkBrokenFiles）所需状态；pageDisposed 在 beforeDestroy 置位
+      pageDisposed: false,
+      brokenCheckSeq: 0,
+      brokenCheckController: null,
+      brokenCheckMessage: null,
       quickWebsites: [
         { name: '上传中心', url: './', icon: 'cloud-upload' },
         { name: '图片浏览', url: './gallery.html', icon: 'images' },
@@ -436,12 +441,17 @@
               formattedFileDetails(item) {
         const metadata = item.metadata;
         const timestamp = new Date(metadata.TimeStamp).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+        // 详情走 v-html 注入：文件名等元数据来自外部输入，必须转义，
+        // 否则一个带 <img onerror=…> 的文件名就能在后台执行脚本（admin.html 版有转义，此处此前漏了）。
+        const esc = (v) => String(v == null ? '' : v)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         return `
           <div style="text-align: left; padding: 5px;">
-            <div><strong>ID：</strong>${item.name}</div>
-            <div><strong>文件名：</strong>${metadata.fileName || item.name}</div>
-            <div><strong>上传时间：</strong>${timestamp}</div>
-            <div><strong>元数据：</strong>${JSON.stringify(metadata)}</div>
+            <div><strong>ID：</strong>${esc(item.name)}</div>
+            <div><strong>文件名：</strong>${esc(metadata.fileName || item.name)}</div>
+            <div><strong>上传时间：</strong>${esc(timestamp)}</div>
+            <div><strong>元数据：</strong>${esc(JSON.stringify(metadata))}</div>
           </div>
         `;
       },
@@ -627,35 +637,49 @@
         });
       },
       checkBrokenFiles() {  // 检测失效文件
-        const loadingMessage = this.$message({ message: '正在检测失效文件...', duration: 0});
+        // 与 admin.html 的重写版对齐：空列表直接提示、可取消（AbortController）、
+        // 按 item 记账。旧版用 tableData 下标去索引 selectedFiles[index].name，
+        // 未全选时 selectedFiles[index] 为 undefined，点按钮即 TypeError。
+        const targets = this.tableData.slice();
+        if (targets.length === 0) {
+          this.$message.info('当前没有可检测的已加载文件');
+          return;
+        }
+        this.cancelBrokenCheck();
+        const seq = ++this.brokenCheckSeq;
+        const controller = typeof AbortController === 'function' ? new AbortController() : null;
+        this.brokenCheckController = controller;
+        this.brokenCheckMessage = this.$message({ message: '正在检测失效文件...', duration: 0 });
 
         let brokenCount = 0;
-        const promises = this.tableData.map((item, index) => {
-          const fileIndex = this.tableData.findIndex(item => item.name === this.selectedFiles[index].name);
-          return new Promise((resolve) => {
-            fetch(`${this.baseURL}/file/${item.name}`, {
-              method: 'HEAD',
-              cache: 'no-cache'  // 避免缓存影响检测结果
-            })
-              .then(response => {
-                if (!response.ok) {
-                  brokenCount++;
-                  this.tableData[fileIndex].selected = true;
-                  resolve({ index, status: 'error' });
-                } else {
-                  resolve({ index, status: 'success' });
-                }
-              })
-              .catch(() => {
+        const promises = targets.map((item) => new Promise((resolve) => {
+          fetch(`${this.baseURL}/file/${item.name}`, {
+            method: 'HEAD',
+            cache: 'no-cache',  // 避免缓存影响检测结果
+            signal: controller ? controller.signal : undefined
+          })
+            .then(response => {
+              if (!response.ok) {
                 brokenCount++;
-                this.tableData[fileIndex].selected = true;
-                resolve({ index, status: 'error' });
-              });
-          });
-        });
+                item.selected = true;
+              }
+              resolve();
+            })
+            .catch(() => {
+              if (controller && controller.signal.aborted) { resolve(); return; }
+              brokenCount++;
+              item.selected = true;
+              resolve();
+            });
+        }));
 
         Promise.all(promises).then(() => {
-          loadingMessage.close();
+          if (seq !== this.brokenCheckSeq || this.pageDisposed) return;
+          this.brokenCheckController = null;
+          if (this.brokenCheckMessage) {
+            this.brokenCheckMessage.close();
+            this.brokenCheckMessage = null;
+          }
           if (brokenCount > 0) {
             this.$message({
               dangerouslyUseHTMLString: true,
@@ -670,6 +694,18 @@
             });
           }
         });
+      },
+      // 取消进行中的失效检测：范围切换或重新检测时调用，避免旧结果回填
+      cancelBrokenCheck() {
+        this.brokenCheckSeq += 1;
+        if (this.brokenCheckController) {
+          try { this.brokenCheckController.abort(); } catch { /* 请求已结束。 */ }
+          this.brokenCheckController = null;
+        }
+        if (this.brokenCheckMessage) {
+          this.brokenCheckMessage.close();
+          this.brokenCheckMessage = null;
+        }
       },
       // 处理网站点击
             // 编辑快捷方式
@@ -740,6 +776,8 @@
       }
     },
     beforeDestroy() {
+      this.pageDisposed = true;
+      this.cancelBrokenCheck();
       window.removeEventListener('resize', this.calculatePageSize);
     }
   });
