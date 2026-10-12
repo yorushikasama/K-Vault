@@ -14,6 +14,12 @@
   var LEGACY_LOGIN_MODE_KEY = "loginBackgroundMode";
   var LEGACY_LOGIN_URL_KEY = "loginBackgroundUrl";
   var API_ENDPOINT = "/api/ui-config";
+  // 只剩「无特效」与「纸纹」两档。math / particle 的 canvas 动画已删除：
+  // 它们画在 z-index:-2 的全屏画布上，而 body 是 var(--ui-page-bg) 不透明
+  // 背景（→ --ui-canvas → hsl(…,97%)），所以画出来的东西必然被整个盖住，
+  // 却是实打实的每秒 450 次 fillText。保留这两个键是为了让旧配置（存着
+  // "math"）不会因校验失败而被当成非法值丢弃 —— 它们会落到 else 分支，
+  // 也就是"无特效"。
   var EFFECT_STYLES = { none: true, math: true, particle: true, texture: true };
 
   var DEFAULTS = {
@@ -24,27 +30,14 @@
     loginBackgroundUrl: "",
     cardOpacity: 86,
     cardBlur: 14,
-    effectStyle: "math",
+    effectStyle: "none",
     effectIntensity: 22,
     optimizeMobile: true,
   };
 
   var root = document.documentElement;
   var settings = null;
-  var layers = { image: null, canvas: null, noise: null };
-  var render = {
-    ctx: null,
-    rafId: 0,
-    width: 0,
-    height: 0,
-    lastTs: 0,
-    style: "none",
-    intensity: 0,
-    mobile: false,
-    maxFps: 30,
-    symbols: [],
-    particles: [],
-  };
+  var layers = { image: null, noise: null };
 
   function cloneSettings(input) {
     return Object.assign({}, input || {});
@@ -392,13 +385,6 @@
     return byWidth || byTouch;
   }
 
-  function prefersReducedMotion() {
-    return (
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    );
-  }
-
   function ensureLayer(tagName, className) {
     var node = document.createElement(tagName);
     node.className = className;
@@ -410,232 +396,16 @@
     if (!document.body) return false;
 
     if (!layers.image) layers.image = ensureLayer("div", "ui-bg-image-layer");
-    if (!layers.canvas) layers.canvas = ensureLayer("canvas", "ui-bg-canvas-layer");
     if (!layers.noise) layers.noise = ensureLayer("div", "ui-bg-noise-layer");
 
     if (!document.body.contains(layers.image)) {
       document.body.insertBefore(layers.image, document.body.firstChild);
     }
-    if (!document.body.contains(layers.canvas)) {
-      document.body.insertBefore(layers.canvas, layers.image.nextSibling);
-    }
     if (!document.body.contains(layers.noise)) {
-      document.body.insertBefore(layers.noise, layers.canvas.nextSibling);
+      document.body.insertBefore(layers.noise, layers.image.nextSibling);
     }
 
-    if (!render.ctx) {
-      render.ctx = layers.canvas.getContext("2d", { alpha: true });
-    }
-
-    ensureCanvasSize();
     return true;
-  }
-
-  function ensureCanvasSize() {
-    if (!layers.canvas || !render.ctx) return;
-    var width = Math.max(window.innerWidth || 0, 1);
-    var height = Math.max(window.innerHeight || 0, 1);
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    var pixelWidth = Math.max(1, Math.floor(width * dpr));
-    var pixelHeight = Math.max(1, Math.floor(height * dpr));
-
-    if (layers.canvas.width !== pixelWidth || layers.canvas.height !== pixelHeight) {
-      layers.canvas.width = pixelWidth;
-      layers.canvas.height = pixelHeight;
-      layers.canvas.style.width = width + "px";
-      layers.canvas.style.height = height + "px";
-      render.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-
-    render.width = width;
-    render.height = height;
-  }
-
-  function clearCanvas() {
-    if (!render.ctx) return;
-    render.ctx.clearRect(0, 0, render.width || 0, render.height || 0);
-  }
-
-  function stopRender(shouldClear) {
-    if (render.rafId) {
-      cancelAnimationFrame(render.rafId);
-      render.rafId = 0;
-    }
-    render.lastTs = 0;
-    if (shouldClear) clearCanvas();
-  }
-
-  function getEffectNodeCount(intensity, mobile) {
-    var count = Math.round(8 + intensity * 0.32);
-    if (mobile) count = Math.max(5, Math.round(count * 0.35));
-    return Math.min(40, Math.max(4, count));
-  }
-
-  function buildMathSymbols(count, mobile) {
-    var chars = ["∑", "∫", "π", "√", "∞", "∆", "∂", "λ", "θ", "∇", "⊕", "≈", "µ"];
-    var symbols = [];
-    var i = 0;
-    for (i = 0; i < count; i += 1) {
-      symbols.push({
-        text: chars[Math.floor(Math.random() * chars.length)],
-        x: Math.random() * render.width,
-        y: Math.random() * render.height,
-        vx: (Math.random() - 0.5) * (mobile ? 7 : 11),
-        vy: (mobile ? 4 : 7) + Math.random() * (mobile ? 6 : 10),
-        size: (mobile ? 10 : 11) + Math.random() * (mobile ? 7 : 12),
-        alpha: (mobile ? 0.06 : 0.05) + Math.random() * (mobile ? 0.08 : 0.11),
-      });
-    }
-    render.symbols = symbols;
-  }
-
-  function buildParticles(count, mobile) {
-    var nodes = [];
-    var speed = mobile ? 11 : 16;
-    var i = 0;
-    for (i = 0; i < count; i += 1) {
-      nodes.push({
-        x: Math.random() * render.width,
-        y: Math.random() * render.height,
-        vx: (Math.random() - 0.5) * speed,
-        vy: (Math.random() - 0.5) * speed,
-        r: (mobile ? 0.75 : 0.9) + Math.random() * (mobile ? 1.2 : 1.5),
-      });
-    }
-    render.particles = nodes;
-  }
-
-  function updateMathSymbols(deltaSec) {
-    var i = 0;
-    var item = null;
-    var width = render.width;
-    var height = render.height;
-    for (i = 0; i < render.symbols.length; i += 1) {
-      item = render.symbols[i];
-      item.y -= item.vy * deltaSec;
-      item.x += item.vx * deltaSec;
-
-      if (item.y < -40) item.y = height + 40;
-      if (item.x < -40) item.x = width + 40;
-      if (item.x > width + 40) item.x = -40;
-    }
-  }
-
-  function drawMathSymbols() {
-    var ctx = render.ctx;
-    var dark = root.getAttribute("data-theme") === "dark";
-    var rgb = dark ? "201, 214, 237" : "102, 113, 132";
-    var i = 0;
-    var item = null;
-
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    for (i = 0; i < render.symbols.length; i += 1) {
-      item = render.symbols[i];
-      ctx.font =
-        Math.round(item.size) +
-        'px "Cambria Math", "Times New Roman", "Noto Sans SC", serif';
-      ctx.fillStyle = "rgba(" + rgb + ", " + item.alpha.toFixed(3) + ")";
-      ctx.fillText(item.text, item.x, item.y);
-    }
-  }
-
-  function updateParticles(deltaSec) {
-    var i = 0;
-    var point = null;
-    var width = render.width;
-    var height = render.height;
-    for (i = 0; i < render.particles.length; i += 1) {
-      point = render.particles[i];
-      point.x += point.vx * deltaSec;
-      point.y += point.vy * deltaSec;
-
-      if (point.x <= 0 || point.x >= width) point.vx *= -1;
-      if (point.y <= 0 || point.y >= height) point.vy *= -1;
-    }
-  }
-
-  function drawParticles() {
-    var ctx = render.ctx;
-    var dark = root.getAttribute("data-theme") === "dark";
-    var rgb = dark ? "184, 198, 225" : "119, 131, 150";
-    var dotAlphaBase = dark ? 0.23 : 0.18;
-    var lineAlphaBase = dark ? 0.16 : 0.12;
-    var intensityFactor = Math.max(0.2, render.intensity / 100);
-    var distanceLimit = render.mobile ? 110 : 145;
-    var i = 0;
-    var j = 0;
-    var a = null;
-    var b = null;
-    var dx = 0;
-    var dy = 0;
-    var distance = 0;
-    var alpha = 0;
-
-    for (i = 0; i < render.particles.length; i += 1) {
-      a = render.particles[i];
-      ctx.beginPath();
-      ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2);
-      ctx.fillStyle =
-        "rgba(" + rgb + ", " + (dotAlphaBase * intensityFactor).toFixed(3) + ")";
-      ctx.fill();
-
-      for (j = i + 1; j < render.particles.length; j += 1) {
-        b = render.particles[j];
-        dx = a.x - b.x;
-        dy = a.y - b.y;
-        distance = Math.sqrt(dx * dx + dy * dy);
-        if (distance > distanceLimit) continue;
-        alpha =
-          ((1 - distance / distanceLimit) * lineAlphaBase * intensityFactor).toFixed(
-            3
-          );
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.strokeStyle = "rgba(" + rgb + ", " + alpha + ")";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
-    }
-  }
-
-  function startRender(style, intensity, mobile) {
-    stopRender(true);
-    render.style = style;
-    render.intensity = intensity;
-    render.mobile = mobile;
-    render.maxFps = mobile ? 14 : 30;
-
-    if (!render.ctx || style === "none" || style === "texture" || prefersReducedMotion()) {
-      return;
-    }
-
-    var nodeCount = getEffectNodeCount(intensity, mobile);
-    if (style === "math") buildMathSymbols(nodeCount, mobile);
-    if (style === "particle") buildParticles(nodeCount, mobile);
-
-    render.rafId = requestAnimationFrame(function frame(ts) {
-      render.rafId = requestAnimationFrame(frame);
-      if (document.hidden) return;
-
-      var minDelta = 1000 / render.maxFps;
-      if (render.lastTs && ts - render.lastTs < minDelta) return;
-      var deltaSec = render.lastTs ? (ts - render.lastTs) / 1000 : minDelta / 1000;
-      render.lastTs = ts;
-      if (deltaSec > 0.08) deltaSec = 0.08;
-
-      clearCanvas();
-
-      if (render.style === "math") {
-        updateMathSymbols(deltaSec);
-        drawMathSymbols();
-      } else if (render.style === "particle") {
-        updateParticles(deltaSec);
-        drawParticles();
-      }
-    });
   }
 
   function applyCompatibilityVars(next, darkMode) {
@@ -1004,13 +774,21 @@ void darkMode;
     refreshPalette(url);
   }
 
+  /* 只剩纸纹了。
+     原来这里还有 math（数学符号）与 particle（粒子网格）两档 canvas 动画，
+     已整体移除。它们的问题不是"重"而是"白费"：画布挂在 z-index:-2，而 body
+     有 background: var(--ui-page-bg) !important（--ui-page-bg → --ui-canvas →
+     hsl(…, 97%)，完全不透明），所以画出来的东西必然被 body 背景整个盖住 ——
+     默认配置下 100% 看不见，却要每秒做 450 次 fillText（强度拉满 1200 次），
+     而且每个图元都重设一次 ctx.font。用户报"操作发卡"时实测到的就是它。
+
+     texture（纸纹）保留：它是纯 CSS 的 background-image，没有 canvas、没有
+     rAF、不吃主线程，代价可以忽略。 */
   function applyEffect(next) {
     if (!ensureLayers()) return;
 
     var style = next.effectStyle;
     var intensity = clampNumber(next.effectIntensity, 0, 100);
-    var mobile = isMobileDevice();
-    var optimizedMobile = next.optimizeMobile && mobile;
 
     if (style === "texture") {
       var noiseBase = 0.06 + intensity / 100 * 0.16;
@@ -1019,14 +797,11 @@ void darkMode;
       root.style.setProperty("--ui-noise-opacity", "0");
     }
 
-    if (optimizedMobile && (style === "math" || style === "particle")) {
-      intensity = Math.max(6, Math.round(intensity * 0.45));
+    if (next.optimizeMobile && isMobileDevice()) {
       root.setAttribute("data-ui-mobile-optimized", "true");
     } else {
       root.removeAttribute("data-ui-mobile-optimized");
     }
-
-    startRender(style, intensity, optimizedMobile);
   }
 
   function hideLegacyLoginLayers() {
@@ -1118,22 +893,12 @@ void darkMode;
       applySettings(settings, { persist: false, silent: true });
     });
 
-    window.addEventListener("resize", function () {
-      if (!ensureLayers()) return;
-      ensureCanvasSize();
-      if (render.style === "math" || render.style === "particle") {
-        startRender(render.style, render.intensity, render.mobile);
-      }
-    });
-
-    document.addEventListener("visibilitychange", function () {
-      if (document.hidden) {
-        stopRender(false);
-      } else {
-        applyEffect(settings);
-      }
-    });
-
+    // 以前这里有 resize 与 visibilitychange 两个监听：resize 要重算画布尺寸
+    // 并重启动画循环，visibilitychange 要在切回标签页时把动画重新跑起来。
+    // 画布动画已经删除，两者都随之失去意义 —— 壁纸层是 CSS
+    // background-size: cover，纸纹是静态 background-image，两者都会随视口
+    // 自己重排，不需要 JS 介入。拖动窗口时的卡顿正是 resize 那个监听造成的，
+    // 所以这里直接删掉而不是留一个空壳。
     if (typeof window.matchMedia === "function") {
       var media = window.matchMedia("(max-width: 768px)");
       if (typeof media.addEventListener === "function") {

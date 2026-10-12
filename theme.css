@@ -591,7 +591,6 @@ html {
    负层级同时消掉这两个方向：层永远在内容之下，页面只要不铺不透明底，
    全局背景图就自然透出来。 */
 .ui-bg-image-layer,
-.ui-bg-canvas-layer,
 .ui-bg-noise-layer {
   position: fixed;
   inset: 0;
@@ -620,11 +619,12 @@ html {
   pointer-events: none;
 }
 
-.ui-bg-canvas-layer {
-  z-index: -2;
-  width: 100vw;
-  height: 100dvh;
-}
+/* .ui-bg-canvas-layer 已删除。
+   它原本挂在 z-index:-2 承载数学符号 / 粒子网格动画，但 body 有
+   background: var(--ui-page-bg) !important（--ui-page-bg → --ui-canvas →
+   hsl(…, 97%)，完全不透明），所以画出来的东西必然被 body 背景整个盖住：
+   默认配置下 100% 不可见，却要每秒 450 次 fillText。删除后壁纸与纸纹不受
+   影响 —— 两者都是 CSS background-image，不经过 canvas。 */
 
 .ui-bg-noise-layer {
   z-index: -1;
@@ -1032,9 +1032,5 @@ body.login-page .bg-overlay {
     justify-content: center !important;
     padding: max(14px, env(safe-area-inset-top)) 14px
       max(14px, env(safe-area-inset-bottom)) 14px !important;
-  }
-
-  .ui-bg-canvas-layer {
-    height: 100vh;
   }
 }

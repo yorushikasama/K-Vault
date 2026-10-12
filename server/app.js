@@ -907,7 +907,7 @@ function createApp() {
     loginBackgroundUrl: '',
     cardOpacity: 86,
     cardBlur: 14,
-    effectStyle: 'math',
+    effectStyle: 'none',
     effectIntensity: 22,
     optimizeMobile: true,
   };

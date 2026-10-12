@@ -203,11 +203,13 @@
             <section class="ui-design-section">
               <div class="ui-design-section-title"><i data-lucide="audio-waveform"></i> 动态背景特效</div>
               <div class="ui-segmented">
-                <label class="ui-segment"><input type="radio" name="uiEffectStyle" value="none" ${checked(snapshot.effectStyle === 'none')}><span>无特效</span></label>
-                <label class="ui-segment"><input type="radio" name="uiEffectStyle" value="math" ${checked(snapshot.effectStyle === 'math')}><span>数学符号</span></label>
-                <label class="ui-segment"><input type="radio" name="uiEffectStyle" value="particle" ${checked(snapshot.effectStyle === 'particle')}><span>粒子网格</span></label>
+                <label class="ui-segment"><input type="radio" name="uiEffectStyle" value="none" ${checked(snapshot.effectStyle !== 'texture')}><span>无特效</span></label>
                 <label class="ui-segment"><input type="radio" name="uiEffectStyle" value="texture" ${checked(snapshot.effectStyle === 'texture')}><span>纸纹叠加</span></label>
               </div>
+              <!-- 「数学符号」与「粒子网格」两档已删除。它们画在 z-index:-2 的
+                   全屏 canvas 上，而 body 是不透明的 --ui-page-bg，所以画出来的
+                   东西必然被完全盖住 —— 看不见，却要每秒 450 次 fillText。
+                   纸纹是纯 CSS background-image，不吃主线程，所以保留。 -->
               <div class="ui-design-range-wrap">
                 <div class="ui-design-range-head">
                   <span>特效强度</span>
@@ -309,7 +311,10 @@
           if (optimizeMobile) optimizeMobile.checked = state.optimizeMobile !== false;
           const loginModeRadio = document.querySelector(`input[name="uiLoginMode"][value="${state.loginBackgroundMode === 'custom' ? 'custom' : 'follow-global'}"]`);
           if (loginModeRadio) loginModeRadio.checked = true;
-          const effectRadio = document.querySelector(`input[name="uiEffectStyle"][value="${state.effectStyle || 'none'}"]`);
+          // 面板只剩「无特效」与「纸纹」两档；旧配置里存着的 math / particle
+          // 不再有对应 radio，必须显式归到"无特效"，否则会出现三个都没选中
+          // 的空白面板。
+          const effectRadio = document.querySelector(`input[name="uiEffectStyle"][value="${state.effectStyle === 'texture' ? 'texture' : 'none'}"]`);
           if (effectRadio) effectRadio.checked = true;
         };
 
