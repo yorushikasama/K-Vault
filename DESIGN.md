@@ -45,11 +45,24 @@ Treatment rules (this is where AI-ness is removed):
 
 ## Shape (radius scale)
 
-Replace the global 16-22px rounding with a deliberate scale, applied by role:
-- `--radius-sm: 6px` — inputs, small buttons, chips, tags-as-rects
-- `--radius-md: 10px` — cards, panels, list items, dialogs
-- `--radius-lg: 14px` — large modals / full media stages (ceiling; never exceed 16px on a rectangular container)
-- Full pill (`9999px`) only for true pills: status dots, toggle switches, count badges, chip tags.
+A deliberate scale, applied by role. Buttons have their own step because
+"how round should a button be" and "how round should a card be" are different
+questions — one value for both makes 40px buttons look square and 300px cards
+look saggy.
+
+- `--radius-control: 12px` — every button and clickable control. 30% of a 40px
+  button's height: visibly softer than the old 10px while still reading as a
+  rectangle. Element UI's own 4px is overridden to match, otherwise the two
+  admin pages look harder than the rest.
+- `--radius-sm: 6px` — inputs, chips, tags-as-rects, and controls nested inside
+  an input (the password eye). A nested control follows its host, not the button
+  scale: a 34px square at 12px would be rounder than the 6px field it sits in.
+- `--radius-md: 10px` — cards, panels, list items, dialogs.
+- `--radius-lg: 14px` — large modals / full media stages (ceiling; never exceed
+  16px on a rectangular container).
+- Full pill (`9999px`) only for true pills: status dots, toggle switches, count
+  badges, chip tags — and genuinely circular controls (icon-only close buttons,
+  spinners), which must not be pulled onto the control scale.
 - Do not round full-bleed images/sections by default.
 
 ## Depth (elevation scale)
@@ -76,7 +89,7 @@ Product UI: keep the system/sans stack already in use (`system-ui`-based). Do no
 
 ## Components (consistency)
 
-- One button vocabulary: solid brand primary, neutral secondary (surface + border), solid danger. Same radius (`--radius-sm`), same height, same states (default/hover/focus/active/disabled) across every page.
+- One button vocabulary: solid brand primary, neutral secondary (surface + border), solid danger. Same radius (`--radius-control`), same height, same states (default/hover/focus/active/disabled) across every page.
 - Inputs: surface bg, 1px border, `--radius-sm`, visible focus ring in brand hue (no glow).
 - Cards/panels: `--radius-md`, opaque surface, hairline border, `--shadow-1` or none.
 - Icons: FontAwesome set already in use; uniform size/weight, monochrome in ink or brand. No emoji in chrome.
