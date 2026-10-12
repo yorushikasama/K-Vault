@@ -55,7 +55,7 @@
       width: 44px;
       height: 44px;
       border: none;
-      border-radius: var(--radius-sm);
+      border-radius: var(--radius-md);
       background: rgba(255, 255, 255, 0.12);
       color: white;
       font-size: 1.2em;
@@ -732,7 +732,7 @@
     .ui-upload-drop {
       min-width: 128px;
       height: 38px;
-      border-radius: var(--radius-sm);
+      border-radius: var(--ui-radius-control);
       border: 1px dashed rgba(15, 23, 42, 0.24);
       background: #fff;
       color: #344054;
@@ -900,7 +900,7 @@
     }
     .ui-design-alert .el-message-box__btns .el-button {
       min-height: 40px;
-      border-radius: var(--radius-sm);
+      border-radius: var(--ui-radius-control);
       padding: 10px 24px;
       transition: filter 0.2s ease;
     }

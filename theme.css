@@ -230,9 +230,22 @@ html[data-theme="dark"] .el-header {
    Element 每次升级都可能调整内部选择器，所以这组规则只覆盖颜色类，
    不碰 .el-button__inner 之类的内部结构。
 
+   唯一的形状例外是文件下方的 border-radius：Element 默认 4px，比全站
+   按钮的 12px 硬得多，后台因此看着比别的页面「方」。圆角不参与 Element
+   的内部布局计算（它不影响 padding / line-height），所以这一处可以安全覆盖。
+
    亮色这组必须带 html:not([data-theme="dark"]) 限定。否则它与下面那组
    同为 !important、权重相同，而后写的这条更靠前会赢 —— 结果就是夜间模式
    下按钮仍是白底深字，只有页脚那些用原生变量的元素才翻转过去。 */
+/* Element 按钮的圆角对齐到全站按钮档位。
+   组件默认 4px，而全站按钮是 12px —— 两个后台页因此明显比其余页面硬。
+   这一条不分组、不带主题限定：形状与明暗无关，两套主题下都要一样。
+   用 :not() 排除掉圆形按钮（.el-button.is-circle，Element 的图标按钮
+   本身就是正圆，覆盖成 12px 会把它改成圆角方形）。 */
+.el-button:not(.is-circle):not(.el-button--text) {
+  border-radius: var(--ui-radius-control) !important;
+}
+
 html:not([data-theme="dark"]) .el-button:not(.el-button--primary):not(.el-button--danger):not(.el-button--text) {
   background: var(--ui-surface-raised) !important;
   color: var(--ui-ink) !important;
@@ -301,7 +314,7 @@ html[data-theme="dark"] textarea::placeholder {
   align-items: center;
   gap: 8px;
   padding: 10px 14px;
-  border-radius: var(--radius-md);
+  border-radius: var(--ui-radius-control);
   border: 1px solid color-mix(in srgb, var(--ui-brand) 25%, transparent);
   background: #ffffff;
   color: #2f3243;
@@ -329,7 +342,7 @@ html[data-theme="dark"] textarea::placeholder {
   align-items: center;
   gap: 8px;
   padding: 9px 13px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--ui-radius-control);
   border: 1px solid color-mix(in srgb, var(--ui-brand) 25%, transparent);
   background: #ffffff;
   color: #2f3243;
@@ -862,7 +875,15 @@ html[data-theme="dark"] .el-button--danger {
   --ui-line-strong: var(--ui-line-strong-light);
   --ui-focus-ring: var(--ui-brand-ring);
 
-  /* -- Shape ------------------------------------------------------------ */
+  /* -- Shape ------------------------------------------------------------
+     按钮单独占一档（--ui-radius-control），因为"按钮该多圆"和"卡片该多圆"
+     是两件事：同一个值让 40px 的按钮显得方，让 300px 的卡片显得垮。
+     此前按钮借用 --ui-radius-md（10px，与卡片共用），于是想调软按钮就
+     必须连卡片一起调 —— 这就是把两者拆开的原因。
+
+     12px 在 40px 高的按钮上占 30%，是"明显变软但仍是矩形"的档位：再小
+     回到硬朗，再大（16px / 40%）小尺寸按钮就开始发圆。 */
+  --ui-radius-control: 12px;
   --ui-radius-sm: 6px;
   --ui-radius-md: 10px;
   --ui-radius-lg: 14px;
@@ -978,6 +999,8 @@ html[data-theme="dark"] {
   --radius-sm: var(--ui-radius-sm);
   --radius-md: var(--ui-radius-md);
   --radius-lg: var(--ui-radius-lg);
+  /* 按钮专用档，供各页的历史类名引用（例如 .action-btn）。 */
+  --radius-control: var(--ui-radius-control);
   --shadow-1: var(--ui-elev-1);
   --shadow-2: var(--ui-elev-2);
   --shadow-3: var(--ui-elev-3);

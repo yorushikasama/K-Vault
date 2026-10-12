@@ -148,7 +148,10 @@
       justify-content: center;
       background: none;
       border: none;
-      border-radius: var(--radius-sm);
+      /* 这个眼睛按钮嵌在输入框内部，圆角要跟着宿主输入框（6px）走，
+         而不是全站按钮档（12px）—— 34px 的方块配 12px 会比它的容器更圆，
+         看起来像贴错了一个角。它是输入框的一部分，不是独立按钮。 */
+      border-radius: var(--ui-radius-sm);
       color: #999;
       cursor: pointer;
       padding: 0;
@@ -203,7 +206,7 @@
       border: 1px solid #ffcccc;
       color: #d32f2f;
       padding: 12px 16px;
-      border-radius: var(--radius-sm);
+      border-radius: var(--radius-md);
       margin-bottom: 20px;
       font-size: 0.9em;
       display: none;
@@ -342,7 +345,7 @@
       .submit-btn {
         padding: 12px;
         font-size: 0.95em;
-        border-radius: var(--radius-sm);
+        border-radius: var(--ui-radius-control);
         margin-top: 4px;
       }
 

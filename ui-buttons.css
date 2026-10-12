@@ -36,7 +36,7 @@
   padding: 0 16px;
 
   border: 1px solid var(--ui-line-strong);
-  border-radius: var(--ui-radius-md);
+  border-radius: var(--ui-radius-control);
   background: var(--ui-surface-raised);
   color: var(--ui-ink);
 
@@ -151,7 +151,11 @@
 }
 
 /* 纯图标。宽度与高度都锁死为正方形，否则会塌成一条。
-   aria-label 是必需项，不是可选项 —— 没有可见文字时它是唯一的名字。 */
+   aria-label 是必需项，不是可选项 —— 没有可见文字时它是唯一的名字。
+
+   圆角跟着 --ui-radius-control 走而不是做成正圆：40px 的方形配 12px
+   与旁边的文字按钮同族；做成 50% 会变成一个圆形按钮，和整排按钮的
+   形状语言对不上。 */
 .btn-icon {
   width: 40px;
   min-width: 40px;
@@ -190,7 +194,7 @@
   gap: 2px;
   padding: 3px;
   border: 1px solid var(--ui-line);
-  border-radius: var(--ui-radius-md);
+  border-radius: var(--ui-radius-control);
   background: var(--ui-surface-sunken);
 }
 
@@ -198,7 +202,9 @@
   min-height: 30px;
   padding: 0 12px;
   border: none;
-  border-radius: calc(var(--ui-radius-md) - 3px);
+  /* 外层容器给 12px，内层要让出容器那 3px 内边距，否则内按钮的圆角
+     会戳到容器边界外面（视觉上像两层圆角没对齐）。 */
+  border-radius: calc(var(--ui-radius-control) - 3px);
   background: transparent;
   color: var(--ui-ink-secondary);
   font-size: 0.84rem;

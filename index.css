@@ -747,14 +747,14 @@
         gap: 12px;
         padding: 12px;
         background: var(--surface-2);
-        border-radius: 12px;
+        border-radius: var(--radius-md);
         margin-bottom: 10px;
       }
 
       .upload-item-preview {
         width: 60px;
         height: 60px;
-        border-radius: 8px;
+        border-radius: var(--radius-sm);
         object-fit: cover;
         background: var(--surface-3);
       }
@@ -902,7 +902,7 @@
         width: 32px;
         height: 32px;
         border: none;
-        border-radius: 8px;
+        border-radius: var(--ui-radius-control);
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -939,7 +939,7 @@
       .format-tab {
         padding: 8px 16px;
         border: 1px solid var(--input-border);
-        border-radius: 8px;
+        border-radius: var(--ui-radius-control);
         cursor: pointer;
         font-size: 0.85em;
         transition: all 0.3s;
@@ -963,7 +963,7 @@
         min-height: 120px;
         padding: 12px;
         border: 2px solid var(--input-border);
-        border-radius: 12px;
+        border-radius: var(--radius-sm);
         background: var(--surface-1);
         color: var(--text-primary);
         font-family: "Consolas", monospace;
@@ -1088,7 +1088,7 @@
       .preview-btn {
         padding: 6px 16px;
         border: none;
-        border-radius: 8px;
+        border-radius: var(--ui-radius-control);
         cursor: pointer;
         font-size: 0.85em;
         font-weight: 500;
@@ -1222,7 +1222,7 @@
 
       .compress-action-btn {
         border: 1.5px solid var(--primary-light);
-        border-radius: 14px;
+        border-radius: var(--ui-radius-control);
         background: var(--surface-1);
         color: var(--text-secondary);
         cursor: pointer;
@@ -1303,7 +1303,7 @@
         flex: 1;
         padding: 12px 16px;
         border: 2px solid var(--input-border);
-        border-radius: 12px;
+        border-radius: var(--radius-sm);
         font-size: 1em;
         background: var(--surface-1);
         color: var(--text-primary);
@@ -1333,7 +1333,7 @@
       .toast {
         padding: 12px 20px;
         background: var(--surface-1);
-        border-radius: 12px;
+        border-radius: var(--radius-md);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         margin-bottom: 10px;
         animation: slideIn 0.3s ease;
@@ -1598,7 +1598,7 @@
         .nav-links a {
           padding: 6px 10px;
           font-size: 0.78em;
-          border-radius: 8px;
+          border-radius: var(--ui-radius-control);
           gap: 4px;
         }
 
@@ -1627,7 +1627,7 @@
         .storage-option {
           padding: 8px 14px;
           font-size: 0.82em;
-          border-radius: 8px;
+          border-radius: var(--ui-radius-control);
         }
 
         /* 文件项优化 */

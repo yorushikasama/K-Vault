@@ -723,7 +723,7 @@ body {
 }
 
 .batch-btn {
-  border-radius: var(--radius-sm) !important;
+  border-radius: var(--ui-radius-control) !important;
   font-weight: 600;
   border: none !important;
 }
@@ -770,11 +770,11 @@ body {
 }
 
 .batch-toolbar .el-button-group .el-button:first-child {
-  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  border-radius: var(--ui-radius-control) 0 0 var(--ui-radius-control);
 }
 
 .batch-toolbar .el-button-group .el-button:last-child {
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  border-radius: 0 var(--ui-radius-control) var(--ui-radius-control) 0;
 }
 
 /* 移动端适配 */
@@ -1006,7 +1006,7 @@ body {
 .header-content .actions > .theme-admin-toggle {
   width: 38px;
   height: 38px;
-  border-radius: var(--radius-md);
+  border-radius: var(--ui-radius-control);
   border: 1px solid var(--admin-line);
   background: var(--ui-surface);
   display: inline-flex;
@@ -1069,7 +1069,7 @@ body {
 .pagination-container .el-pager li,
 .pagination-container .btn-prev,
 .pagination-container .btn-next {
-  border-radius: 10px !important;
+  border-radius: var(--ui-radius-control) !important;
 }
 
 .load-more-end {

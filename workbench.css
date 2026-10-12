@@ -75,7 +75,7 @@
 .kv-workbench :is(.upload-inline-actions, .upload-row-actions, .upload-field-row, .upload-segmented) { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .kv-workbench .upload-field-row > input { flex: 1 1 260px; min-height: 40px; }
 .kv-workbench .upload-storage-options { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
-.kv-workbench .upload-storage-option { display: inline-flex; gap: 8px; align-items: center; min-height: 42px; padding: 8px 12px; border: 1px solid var(--wb-border); border-radius: var(--radius-sm); background: var(--wb-surface); color: var(--wb-ink); }
+.kv-workbench .upload-storage-option { display: inline-flex; gap: 8px; align-items: center; min-height: 42px; padding: 8px 12px; border: 1px solid var(--wb-border); border-radius: var(--ui-radius-control); background: var(--wb-surface); color: var(--wb-ink); }
 .kv-workbench .upload-storage-option:hover:not(:disabled) { border-color: var(--wb-accent); }
 .kv-workbench .upload-storage-option.is-selected { color: var(--wb-accent-ink); border-color: var(--wb-accent); background: var(--wb-accent-soft); }
 .kv-workbench .upload-storage-option:disabled { opacity: .6; }
@@ -161,7 +161,7 @@
 .kv-workbench .quality-picker-options { display: grid; gap: 8px; margin: 0; padding: 0; border: 0; }
 .kv-workbench .quality-picker-option {
   display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-  border: 1px solid var(--wb-border); border-radius: var(--radius-sm); background: var(--wb-surface); cursor: pointer;
+  border: 1px solid var(--wb-border); border-radius: var(--ui-radius-control); background: var(--wb-surface); cursor: pointer;
 }
 .kv-workbench .quality-picker-option:hover { border-color: var(--wb-accent); }
 .kv-workbench .quality-picker-option.is-disabled { opacity: .6; cursor: not-allowed; }
@@ -274,12 +274,12 @@
 .kv-files .files-query-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .kv-files .files-filter-button {
   display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 6px 12px;
-  border: 1px solid var(--wb-border); border-radius: var(--radius-sm); background: var(--wb-surface);
+  border: 1px solid var(--wb-border); border-radius: var(--ui-radius-control); background: var(--wb-surface);
   color: var(--wb-ink); font-size: .8125rem; line-height: 1.3; white-space: nowrap;
 }
 .kv-files .files-filter-button:hover { border-color: var(--wb-accent); background: var(--wb-subtle); }
 .kv-files .files-filter-button > .kv-icon:last-child:not(:first-child) { width: 14px; height: 14px; color: var(--wb-muted); }
-.kv-files .files-view-switch { display: inline-flex; margin-left: auto; border: 1px solid var(--wb-border); border-radius: var(--radius-sm); overflow: hidden; }
+.kv-files .files-view-switch { display: inline-flex; margin-left: auto; border: 1px solid var(--wb-border); border-radius: var(--ui-radius-control); overflow: hidden; }
 .kv-files .files-view-switch button { display: inline-flex; align-items: center; justify-content: center; width: 40px; min-height: 36px; border: 0; background: var(--wb-surface); color: var(--wb-muted); }
 .kv-files .files-view-switch button + button { border-left: 1px solid var(--wb-border); }
 .kv-files .files-view-switch button.is-active { background: var(--wb-accent-soft); color: var(--wb-accent-ink); }
@@ -328,7 +328,7 @@
 .kv-files .file-tile-actions { display: flex; align-items: center; gap: 4px; margin-top: auto; padding-top: 8px; border-top: 1px solid var(--wb-border); }
 .kv-files .file-text-action {
   display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 4px 8px;
-  border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--wb-accent-ink); font-size: .8125rem;
+  border: 0; border-radius: var(--ui-radius-control); background: transparent; color: var(--wb-accent-ink); font-size: .8125rem;
 }
 .kv-files .file-text-action:hover { background: var(--wb-subtle); }
 .kv-files .file-text-action > .kv-icon:last-child:not(:first-child) { width: 13px; height: 13px; }
@@ -343,7 +343,7 @@
 .kv-files .preview-gate-subtitle { font-size: .75rem; overflow-wrap: anywhere; }
 .kv-files .file-media-error { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; height: 100%; padding: 12px; color: var(--wb-muted); font-size: .75rem; text-align: center; }
 .kv-files .file-media-error .kv-icon { width: 26px; height: 26px; }
-.kv-files .file-media-error button { min-height: 30px; padding: 4px 10px; border: 1px solid var(--wb-border); border-radius: var(--radius-sm); background: var(--wb-surface); color: var(--wb-accent-ink); font-size: .75rem; }
+.kv-files .file-media-error button { min-height: 30px; padding: 4px 10px; border: 1px solid var(--wb-border); border-radius: var(--ui-radius-control); background: var(--wb-surface); color: var(--wb-accent-ink); font-size: .75rem; }
 .kv-files .file-document-preview {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
   width: 100%; height: 100%; border: 0; background: var(--wb-subtle); color: var(--wb-ink);

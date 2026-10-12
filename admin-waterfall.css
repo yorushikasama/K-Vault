@@ -87,7 +87,7 @@
       justify-content: center;
       gap: 8px;
       border: 1px solid var(--wf-border);
-      border-radius: var(--radius-sm);
+      border-radius: var(--ui-radius-control);
       padding: 10px 14px;
       min-height: 40px;
       background: var(--wf-surface);

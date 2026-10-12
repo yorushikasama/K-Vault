@@ -123,7 +123,7 @@
 
     .pill {
       border: 1px solid var(--line);
-      border-radius: var(--radius-sm);
+      border-radius: var(--radius-md);
       padding: 2px 9px;
       background: #f8fafc;
     }
@@ -408,7 +408,7 @@
     }
 
     .pill {
-      border-radius: var(--radius-sm);
+      border-radius: var(--radius-md);
       background: #f3f6fa;
       font-weight: 650;
     }
@@ -486,7 +486,7 @@
     .audio-mark {
       width: 64px;
       height: 64px;
-      border-radius: var(--radius-sm);
+      border-radius: var(--radius-md);
       display: grid;
       place-items: center;
       color: #101828;
@@ -610,7 +610,7 @@
     .data-code {
       margin: 14px 0;
       padding: 16px;
-      border-radius: var(--radius-sm);
+      border-radius: var(--radius-md);
       background: var(--code-bg);
       color: var(--code-text);
       overflow: auto;
@@ -632,7 +632,7 @@
     .data-chip,
     .summary-chip {
       border: 1px solid #d8e0ea;
-      border-radius: var(--radius-sm);
+      border-radius: var(--ui-radius-md);
       padding: 11px 12px;
       background: #f8fafc;
     }
@@ -745,7 +745,7 @@
     .summary-icon {
       width: 54px;
       height: 54px;
-      border-radius: var(--radius-sm);
+      border-radius: var(--radius-md);
       display: grid;
       place-items: center;
       margin-bottom: 14px;
