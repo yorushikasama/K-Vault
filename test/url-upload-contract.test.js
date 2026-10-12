@@ -152,4 +152,125 @@ describe('URL upload share-link detection matches the server contract', function
       assert.strictEqual(detect('https://www.douyin.com/video/1'), false);
     });
   });
+
+  describe('the URL box empties after a transfer is accepted', function () {
+    // 用户报的现象：「使用URL转存之后输入框里面应该清空，但是目前输入框里面
+    // 留存了url」。根因是 uploadFromUrl 的分享链接分支 —— 它把链接交给
+    // openQualityPicker 之后直接 return，从没清过输入框；只有普通直链那条
+    // 成功路径写了 urlToUpload = ""。
+    //
+    // 这里不解析语法树，直接取方法体在沙箱里跑：把那些依赖（toast、上传
+    // 接口、清晰度弹窗）都换成探针，然后断言「提交被收下之后输入框是空的」。
+    const uploadFromUrlBody = (() => {
+      const m = /async uploadFromUrl\(\)\s*\{([\s\S]*?)\n {10}\},/.exec(html);
+      assert.ok(m, '找不到 uploadFromUrl 的实现');
+      return m[1];
+    })();
+
+    /** 用给定的「世界」跑一次 uploadFromUrl，返回结束时的状态。 */
+    function submit(world) {
+      const state = Object.assign(
+        {
+          authChecking: false,
+          urlSubmitting: false,
+          urlUploading: false,
+          urlResolving: false,
+          qualityPicker: { visible: false },
+          urlToUpload: "",
+          mediaResolve: { loaded: true, available: true, allowedHosts: [], allowUnknownHosts: true },
+          toasts: [],
+          showToast(message, kind) {
+            this.toasts.push({ message, kind });
+          },
+          startUrlTicker() {},
+          stopUrlTicker() {},
+          registerUploadedUrlFile() {
+            this.registered = true;
+          },
+          async uploadPlainUrlToServer() {
+            return [{ src: "/file/plain.bin" }];
+          },
+          async openQualityPicker(url) {
+            this.pickerOpenedWith = url;
+          },
+          // extractUrlFromText 是同一模块里的真实实现，直接从文件里取出编译，
+          // 避免这里再抄一份抽取逻辑。
+          extractUrlFromText(text) {
+            const m = String(text || "").match(/https?:\/\/[^\s<>"'`）)】\]]+/i);
+            return m ? m[0].replace(/[.,;:！。，、）)】\]]+$/, "") : "";
+          },
+          isMediaShareLink() {
+            return world.isShareLink === true;
+          },
+        },
+        world.state || {},
+      );
+
+      const fn = new Function(`
+        "use strict";
+        return async function () {${uploadFromUrlBody}};
+      `)();
+      return fn.call(state).then(() => state);
+    }
+
+    it('clears the box for a share link that goes to the quality picker', async function () {
+      // 用户实际遇到的场景：抖音/B站分享链接。
+      const state = await submit({
+        isShareLink: true,
+        state: { urlToUpload: "0.71 复制打开抖音，看看【某人】 https://v.douyin.com/abcdef/ 12/12" },
+      });
+      assert.strictEqual(state.pickerOpenedWith, "https://v.douyin.com/abcdef/", '分享链接没有被交给解析');
+      assert.strictEqual(state.urlToUpload, "", '分享链接交给解析后输入框仍留着 URL —— 用户报的就是这个');
+    });
+
+    it('clears the box for a plain direct link', async function () {
+      const state = await submit({
+        isShareLink: false,
+        state: { urlToUpload: "https://example.com/file.zip" },
+      });
+      assert.strictEqual(state.registered, true, '直链没有走成功入库路径');
+      assert.strictEqual(state.urlToUpload, "", '直链上传成功后输入框应当清空');
+    });
+
+    it('keeps the URL when the transfer fails, so it can be retried', async function () {
+      const state = await submit({
+        isShareLink: false,
+        state: {
+          urlToUpload: "https://example.com/broken.zip",
+          async uploadPlainUrlToServer() {
+            throw new Error("远程地址不可达");
+          },
+        },
+      });
+      assert.strictEqual(state.urlToUpload, "https://example.com/broken.zip", '失败时清空了输入框，用户没法重试');
+      assert.strictEqual(state.toasts.length, 1, '失败时应当有一条提示');
+    });
+
+    it('keeps the URL when the format is rejected', async function () {
+      // 校验失败的几条分支同样不该清空：什么都没提交出去。
+      for (const bad of ["ftp://example.com/x.zip", "not a url"]) {
+        const state = await submit({
+          isShareLink: false,
+          state: { urlToUpload: bad },
+        });
+        assert.strictEqual(state.urlToUpload, bad, `${bad} 被拒绝时不该清空输入框`);
+      }
+    });
+
+    it('marks the submission in-flight so a second submit cannot race it', async function () {
+      // 清空输入框之后用户马上就能粘贴下一条；解析要等好几秒，
+      // 必须有东西挡住「粘贴紧接着回车」造成的重复提交。
+      const state = await submit({
+        isShareLink: true,
+        state: { urlToUpload: "https://v.douyin.com/abcdef/" },
+      });
+      assert.strictEqual(state.urlSubmitting, false, '提交结束后没有复位 urlSubmitting');
+      assert.match(uploadFromUrlBody, /this\.urlSubmitting\s*=\s*true/, 'urlSubmitting 从未被置为 true —— 按钮不会显示「添加中」，也挡不住重复提交');
+      assert.match(
+        uploadFromUrlBody,
+        /authChecking \|\| this\.urlSubmitting/,
+        '提前返回的守卫没有包含 urlSubmitting',
+      );
+    });
+  });
 });

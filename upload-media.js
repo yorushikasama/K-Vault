@@ -292,7 +292,7 @@
             return match ? match[0].replace(/[.,;:！。，、）)】\]]+$/, "") : "";
           },
           async uploadFromUrl() {
-            if (this.authChecking || this.urlUploading || this.urlResolving || this.qualityPicker.visible) return;
+            if (this.authChecking || this.urlSubmitting || this.urlUploading || this.urlResolving || this.qualityPicker.visible) return;
             const pasted = String(this.urlToUpload || "").trim();
             if (!pasted) {
               this.showToast("请输入有效的URL", "error");
@@ -319,10 +319,25 @@
 
             // 分享链接：交给服务端解析，先把可选清晰度摆出来让用户定，再转存
             if (this.isMediaShareLink(submittedUrl)) {
-              await this.openQualityPicker(submittedUrl);
+              // urlSubmitting 同时做两件事：按钮显示"添加中"并禁用，
+              // 以及挡住重复提交。后者在清空输入框之后变得必要 ——
+              // 框子空了，用户马上就能粘贴下一条，而解析还在路上。
+              this.urlSubmitting = true;
+              // 这一支已经"收下"了这个链接（解析 + 后续转存都由弹窗接手），
+              // 所以立即清空输入框。此前这里直接 return，输入框里一直留着
+              // 那条分享文案 —— 用户看到的就是"转存了但 URL 还在"。
+              // 清空放在发起解析之前：解析要等几秒，先清掉可以让这几秒里
+              // 输入框处于"已就绪"的观感，而不是等结果回来才变空。
+              this.urlToUpload = "";
+              try {
+                await this.openQualityPicker(submittedUrl);
+              } finally {
+                this.urlSubmitting = false;
+              }
               return;
             }
 
+            this.urlSubmitting = true;
             this.startUrlTicker();
             try {
               const data = await this.uploadPlainUrlToServer(submittedUrl);
@@ -333,8 +348,10 @@
 
               this.urlToUpload = "";
             } catch (err) {
+              // 失败时保留输入框内容：用户多半要重试，清掉等于逼他重新粘贴。
               this.showToast("URL上传失败：" + err.message, "error");
             } finally {
+              this.urlSubmitting = false;
               this.stopUrlTicker();
             }
           },

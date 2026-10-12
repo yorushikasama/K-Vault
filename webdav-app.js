@@ -327,6 +327,10 @@
               pushResult("URL 上传完成。", "ok");
             }
             setStatus("URL 上传完成。", true);
+            // 转存成功才清空：失败时保留，用户多半要改一改重试，
+            // 清掉等于逼他重新粘贴一遍。这个函数此前从不清空，
+            // 所以成功的 URL 会一直留在框里。
+            urlInput.value = "";
           } finally {
             uploadUrlBtn.disabled = false;
           }
