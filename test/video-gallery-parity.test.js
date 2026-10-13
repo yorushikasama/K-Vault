@@ -34,6 +34,15 @@ describe('video library mirrors the gallery derivation chain', function () {
     return m[1];
   }
 
+  /* 视频扩展名清单在四个运行时里各有一份（Workers 与浏览器互相 import
+     不了，admin-app 又有自己的私有副本）。它被三组测试用到，所以定义在
+     describe 外面而不是塞在某一段里。 */
+  function sharedList() {
+    const m = /var VIDEO_EXTS = \[([\s\S]*?)\];/.exec(shared);
+    assert.ok(m, 'kv-shared.js 里找不到 VIDEO_EXTS');
+    return [...m[1].matchAll(/"([a-z0-9]+)"/g)].map((x) => x[1]);
+  }
+
   describe('same four stages, same division of labour', function () {
     it('declares the same stage names as the gallery', function () {
       for (const stage of ['videoItems', 'searchedVideos', 'filteredVideos']) {
@@ -86,12 +95,6 @@ describe('video library mirrors the gallery derivation chain', function () {
   });
 
   describe('the video extension list matches everywhere it is duplicated', function () {
-    const sharedList = () => {
-      const m = /var VIDEO_EXTS = \[([\s\S]*?)\];/.exec(shared);
-      assert.ok(m, 'kv-shared.js 里找不到 VIDEO_EXTS');
-      return [...m[1].matchAll(/"([a-z0-9]+)"/g)].map((x) => x[1]);
-    };
-
     it('kv-shared.js declares and exports it', function () {
       const list = sharedList();
       assert.ok(list.length >= 10, `清单只有 ${list.length} 项，像是没加载出来`);
@@ -229,7 +232,86 @@ describe('video library mirrors the gallery derivation chain', function () {
     });
   });
 
-  describe('the files page hands media over instead of duplicating it', function () {
+  describe('the folder dimension is not optional', function () {
+  const foldersApi = read('functions/api/manage/folders.js');
+
+  it('sends folderPath to the server, not filters it in the browser', function () {
+    // 这是用户报的现象的根因：文件工作台能进目录，本页最初只拉根目录，
+    // 于是 /douyin 里的 8 个视频在视频页一个都看不到 —— 两个页给出两个数，
+    // 而两个数都不算错。
+    // 关键在于必须在服务端筛：不带 folderPath 时接口只返回根目录直属文件，
+    // 前端拿到的已经是残缺的一页，再怎么过滤也补不回来。
+    assert.match(
+      videoApp,
+      /params\.set\('folderPath', this\.folderPath\)/,
+      '拉列表时必须带 folderPath —— 服务端才会返回该目录的文件'
+    );
+  });
+
+  it('marks exactly one folder as current', function () {
+    assert.match(videoHtml, /:class="\{ 'is-current': folder\.path === folderPath \}"/,
+      '当前目录需要高亮，否则用户不知道自己在看哪一批文件');
+    assert.match(videoApp, /folderTree\(\)/, '缺少目录树派生');
+    assert.match(videoHtml, /v-for="folder in folderTree"/, '模板没有渲染目录树');
+  });
+
+  it('shows the scope next to the count', function () {
+    // 不写范围的话，/douyin 里 8 个、根目录 5 个，两个数互相矛盾而都正确。
+    assert.match(videoApp, /scopeLabel\(\)\s*\{\s*return this\.folderPath \?/, '缺少范围说明');
+    assert.match(videoHtml, /\{\{ scopeLabel \}\} · 视频<strong>\{\{ totalCount \}\}/,
+      '计数前必须挂上范围，否则用户在目录间切换时无法解释数字变化');
+  });
+
+  it('labels the link formats with what they actually produce', function () {
+    // 「链接格式」四个字没告诉用户 MD 和 HTML 出来的是什么东西，
+    // 只能点了才知道。这个控件的存在价值就是省掉那一点点。
+    assert.match(videoHtml, /title="只复制直链地址"/, '直链按钮应有产物说明');
+    assert.match(videoHtml, /title="!\[文件名\]\(直链\)"/, 'MD 按钮应给出实际模板');
+    assert.match(videoHtml, /title="\[img\]直链\[\/img\]"/, 'BB 按钮应给出实际模板');
+    assert.match(videoHtml, />直链</, 'URL 应改叫「直链」，而不是让人猜');
+  });
+
+  it('gets a per-type count from the folders endpoint', function () {
+    // 目录树徽标要是视频数而不是文件数，否则「文件 8 / 视频 5」两个数字
+    // 互相矛盾，而目录树是那个矛盾最先被看到的地方。
+    assert.match(foldersApi, /videoCount: videoCountByFolder\.get\(pathValue\) \|\| 0/,
+      'folders 接口要按目录给视频数');
+    assert.match(foldersApi, /if \(isVideoName\(record\?\.name\)\)/,
+      '视频数必须按扩展名判定，不能按 mimeType');
+  });
+
+  it('the folders endpoint video list matches the shared list', function () {
+    // 同一件事第四份副本。前三份（kv-shared / list.js / admin-app）已经对齐过，
+    // 这次新增的 folders.js 也要跟上，否则目录树和列表会各数各的。
+    const m = /const VIDEO_EXTS = new Set\(\[([\s\S]*?)\]\);/.exec(foldersApi);
+    assert.ok(m, 'folders.js 里找不到 VIDEO_EXTS');
+    const apiItems = [...m[1].matchAll(/'([a-z0-9]+)'/g)].map((x) => x[1]);
+    const sharedItems = sharedList();
+    assert.deepStrictEqual(
+      apiItems.slice().sort(),
+      sharedItems.slice().sort(),
+      `folders.js 与 kv-shared.js 的视频清单不一致。\n  共享: ${sharedItems.join(',')}\n  folders: ${apiItems.join(',')}`
+    );
+  });
+
+  it('never falls back to a zero count', function () {
+    // 显示 0 会让用户以为这里没有视频，比给个保守下界糟得多。
+    const fn = /allVideoCount\(\)\s*\{([\s\S]*?)\n {6}\},/.exec(videoApp);
+    assert.ok(fn, '找不到 allVideoCount');
+    assert.match(fn[1], /return this\.videos\.length;/,
+      '目录接口不可用时应退回当前范围的下界，不能返回 0');
+  });
+
+  it('styles the folder UI it emits', function () {
+    const css = read('video.css').replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const cls of ['video-folders', 'video-folder-item', 'video-folder-name',
+                       'video-folder-count', 'video-crumbs', 'video-crumb']) {
+      assert.ok(css.includes(`.${cls}`), `video.css 缺少 .${cls}`);
+    }
+  });
+});
+
+describe('the files page hands media over instead of duplicating it', function () {
     it('sends the image filter to the gallery and the video filter to the video page', function () {
       // 同一个东西有两个入口时，两边的清单各自会漂移。所以 admin 不再
       // 自己筛图片/视频，而是给一条明确的路。

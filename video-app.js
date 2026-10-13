@@ -2,10 +2,18 @@
  * 视频库页的 Vue 应用。
  *
  * 与 gallery-app.js 是同一套派生链、同一套数据源（/api/manage/list），
- * 只有两处不同：类型口径是 VIDEO 而不是 IMAGE，卡片里放 <video> 而不是
- * <img>。这里保留独立文件而不是抽公共组件，是因为这个仓库没有构建步骤，
- * 抽共享组件要额外引入一个全局组件注册 + 两页各自的模板，收益不抵成本；
- * 而「两边必须一致」的部分由 test/video-gallery-parity.test.js 钉住。
+ * 只有三处不同：类型口径是 VIDEO 而不是 IMAGE，卡片里放 <video> 而不是
+ * <img>，以及本页有目录维度（见 folderPath）。
+ *
+ * 目录这一维是补上的，不是多余的：文件工作台能进目录，而本页面最初只能
+ * 拉根目录，于是用户在 /douyin 里有 8 个视频、在这个页面上看到 0 个 ——
+ * 「视频页面只有 8 个」其实是「文件页有 8 个、视频页一个都没有」被误读。
+ * 计数必须能说清自己在数哪个范围，否则同一批文件在两页给出两个数，
+ * 而两个数都不算错。
+ *
+ * 这里保留独立文件而不是抽公共组件，是因为这个仓库没有构建步骤，抽共享
+ * 组件要额外引入全局组件注册 + 两页各自的模板，收益不抵成本；而「两边必须
+ * 一致」的部分由 test/video-gallery-parity.test.js 钉住。
  */
 (function () {
   // 顶栏的退出按钮。与 gallery-app.js 同一机制：外壳由 theme-core.js 维护，
@@ -32,7 +40,10 @@
       pageSize: 12, // 视频卡比图片卡大得多，一页 12 个已经要滚很久了
       nextCursor: null,
       hasMore: true,
-      searchTimer: null
+      searchTimer: null,
+      folders: [],
+      folderPath: '',
+      folderLoading: false
     },
     computed: {
       /* 与图库完全同构的派生链，每层只做一件事：
@@ -70,6 +81,61 @@
         return this.videoItems.filter((vid) => vid.selected).length;
       },
 
+      /* 目录树：根节点 + 服务端给的目录列表，按层级排序。
+         与文件工作台的 folderTreeNodes 同构 —— 两边都从 /api/manage/folders
+         读，所以同一个目录在两页的名字和计数一致。 */
+      folderTree() {
+        const root = {
+          path: '',
+          name: '全部视频',
+          depth: 0,
+          fileCount: this.folderCount('')
+        };
+        const nodes = (this.folders || [])
+          .map((folder) => {
+            const path = KVShared.normalizeFolderPath(folder.path ?? folder.folderPath ?? '');
+            if (!path) return null;
+            return {
+              path,
+              name: folder.name || path.split('/').pop(),
+              depth: path.split('/').length,
+              videoCount: folder.videoCount
+            };
+          })
+          .filter(Boolean)
+          .sort((a, b) => a.depth - b.depth || a.path.localeCompare(b.path, 'zh-CN'));
+        return [root].concat(nodes);
+      },
+
+      folderBreadcrumbs() {
+        const parts = KVShared.normalizeFolderPath(this.folderPath).split('/').filter(Boolean);
+        const crumbs = [{ path: '', name: '全部视频' }];
+        let acc = '';
+        for (const part of parts) {
+          acc = acc ? `${acc}/${part}` : part;
+          crumbs.push({ path: acc, name: part });
+        }
+        return crumbs;
+      },
+
+      /* 页头那句「范围内 N 项」的范围说明。不写清楚的话，用户在
+         /douyin 看到 8、回到根目录看到 5，会以为是漏了 3 个。 */
+      scopeLabel() {
+        return this.folderPath ? `目录 /${this.folderPath}` : '全部目录';
+      },
+
+      /* 根目录的视频总数。服务端 list 不带 folderPath 时只返回根目录直属
+         文件，所以「根目录视频数」必须由目录接口的 videoCount 给，不能拿
+         当前已加载的 videos 去数 —— 那个数只覆盖已翻到的那几页。 */
+      allVideoCount() {
+        const root = (this.folders || []).find((f) => !f.path);
+        if (root && Number.isFinite(root.videoCount)) return root.videoCount;
+        // 目录接口没给（旧的 Node 端副本、或请求失败）时退回当前范围。
+        // 这是一个保守下界，但必须是当前目录的数，不能是 0 —— 显示 0 会让
+        // 用户以为这里没有视频。
+        return this.videos.length;
+      },
+
       isAllSelected() {
         return this.filteredVideos.length > 0 && this.filteredVideos.every((vid) => vid.selected);
       },
@@ -100,6 +166,42 @@
     methods: {
       extOf(name) {
         return String(name || '').split('.').pop().toLowerCase();
+      },
+
+      /* 目录树上的数字是**该目录的视频数**，不是该目录的文件总数 ——
+         目录里若混着图片，数字得说自己在数视频，否则又是一个
+         「两个数都不算错」的场合。服务端只给总数，所以视频数在这里算。 */
+      folderCount(path) {
+        if (!path) return this.allVideoCount;
+        return this.folders.find((f) => f.path === path)?.videoCount ?? '—';
+      },
+
+      async loadFolders() {
+        this.folderLoading = true;
+        try {
+          const response = await fetch('./api/manage/folders', {
+            method: 'GET',
+            credentials: 'include'
+          });
+          if (!response.ok) return;
+          const payload = await response.json();
+          this.folders = Array.isArray(payload?.folders) ? payload.folders : [];
+        } catch (error) {
+          this.folders = [];
+        } finally {
+          this.folderLoading = false;
+        }
+      },
+
+      async selectFolder(path) {
+        const next = KVShared.normalizeFolderPath(path);
+        if (next === this.folderPath) return;
+        this.folderPath = next;
+        this.currentPage = 1;
+        this.clearSelection();
+        this.nextCursor = null;
+        this.hasMore = true;
+        await this.loadVideos();
       },
 
       formatLink(vid) {
@@ -140,10 +242,15 @@
        * 每一条都得补 selected:false 和 fileName 回退 —— 服务端只在
        * 部分路径写 metadata.fileName。 */
       async fetchPage(cursor) {
-        const query = cursor
-          ? `./api/manage/list?limit=100&cursor=${encodeURIComponent(cursor)}`
-          : './api/manage/list?limit=100';
-        const response = await fetch(query, { method: 'GET', credentials: 'include' });
+        const params = new URLSearchParams({ limit: '100' });
+        if (cursor) params.set('cursor', String(cursor));
+        // 目录维度必须由服务端筛，不能前端筛：不带 folderPath 时接口只返回
+        // 根目录直属文件，前端拿到的就已经是残缺的一页，再怎么过滤也补不回来。
+        if (this.folderPath) params.set('folderPath', this.folderPath);
+        const response = await fetch(`./api/manage/list?${params.toString()}`, {
+          method: 'GET',
+          credentials: 'include'
+        });
 
         if (response.status === 401) {
           window.location.href = './api/manage/login';
@@ -276,11 +383,14 @@
         return KVShared.ensureAuth({ loginPath: '/login.html' });
       }
     },
-    async mounted() {
+async mounted() {
       const isAuth = await this.checkAuth();
       if (!isAuth) return;
 
-await this.loadVideos();
+      // 目录树先到：徽标上的数字要能解释「文件 8 / 视频 5」，所以它必须在
+      // 列表之前就位，否则用户会先看到一个没来由的 5，再看到目录里写着 8。
+      await this.loadFolders();
+      await this.loadVideos();
 
       // 网格里同时挂着多个 <video>，preload 必须停在 none：
       // 一页 12 个 metadata 预载会让首屏多打 12 个 Range 请求，卡在移动

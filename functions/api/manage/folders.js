@@ -1,6 +1,27 @@
 ﻿const STORAGE_PREFIXES = ['img:', 'vid:', 'aud:', 'doc:', 'r2:', 's3:', 'discord:', 'hf:', 'webdav:', 'github:', ''];
 const INVALID_PREFIXES = ['session:', 'chunk:', 'upload:', 'temp:'];
 
+// 目录树徽标要按类型再数一遍。与 functions/api/manage/list.js 的 VIDEO_EXTS
+// 同一份内容（那边跑在 Workers 上 import 不了浏览器脚本，两边一致性由
+// test/video-gallery-parity.test.js 钉住）。
+// 为什么要按类型：文件数不能直接当视频数用。用户在 /douyin 看到文件页写 8，
+// 切到视频页看到 5，两个数都不算错但互相矛盾 —— 那个目录里混着非视频文件，
+// 而视频页只显示视频。目录树若只给文件总数，两页就没法互相解释。
+const VIDEO_EXTS = new Set([
+  'mp4', 'webm', 'ogg', 'ogv', 'avi', 'mov', 'wmv', 'flv', 'mkv',
+  'm4v', 'm3u8', '3gp', 'ts', 'mts', 'm2ts', 'f4v', 'rm', 'rmvb',
+  'vob', 'asf', 'divx', 'mxf',
+]);
+
+function extOf(name) {
+  const segments = String(name == null ? '' : name).split('.');
+  return segments.length > 1 ? segments.pop().toLowerCase() : '';
+}
+
+function isVideoName(name) {
+  return VIDEO_EXTS.has(extOf(name));
+}
+
 function normalizeFolderPath(value = '') {
   const raw = String(value || '').replace(/\\/g, '/').trim();
   const output = [];
@@ -59,6 +80,7 @@ function includeParentPaths(pathValue, set) {
 function buildFolderNodes(fileRecords, folderMarkers) {
   const folderPaths = new Set();
   const fileCountByFolder = new Map();
+  const videoCountByFolder = new Map();
 
   for (const record of fileRecords) {
     const folderPath = normalizeFolderPath(record?.metadata?.folderPath || '');
@@ -66,6 +88,9 @@ function buildFolderNodes(fileRecords, folderMarkers) {
     folderPaths.add(folderPath);
     includeParentPaths(folderPath, folderPaths);
     fileCountByFolder.set(folderPath, (fileCountByFolder.get(folderPath) || 0) + 1);
+    if (isVideoName(record?.name)) {
+      videoCountByFolder.set(folderPath, (videoCountByFolder.get(folderPath) || 0) + 1);
+    }
   }
 
   for (const marker of folderMarkers) {
@@ -94,6 +119,7 @@ function buildFolderNodes(fileRecords, folderMarkers) {
         parentPath: parts.length > 1 ? parts.slice(0, -1).join('/') : '',
         depth: parts.length,
         fileCount: fileCountByFolder.get(pathValue) || 0,
+        videoCount: videoCountByFolder.get(pathValue) || 0,
       };
     });
 }

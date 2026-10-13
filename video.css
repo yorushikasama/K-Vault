@@ -89,6 +89,115 @@
       color: var(--ui-ink-muted);
     }
 
+    /* ---------- 目录树 ----------
+       与文件工作台的目录侧栏同构：竖排、可点、当前项高亮、右侧带计数。
+       徽标数字是该目录的视频数，服务端按扩展名算好后一起给。 */
+
+    .video-folders {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 8px;
+      margin-bottom: 12px;
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow);
+    }
+
+    .video-folder-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 36px;
+      padding: 8px 10px;
+      border: none;
+      border-radius: var(--ui-radius-sm);
+      background: transparent;
+      color: var(--ui-ink);
+      font: inherit;
+      font-size: 0.88rem;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .video-folder-item:hover {
+      background: color-mix(in srgb, var(--ui-brand) 8%, transparent);
+    }
+
+    .video-folder-item.is-current {
+      background: color-mix(in srgb, var(--ui-brand) 14%, transparent);
+      color: var(--ui-brand);
+      font-weight: 600;
+    }
+
+    .video-folder-item svg,
+    .video-folder-item i {
+      flex: 0 0 auto;
+      width: 16px;
+      height: 16px;
+    }
+
+    .video-folder-name {
+      flex: 1 1 auto;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .video-folder-count {
+      flex: 0 0 auto;
+      min-width: 22px;
+      padding: 1px 6px;
+      border-radius: var(--ui-radius-sm);
+      background: color-mix(in srgb, var(--ui-brand) 12%, transparent);
+      color: var(--ui-ink-muted);
+      font-size: 0.72rem;
+      text-align: center;
+    }
+
+    /* ---------- 面包屑 ---------- */
+
+    .video-crumbs {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 12px;
+      font-size: 0.85rem;
+    }
+
+    .video-crumbs > svg {
+      width: 14px;
+      height: 14px;
+      color: var(--ui-ink-muted);
+      opacity: 0.6;
+    }
+
+    .video-crumb {
+      padding: 4px 8px;
+      border: none;
+      border-radius: var(--ui-radius-sm);
+      background: transparent;
+      color: var(--ui-ink-muted);
+      font: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .video-crumb:hover {
+      background: color-mix(in srgb, var(--ui-brand) 8%, transparent);
+      color: var(--ui-ink);
+    }
+
+    .video-crumb.is-current {
+      color: var(--ui-ink);
+      font-weight: 600;
+      cursor: default;
+    }
+
     /* ---------- 视频网格 ----------
        列宽比图库宽不少：视频是 16:9，卡片里要放下原生播放器的控件条，
        220px 那档会让进度条和音量按钮挤成一团。 */
@@ -296,6 +405,27 @@
       }
 
       .segmented { justify-content: center; }
+
+      /* 目录树在窄屏压成横向滚动条：竖排会占掉整屏高度，用户要先滚过一串目录
+         才能看到视频。文件工作台是侧栏 + 抽屉，本页没有侧栏可用。 */
+      .video-folders {
+        flex-direction: row;
+        overflow-x: auto;
+        gap: 6px;
+        scrollbar-width: thin;
+      }
+
+      .video-folder-item {
+        width: auto;
+        flex: 0 0 auto;
+        padding: 8px 12px !important; /* 覆盖 :style 里的缩进 */
+        border: 1px solid var(--ui-line);
+        white-space: nowrap;
+      }
+
+      .video-folder-name { flex: 0 0 auto; }
+
+      .video-crumbs { font-size: 0.8rem; }
 
       .video-grid {
         grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

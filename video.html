@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="/ui-buttons.css?v=55f77f600e">
   <!-- 应用外壳（顶栏）各分区页共用，因此排在页面私有样式之前。 -->
   <link rel="stylesheet" href="/app-shell.css?v=3dda6774c7">
-  <link rel="stylesheet" href="/video.css?v=3eaef45bac">
+  <link rel="stylesheet" href="/video.css?v=a15376935b">
 <script src="/kv-shared.js?v=1ea5bed490"></script>
   <link rel="stylesheet" href="/mobile-refactor.css?v=2f0292c228">
 </head>
@@ -49,6 +49,37 @@
   </header>
 
   <div id="app" v-cloak>
+    <!-- 目录树。与文件工作台同一个数据源（/api/manage/folders），所以同一个
+         目录在两页的名字和数字一致。
+         徽标数字是**该目录的视频数**，不是文件数：目录里混着图片时，
+         「文件 8 / 视频 5」两个数都要能各自解释，而不是让用户猜少了三个。 -->
+    <nav class="video-folders" aria-label="视频目录">
+      <button v-for="folder in folderTree"
+              :key="folder.path || '__root__'"
+              type="button"
+              class="video-folder-item"
+              :class="{ 'is-current': folder.path === folderPath }"
+              :style="{ paddingLeft: (10 + folder.depth * 14) + 'px' }"
+              :aria-current="folder.path === folderPath ? 'page' : null"
+              @click="selectFolder(folder.path)">
+        <kv-icon name="folder"></kv-icon>
+        <span class="video-folder-name">{{ folder.name }}</span>
+        <span class="video-folder-count">{{ folderCount(folder.path) }}</span>
+      </button>
+    </nav>
+
+    <!-- 面包屑。切到子目录后页头不再写「全部目录」，否则同一个 8 会在两个
+         目录下各出现一次，用户无法判断自己在看哪个范围。 -->
+    <div class="video-crumbs" aria-label="当前目录">
+      <template v-for="(crumb, index) in folderBreadcrumbs" :key="crumb.path || '__root__'">
+        <kv-icon v-if="index > 0" name="chevron-right"></kv-icon>
+        <button type="button"
+                class="video-crumb"
+                :class="{ 'is-current': index === folderBreadcrumbs.length - 1 }"
+                @click="selectFolder(crumb.path)">{{ crumb.name }}</button>
+      </template>
+    </div>
+
     <!-- 工具栏 -->
     <div class="toolbar">
       <div class="toolbar-left">
@@ -58,11 +89,13 @@
         </div>
         <!-- totalCount 取的是 searchedVideos.length，也就是**搜索过滤之后**的
              视频数，与网格里看到的严格一致。标签跟着语义走：搜索时叫
-             "匹配"，平时叫"视频"。与图库同一套派生链。 -->
+             "匹配"，平时叫"视频"。与图库同一套派生链。
+             计数前面挂上范围标签：不写清楚的话，/douyin 里 8 个、根目录
+             5 个，两个数都不算错却互相矛盾。 -->
         <span class="stat-badge">
           <i data-lucide="film"></i>
-          <template v-if="searchQuery.trim()">匹配<strong>{{ totalCount }}</strong></template>
-          <template v-else>视频<strong>{{ totalCount }}</strong></template>
+          <template v-if="searchQuery.trim()">{{ scopeLabel }} · 匹配<strong>{{ totalCount }}</strong></template>
+          <template v-else>{{ scopeLabel }} · 视频<strong>{{ totalCount }}</strong></template>
         </span>
         <span class="stat-badge"><i data-lucide="square-check"></i> 已选<strong>{{ selectedCount }}</strong></span>
         <button class="btn btn-sm btn-ghost" @click="selectAll">
@@ -75,12 +108,22 @@
         </button>
       </div>
       <div class="toolbar-right">
-        <span class="format-label">链接格式</span>
-        <div class="segmented" role="group" aria-label="链接格式">
-          <button class="btn" :aria-pressed="linkFormat === 'url' ? 'true' : 'false'" @click="linkFormat = 'url'">URL</button>
-          <button class="btn" :aria-pressed="linkFormat === 'markdown' ? 'true' : 'false'" @click="linkFormat = 'markdown'">MD</button>
-          <button class="btn" :aria-pressed="linkFormat === 'html' ? 'true' : 'false'" @click="linkFormat = 'html'">HTML</button>
-          <button class="btn" :aria-pressed="linkFormat === 'bbcode' ? 'true' : 'false'" @click="linkFormat = 'bbcode'">BB</button>
+        <!-- 每种格式的实际产物直接写在标签里。「链接格式」四个字没告诉
+             用户 MD 和 HTML 出来的是什么东西，只能点了才知道。 -->
+        <span class="format-label" aria-hidden="true">复制格式</span>
+        <div class="segmented" role="group" aria-label="复制链接的格式">
+          <button class="btn" :aria-pressed="linkFormat === 'url' ? 'true' : 'false'"
+                  title="只复制直链地址"
+                  @click="linkFormat = 'url'">直链</button>
+          <button class="btn" :aria-pressed="linkFormat === 'markdown' ? 'true' : 'false'"
+                  title="![文件名](直链)"
+                  @click="linkFormat = 'markdown'">MD</button>
+          <button class="btn" :aria-pressed="linkFormat === 'html' ? 'true' : 'false'"
+                  title="&lt;img src=&quot;直链&quot;&gt;"
+                  @click="linkFormat = 'html'">HTML</button>
+          <button class="btn" :aria-pressed="linkFormat === 'bbcode' ? 'true' : 'false'"
+                  title="[img]直链[/img]"
+                  @click="linkFormat = 'bbcode'">BB</button>
         </div>
       </div>
     </div>
@@ -208,6 +251,6 @@
        只作用于之后创建的实例。放在后面的话 v-if 里的图标永远不会被替换。 -->
   <script src="/icons-subset.js?v=a139a660aa"></script>
   <script src="/icons.js?v=fc3fc216e0"></script>
-  <script src="/video-app.js?v=a8a84bc3d3"></script>
+  <script src="/video-app.js?v=46ee2c3712"></script>
 </body>
 </html>
