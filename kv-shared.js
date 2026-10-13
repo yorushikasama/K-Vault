@@ -92,18 +92,83 @@
 
   // ---------- 链接格式化 ----------
 
+  /* 各格式按文件类型套不同外壳。
+   *
+   * 此前无论什么类型都套 <img>：复制一个 mp4 选 MD，粘出去是
+   * ![旅行 vlog.mp4](…mp4)，Markdown 会去渲染成**一张图片**，然后裂开；
+   * HTML 是 <img src="…mp4">，BBCode 是 [img]…[/img]，三个都产出坏标记。
+   * 这个函数原本只给图库用（那里全是图片，碰巧成立），视频页沿用之后就
+   * 露馅了 —— 同一件事在图床上是特性，扩到别的类型就成了 bug。
+   *
+   * 现在标签由类型决定：
+   *   图片  ![](…)  / <img>              / [img]
+   *   视频  [](…)   / <video controls>   / [video]
+   *   音频  [](…)   / <audio controls>   / [audio]
+   *   其它  [](…)   / <a>（下载链接）    / [url]
+   * 音频和文档没有专属的「内联」标记可套，退回普通链接 —— 那才是真的能用的
+   * 产物：一个能点开的链接，而不是一段渲染不出来的东西。 */
+  var EMBED_TAGS = {
+    image: {
+      markdown: function (n, u) { return `![${n}](${u})`; },
+      html: function (n, u) { return `<img src="${u}" alt="${n}">`; },
+      bbcode: function (u) { return `[img]${u}[/img]`; },
+      ubb: function (u) { return `[IMG]${u}[/IMG]`; }
+    },
+    video: {
+      markdown: function (n, u) { return `[${n}](${u})`; },
+      html: function (u) { return `<video src="${u}" controls></video>`; },
+      bbcode: function (u) { return `[video]${u}[/video]`; },
+      ubb: function (u) { return `[VIDEO]${u}[/VIDEO]`; }
+    },
+    audio: {
+      markdown: function (n, u) { return `[${n}](${u})`; },
+      html: function (u) { return `<audio src="${u}" controls></audio>`; },
+      bbcode: function (u) { return `[audio]${u}[/audio]`; },
+      ubb: function (u) { return `[AUDIO]${u}[/AUDIO]`; }
+    },
+    document: {
+      // 文档没有「内联显示」这个概念，套 <img> 只会裂。给下载链接。
+      markdown: function (n, u) { return `[${n}](${u})`; },
+      html: function (n, u) { return `<a href="${u}">${n}</a>`; },
+      bbcode: function (u) { return `[url]${u}[/url]`; },
+      ubb: function (u) { return `[URL]${u}[/URL]`; }
+    }
+  };
+
+  /** 由文件名判断该用哪套标签。
+   *
+   * 图片走的是**可渲染子集**而不是归类清单：RAW / PSD / tiff / heic / jxl
+   * 是货真价实的图片，但 <img> 解不了码 —— 套 ![](…) 粘到任何地方都是一张
+   * 裂图。给人一张裂图不如给他一个能点开的下载链接。这与图库卡片、preview
+   * 页用的是同一个判断，三处口径必须一致。
+   *
+   * 取不到扩展名时退回 document 而不是 image：文件没扩展名的话，多半不是
+   * 浏览器能画的东西，给下载链接更可能有用。
+   */
+  function linkEmbedKind(fileName) {
+    var ext = extOf(fileName);
+    if (VIDEO_EXTS.indexOf(ext) !== -1) return "video";
+    if (AUDIO_EXTS.indexOf(ext) !== -1) return "audio";
+    if (VIEWABLE_IMAGE_EXTS.indexOf(ext) !== -1) return "image";
+    return "document";
+  }
+
   /**
-   * 直链 → 各种论坛/编辑器格式。upload、gallery 与 admin 的快捷复制
-   * 原本各有一份 switch，这里统一；ubb 只有上传页的格式选择器暴露。
+   * 直链 → 各种论坛/编辑器格式。upload、gallery、video 与 admin 的快捷
+   * 复制原本各有一份 switch，这里统一；ubb 只有上传页的格式选择器暴露。
+   *
+   * name 决定标签里的显示文字，所以调用方必须传**文件名**而不是 key ——
+   * key 是 telegram_1791733102845_n2f75p.mp4 这种内部标识，贴到论坛里没人
+   * 看得懂。三个调用方都传 metadata.fileName。
    */
   function formatLink(url, name, format) {
-    switch (format) {
-      case "markdown": return `![${name}](${url})`;
-      case "html": return `<img src="${url}" alt="${name}">`;
-      case "bbcode": return `[img]${url}[/img]`;
-      case "ubb": return `[IMG]${url}[/IMG]`;
-      default: return url;
-    }
+    var kind = EMBED_TAGS[linkEmbedKind(name)];
+    var fn = kind && kind[format];
+    // 直链与未知格式一律返回裸链接：多套一层壳对用户没有价值，
+    // 只有他明确选了某种格式时才该包。
+    if (!fn) return url;
+    // bbcode/ubb 的模板只需要 url；markdown/html 需要 name。
+    return fn.length >= 2 ? fn(name, url) : fn(url);
   }
 
   // ---------- 文件类型图标 ----------

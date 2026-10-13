@@ -17,7 +17,7 @@
   <!-- 应用外壳（顶栏）各分区页共用，因此排在页面私有样式之前。 -->
   <link rel="stylesheet" href="/app-shell.css?v=3dda6774c7">
   <link rel="stylesheet" href="/video.css?v=a15376935b">
-<script src="/kv-shared.js?v=1ea5bed490"></script>
+<script src="/kv-shared.js?v=bbf671511b"></script>
   <link rel="stylesheet" href="/mobile-refactor.css?v=2f0292c228">
 </head>
 <body>
@@ -108,21 +108,23 @@
         </button>
       </div>
       <div class="toolbar-right">
-        <!-- 每种格式的实际产物直接写在标签里。「链接格式」四个字没告诉
-             用户 MD 和 HTML 出来的是什么东西，只能点了才知道。 -->
+        <!-- 每种格式的实际产物直接写在标签和 title 里。「链接格式」四个字没告诉
+             用户 MD 和 HTML 出来的是什么东西，只能点了才知道。
+             标题按本页类型写实：视频页给的是 [文件名](直链) 与 <video controls>，
+             不是图库那套 ![文件名](直链) 和 <img>。 -->
         <span class="format-label" aria-hidden="true">复制格式</span>
         <div class="segmented" role="group" aria-label="复制链接的格式">
           <button class="btn" :aria-pressed="linkFormat === 'url' ? 'true' : 'false'"
                   title="只复制直链地址"
                   @click="linkFormat = 'url'">直链</button>
           <button class="btn" :aria-pressed="linkFormat === 'markdown' ? 'true' : 'false'"
-                  title="![文件名](直链)"
+                  title="[文件名](直链)"
                   @click="linkFormat = 'markdown'">MD</button>
           <button class="btn" :aria-pressed="linkFormat === 'html' ? 'true' : 'false'"
-                  title="&lt;img src=&quot;直链&quot;&gt;"
+                  title="&lt;video src=&quot;直链&quot; controls&gt;&lt;/video&gt;"
                   @click="linkFormat = 'html'">HTML</button>
           <button class="btn" :aria-pressed="linkFormat === 'bbcode' ? 'true' : 'false'"
-                  title="[img]直链[/img]"
+                  title="[video]直链[/video]"
                   @click="linkFormat = 'bbcode'">BB</button>
         </div>
       </div>

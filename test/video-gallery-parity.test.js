@@ -266,9 +266,18 @@ describe('video library mirrors the gallery derivation chain', function () {
   it('labels the link formats with what they actually produce', function () {
     // 「链接格式」四个字没告诉用户 MD 和 HTML 出来的是什么东西，
     // 只能点了才知道。这个控件的存在价值就是省掉那一点点。
+    //
+    // 标题要按**本页类型**写实：视频页给的是 [文件名](直链) 与 <video>，
+    // 不是图库那套 ![文件名](直链) 与 <img> —— 后者是 formatLink 曾经
+    // 把标签写死成 <img> 时的产物，复制一个 mp4 粘出去就是一张裂图。
     assert.match(videoHtml, /title="只复制直链地址"/, '直链按钮应有产物说明');
-    assert.match(videoHtml, /title="!\[文件名\]\(直链\)"/, 'MD 按钮应给出实际模板');
-    assert.match(videoHtml, /title="\[img\]直链\[\/img\]"/, 'BB 按钮应给出实际模板');
+    assert.match(videoHtml, /title="\[文件名\]\(直链\)"/,
+      'MD 按钮应给出视频页的实际模板，不能是图库的 ![]()');
+    assert.match(videoHtml, /title="\[video\]直链\[\/video\]"/, 'BB 按钮应给出视频页的实际模板');
+    assert.match(videoHtml, /title="&lt;video src=&quot;直链&quot; controls&gt;/,
+      'HTML 按钮应说明产出 <video controls>，不是 <img>');
+    assert.doesNotMatch(videoHtml, /title="!\[文件名\]/,
+      '视频页不该再承诺图片语法 —— 那会产出裂图');
     assert.match(videoHtml, />直链</, 'URL 应改叫「直链」，而不是让人猜');
   });
 
