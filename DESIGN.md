@@ -26,7 +26,7 @@ Deriving, not restating:
 
 The accent must clear WCAG AA (4.5:1) as text on canvas, as text on every surface, and as the ground for `--ui-brand-ink`. The test asserts this for all 360 hues instead of two fixed values, so it cannot be satisfied by editing a constant.
 
-Pages must not define `--ui-brand` or their own neutral palette. preview and admin-waterfall used to pin a teal brand, and admin-imgtc kept a private `--admin-*` scale with no dark block at all — every one of those forks the palette the moment the wallpaper changes.
+Pages must not define `--ui-brand` or their own neutral palette. preview and the old waterfall page used to pin a teal brand, and the old imgtc page kept a private `--admin-*` scale with no dark block at all — every one of those forks the palette the moment the wallpaper changes. Both legacy pages are now gone; the gallery's masonry view lives inside gallery.css and inherits the same tokens.
 
 Element UI semantic colors (success/warning/danger/info) intentionally stay fixed: they carry meaning (a delete button is red in any theme), not brand identity.
 
@@ -96,4 +96,4 @@ Product UI: keep the system/sans stack already in use (`system-ui`-based). Do no
 
 ## Scope note
 
-`theme.css` is loaded first on every page and owns the shared tokens + neutralizers. Per-page inline `<style>` blocks and `admin-imgtc.css` / `mobile-refactor.css` must be swept to remove local gradients/glass/glows/over-rounding/lift and to reference these tokens where practical. Keep behavior and layout identical; this pass is visual treatment only.
+`theme.css` is loaded first on every page and owns the shared tokens + neutralizers. Per-page inline `<style>` blocks and `mobile-refactor.css` must be swept to remove local gradients/glass/glows/over-rounding/lift and to reference these tokens where practical. Keep behavior and layout identical; this pass is visual treatment only.

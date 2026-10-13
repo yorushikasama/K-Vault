@@ -10,10 +10,8 @@
 | --- | --- |
 | index（上传首页） | theme-core → theme-effects(defer) → icons-subset → icons → kv-shared → upload-media → upload-image → upload-app |
 | admin（文件工作台） | theme-core → theme-effects(defer) → icons-subset → icons → admin-shared → kv-shared → admin-tokens → admin-ui-design → admin-app |
-| admin-imgtc（旧图床） | theme-core → theme-effects(defer) → icons-subset → icons → admin-shared → kv-shared → admin-imgtc-app |
 | gallery / video | … → kv-shared → 各自 app |
 | preview | theme-core → kv-shared → preview-parsers → preview-app → icons |
-| admin-waterfall | theme-core → kv-shared → 内联脚本 |
 | login / block-img / whitelist-on | theme-core（+ icons）；不依赖共享模块 |
 
 ## 共享层
@@ -35,7 +33,6 @@
 | `admin-app.js` | `new Vue` | 文件工作台装配：列表作用域缓存、目录树、拖拽、批量操作、视图切换 |
 | `admin-tokens.js` | `window.KVAdminTokens.methods` | API Token 的创建/轮换/启停/删除 |
 | `admin-ui-design.js` | `window.KVAdminUiDesign.methods` | 前端 UI 设计设置面板（含面板模板） |
-| `admin-imgtc-app.js` | `new Vue` | 旧版图床管理页应用 |
 | `gallery-app.js` | `new Vue` | 图库页应用 |
 | `preview-app.js` | IIFE | 预览器的渲染调度与 DOM 构建 |
 | `preview-parsers.js` | `window.KVPreviewParsers` | 纯解析器（ZIP/TAR/OpenXML/CSV/邮件/JSON），零 DOM 耦合，可独立测试 |
@@ -44,7 +41,7 @@
 ## 铁律
 
 1. **icons.js 必须先于任何 `new Vue` / 应用脚本加载**：它用 `Vue.mixin` 注册渲染钩子，
-   只作用于之后创建的实例。顺序反了，条件渲染里的图标永久空白（gallery / admin-imgtc 都踩过）。
+   只作用于之后创建的实例。顺序反了，条件渲染里的图标永久空白（gallery 与已下线的旧图床页都踩过）。
    契约测试按页面逐一校验此顺序。
 2. **页面不内联应用逻辑**：`new Vue` 只允许出现在根级 app 文件里（契约测试）；
    页面模板里的 `style="` 属性同样禁止（样式进 CSS 文件并使用 token）。

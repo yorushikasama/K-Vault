@@ -43,7 +43,7 @@ describe('frontend third-party asset contract', function () {
   describe('Element UI only loads where it is actually used', function () {
     // Element UI 的 JS + CSS 合计 183 KB gzip，只有真用 <el-*> 组件或 $message/
     // $confirm 这类实例方法的页面才值得付这个代价。
-    const elementUsers = ['admin.html', 'admin-imgtc.html'];
+    const elementUsers = ['admin.html'];
 
     it('is loaded by the admin pages that use its components', function () {
       for (const page of elementUsers) {
@@ -98,16 +98,31 @@ describe('frontend third-party asset contract', function () {
     // icons.js 用 Vue.mixin 注册渲染钩子，而 Vue.mixin 只作用于之后创建的实例。
     // 应用逻辑已拆到根级 app 文件：页面不再内联 new Vue，约束转化为
     // 「icons.js 必须排在应用脚本之前」——script 标签按序执行，等价。
-    // gallery.html 和 admin-imgtc.html 都踩过这个坑。
+    // gallery.html 踩过这个坑。
     const APP_SCRIPTS = {
       'index.html': 'upload-app.js',
       'gallery.html': 'gallery-app.js',
+      'video.html': 'video-app.js',
       'admin.html': 'admin-app.js',
-      'admin-imgtc.html': 'admin-imgtc-app.js',
     };
 
-    it('finds the Vue pages to check', function () {
-      assert.strictEqual(Object.keys(APP_SCRIPTS).length, 4, 'Vue 页面清单与预期不符，请同步更新');
+    it('covers every page that instantiates Vue', function () {
+      // 不写死数量，而是把仓库里真正带 new Vue 的页面找出来对账 ——
+      // 写死数字的话，新增页面时这条会失败，而失败原因看不出是「漏登记」
+      // 还是「真的写错了数量」。admin-imgtc.html 曾经在这里占一行，
+      // 页面下线后删除即可，video.html 则补进来。
+      const vuePages = fs.readdirSync(root)
+        .filter((f) => f.endsWith('.html'))
+        .filter((f) => {
+          const src = read(f);
+          return /new Vue\s*\(/.test(src) || src.includes('="app"');
+        });
+      const declared = Object.keys(APP_SCRIPTS);
+      assert.deepStrictEqual(
+        vuePages.slice().sort(),
+        declared.slice().sort(),
+        'APP_SCRIPTS 与仓库里真正实例化 Vue 的页面不一致；新增/删除 Vue 页面时要同步更新'
+      );
     });
 
     for (const [page, app] of Object.entries(APP_SCRIPTS)) {
@@ -137,7 +152,7 @@ describe('frontend third-party asset contract', function () {
     // 而「标签里有没有这个文件名」的粗检查照样通过。这里钉住标签类型。
     const MODULES = ['kv-shared.js', 'admin-shared.js', 'upload-media.js', 'upload-image.js',
       'admin-tokens.js', 'admin-ui-design.js', 'preview-parsers.js', 'gallery-app.js',
-      'preview-app.js', 'upload-app.js', 'admin-app.js', 'admin-imgtc-app.js'];
+      'preview-app.js', 'upload-app.js', 'admin-app.js'];
 
     it('none of them is referenced with a <link> tag', function () {
       const offenders = [];
@@ -203,7 +218,7 @@ describe('frontend third-party asset contract', function () {
     // 合并同样不是净收益：theme.css 被 10 个页面共享、mobile-refactor.css 被 9 个、
     // workbench.css 被 2 个，把 admin 专属规则并进共享表会让其它页面多下载。
     // admin-imgtc.css 与 admin.css 的选择器交集为 0，合并也减不掉重复。
-    const ADMIN_SHEETS = ['theme.css', 'admin-imgtc.css', 'mobile-refactor.css', 'admin.css', 'workbench.css'];
+    const ADMIN_SHEETS = ['theme.css', 'mobile-refactor.css', 'admin.css', 'workbench.css'];
 
     it('loads exactly the sheets each page needs', function () {
       const html = read('admin.html');

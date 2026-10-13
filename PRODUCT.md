@@ -6,7 +6,7 @@ product
 
 ## Users
 
-Self-hosters and small teams who run YoruVault as their own image/file hosting and paste service. They arrive to do one concrete job: upload a file or image, get a link, and later browse, manage, block, or delete what they stored. The admin surfaces (dashboard, waterfall gallery, token management) are used by the operator, not the public.
+Self-hosters and small teams who run YoruVault as their own image/file hosting and paste service. They arrive to do one concrete job: upload a file or image, get a link, and later browse, manage, block, or delete what they stored. The gallery offers both a uniform grid and a masonry layout, so the operator picks. The admin surfaces (dashboard, token management) are used by the operator, not the public.
 
 ## Product Purpose
 

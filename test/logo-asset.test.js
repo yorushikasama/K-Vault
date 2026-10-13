@@ -45,8 +45,32 @@ describe('logo asset budget', function () {
   });
 
   it('is still referenced by the pages that need it', function () {
+    // 逐页点名，而不是写死个数。写死 9 的问题是：下线两个页面后阈值不再
+    // 对得上，测试会以「引用被误删」的说法失败，而真实原因只是页面少了
+    // —— 报错会把排查方向指到错的���方。
     const pages = fs.readdirSync(root).filter((f) => f.endsWith('.html'));
-    const users = pages.filter((p) => fs.readFileSync(path.join(root, p), 'utf8').includes('/logo.png'));
-    assert.ok(users.length >= 9, `只有 ${users.length} 个页面引用 logo.png，引用可能被误删`);
+    const src = Object.fromEntries(
+      pages.map((p) => [p, fs.readFileSync(path.join(root, p), 'utf8')])
+    );
+
+    const mustHaveLogo = ['index.html', 'admin.html', 'gallery.html', 'video.html', 'login.html'];
+    for (const page of mustHaveLogo) {
+      assert.ok(
+        src[page] && src[page].includes('/logo.png'),
+        `${page} 不再引用 logo.png；应用外壳的品牌位会显示空白`
+      );
+    }
+
+    // 反向：不引用品牌位的页面（preview / block-img / whitelist-on 这类
+    // 被服务端 302 过去的落地页）不该硬塞一个 logo进来。
+    const landedOnly = ['preview.html', 'block-img.html', 'whitelist-on.html'];
+    for (const page of landedOnly) {
+      if (!src[page]) continue;
+      assert.doesNotMatch(
+        src[page],
+        /\/logo-[a-z0-9-]+\.png/,
+        `${page} 引用了不存在的 logo 变体`
+      );
+    }
   });
 });

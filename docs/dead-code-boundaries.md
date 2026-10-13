@@ -114,7 +114,7 @@ index.html:188  <div class="compress-controls" v-if="imageCompress.enabled || im
 `handleBatchDelete` / `handleBatchDownload` / `handleBatchBlockOrUnblock`
 用 `this.selectedFiles = []` 清空选择，而 `admin.html` 用 `clearSelection()`。
 
-在 `admin-imgtc.html` 里 `selectedFiles` 是 **data**，由 `watch: tableData (deep)`
+旧版图床页（`admin-imgtc.html`，已下线）里 `selectedFiles` 是 **data**，由 `watch: tableData (deep)`
 回填；模板上的勾选标记绑定的是 `item.selected`。所以清副本的后果是：
 
 - 勾选标记仍在（模板读的是 `item.selected`）
@@ -123,7 +123,7 @@ index.html:188  <div class="compress-controls" v-if="imageCompress.enabled || im
 
 实测对照（注入两条数据）：
 
-| 步骤 | admin.html | admin-imgtc.html（修复前） |
+| 步骤 | admin.html | 旧版图床页（修复前，页面已下线） |
 |---|---|---|
 | 勾选 2 条后底层 | 2 条 true | 2 条 true |
 | 取消选择后底层 | 0 条 true | **仍 2 条 true** |
@@ -136,10 +136,10 @@ index.html:188  <div class="compress-controls" v-if="imageCompress.enabled || im
 ### 保留（2 个）：`refreshFileList` / `loadMore` 的错误处理深度不同
 
 `admin.html` 用 `requestJson`（30 秒超时、AbortController 取消、
-校验响应体 `success` 字段），`admin-imgtc.html` 用原生 `fetch` + 简单 try/catch。
+校验响应体 `success` 字段），旧版图床页用原生 `fetch` + 简单 try/catch。
 
 这是**架构性差异不是缺陷**：`admin.html` 是带请求取消的高级工作台，
-`admin-imgtc.html` 是简单页。后者完全没有这套基建：
+旧版图床页是简单页。它完全没有这套基建：
 
 ```
 managedControllers 0 处   requestTimers 0 处   pageDisposed 0 处

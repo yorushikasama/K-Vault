@@ -302,8 +302,15 @@
               type !== 'document' && type !== 'all' && this.fileConfig[type].exts.includes(ext)
             );
           } else {
-            // 特定类型模式
-            matchesType = this.fileConfig[this.fileType].exts.includes(ext);
+            // 特定类型模式。
+            // 这里再兜一层：mounted 已用 hasOwnProperty 规整过 localStorage
+            // 读回的 fileType，但 switchFileType 与任何直接赋值 data 的路径
+            // 都可能绕过那一处。键不存在时 fileConfig[x] 是 undefined，
+            // 再取 .exts 就是 TypeError —— filter 回调抛错会让整个 computed
+            // 求值失败，文件列表什么都不显示。判空后退回「不过滤」，
+            // 宁可多显示几个文件，也不要整页空白。
+            const config = this.fileConfig[this.fileType];
+            matchesType = config ? config.exts.includes(ext) : true;
           }
 
           // 存储类型匹配
@@ -2365,7 +2372,22 @@
       // 恢复设置
       this.sortOption = localStorage.getItem('sortOption') || this.sortOption;
       this.filterOption = localStorage.getItem('filterOption') || this.filterOption;
-      this.fileType = localStorage.getItem('fileType') || this.fileType;
+      // fileType 必须规整后再用，不能原样读回。
+      //
+      // localStorage 里的键是跨版本存活的：图片 / 视频的筛选已独立成页，
+      // 老版本写进去的值（'imgtc'、'webdav' 之类）现在都不在 fileConfig 里。
+      // 原样赋值的话，下面 filteredTableData 的
+      // `this.fileConfig[this.fileType].exts` 会取到 undefined 再取 .exts，
+      // 直接 TypeError —— filter 回调抛错导致 computed 求值失败，
+      // 整个文件列表渲染不出来（页面上什么都不显示）。
+      // 这个坑在旧版图床页上真实发生过，页面已下线但隐患搬到了这里。
+      const restoredType = localStorage.getItem('fileType');
+      if (restoredType && Object.prototype.hasOwnProperty.call(this.fileConfig, restoredType)) {
+        this.fileType = restoredType;
+      } else if (restoredType) {
+        // 存量键已失效：清掉，否则每次打开都带着一个非法值。
+        localStorage.removeItem('fileType');
+      }
       this.loadMode = localStorage.getItem('loadMode') || this.loadMode;
       this.safeMode = localStorage.getItem('safeMode') !== 'false';
       const savedViewMode = localStorage.getItem('adminViewMode');

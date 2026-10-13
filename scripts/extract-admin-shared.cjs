@@ -22,13 +22,13 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..');
 const PAGES = [
   { page: 'admin.html', app: 'admin-app.js' },
-  { page: 'admin-imgtc.html', app: 'admin-imgtc-app.js' },
 ];
 const SHARED_FILE = 'admin-shared.js';
 const SHARED_GLOBAL = 'window.KVAdminShared';
 const SECTIONS = ['methods', 'computed', 'watch'];
 
-/** 只收「两页逐字相同」的方法。名单由 scripts/extract-admin-shared.cjs 生成时确定。 */
+/** 只收「多页逐字相同」的方法。名单由 scripts/extract-admin-shared.cjs 生成时确定。
+ *  旧版图床页（admin-imgtc.html）曾与 admin.html 共用这个模块，该页已下线。 */
 const SHARED_NAMES = [
   'copyToClipboardFallback', 'mergeListData', 'normalizeListItem', 'sortData',
   'toggleSelect', 'getFileType', 'openUploader', 'filter', 'handleWebsite', 'sort',

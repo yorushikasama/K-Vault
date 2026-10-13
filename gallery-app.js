@@ -24,9 +24,35 @@
         nextCursor: null,
         hasMore: true,
         previewData: null,  // 新的预览数据对象
-        searchTimer: null
+        searchTimer: null,
+        // 方格 / 瀑布流。原先瀑布流是 admin-waterfall.html 这个独立页面，
+        // 与图库功能重叠却少了选择、复制链接和删除，还自带一份过期的图片
+        // 清单（9 项，连 heic/tiff 都没有）。并进来之后两种视图渲染同一批
+        // 卡片、共用同一批操作，所以切换视图不会丢选中态。
+        //
+        // 底层字段叫 viewModeValue 而不是 _viewMode：Vue 2 不会把下划线
+        // 开头的 data 键挂到实例上（只存在于 $data），computed 里的
+        // `this._viewMode` 会读到 undefined —— 模板因此拿不到类名，
+        // 页面停在方格布局，看起来像开关没生效。
+        // mounted 里从 localStorage 恢复；setter 负责校验与写回。
+        viewModeValue: 'grid' // grid | masonry
       },
       computed: {
+        /* 校验后再用。localStorage 可能被手改，也可能是旧版本留下的键，
+         * 直接读会让一个非法值落进 :class —— 两种布局都不匹配，
+         * 页面就变成没有网格的散排。 */
+        viewMode: {
+          get() { return this.viewModeValue; },
+          set(value) {
+            this.viewModeValue = value === 'masonry' ? 'masonry' : 'grid';
+            try {
+              localStorage.setItem('galleryViewMode', this.viewModeValue);
+            } catch (error) {
+              /* 隐私模式下 localStorage 会抛异常，不影响本次浏览 */
+            }
+          },
+        },
+
         /* 图库 = 只看图片，全页只有一个口径。
          *
          * 此前这里有三处各自重写「是不是图片」和「匹配不匹配搜索」：
@@ -60,7 +86,7 @@
           return this.searchedImages.slice(start, start + this.pageSize);
         },
 
-        /* 与网格、搜索、分页严格同源：搜索「png」时这里也只数匹配到的图片，
+/* 与网格、搜索、分页严格同源：搜索「png」时这里也只数匹配到的图片，
            不再出现「总数 6 / 搜索结果 1」这种对不上的情况。 */
         totalCount() {
           return this.searchedImages.length;
@@ -317,6 +343,14 @@
         }
       },
       async mounted() {
+        // 恢复上次选的布局。走 setter 而不是直接赋值，这样非法值会被
+        // 归一成 grid，同时顺手把归一后的结果写回 localStorage。
+        try {
+          this.viewMode = localStorage.getItem('galleryViewMode');
+        } catch (error) {
+          /* 隐私模式下读不到，留在默认方格 */
+        }
+
         // 先检查认证
         const isAuth = await this.checkAuth();
         if (!isAuth) return;

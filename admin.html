@@ -18,7 +18,6 @@
        上传/文件/图库/视频的顶栏必须逐字一样，页面样式只负责内容区。 -->
   <link rel="stylesheet" href="/app-shell.css?v=2163c4e540">
   <!-- Import CSS -->
-  <link rel="stylesheet" href="./admin-imgtc.css?v=0f0b8de374">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css" integrity="sha384-ZUOUQ+hNJ+DV4HfNwHNFq4PcclqayiUDpCMsWD1lOpUQZ/go0ofwD/GLaYdzOcdx" crossorigin="anonymous" referrerpolicy="no-referrer">
   <!-- Sentry loader 故意不加 SRI：这个脚本内容随项目配置变化（采样率、集成项），钉死哈希会在后台改配置时把它整个拦掉。
        data-lazy：loader 仍会挂上全局钩子，但**不下载真正的 SDK**（约 30 KB），
@@ -50,8 +49,6 @@
             <button type="button" class="workspace-tool"><kv-icon name="external-link"></kv-icon><span>快捷入口</span><kv-icon name="chevron-down"></kv-icon></button>
             <el-dropdown-menu slot="dropdown" class="files-menu">
               <el-dropdown-item v-for="(site, index) in quickWebsites" :key="'site-' + index" :command="site.url"><kv-icon :name="site.icon"></kv-icon> {{ site.name }}</el-dropdown-item>
-              <el-dropdown-item command="./admin-imgtc.html" divided>旧版图床管理</el-dropdown-item>
-              <el-dropdown-item command="./admin-waterfall.html">旧版瀑布流管理</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
           <el-dropdown @command="handleToolkit" trigger="click">
@@ -735,11 +732,11 @@ curl -X POST "{SITE_URL}/api/v1/import" \
 <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js" integrity="sha384-ULpZhk1pvhc/UK5ktA9kwb2guy9ovNSTyxPNHANnA35YjBQgdwI+AhLkixDvdlw4" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/index.js" integrity="sha384-+gBC+PMSL+TRFl/FIZXz0BFZ9goHb5wqIwBbAscP86Bd6JJJ1TS5MwaN1SAIjzGj" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <!-- Vue 与 Lucide 就绪后注册共享指令，再创建应用。 -->
-<script src="/icons-subset.js?v=7a1b690b57"></script>
+<script src="/icons-subset.js?v=1ab0ddfccc"></script>
 <script src="/icons.js?v=fc3fc216e0"></script>
 <script src="/admin-shared.js?v=44f1a15913"></script>
 <script src="/admin-tokens.js?v=5085cfdc1c"></script>
 <script src="/admin-ui-design.js?v=04415a6345"></script>
-<script src="/admin-app.js?v=a51e4810dc"></script>
+<script src="/admin-app.js?v=18430ba766"></script>
 </body>
 </html>

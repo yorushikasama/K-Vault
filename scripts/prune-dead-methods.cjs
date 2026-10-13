@@ -33,9 +33,6 @@ const DEAD = {
     { name: 'shouldShowImage', note: '预览门控改用 shouldAutoLoadPreview / isPreviewRevealed' },
     { name: 'viewModeIcon', note: '图标改由模板内联三元给出，这个 computed 无人读' },
   ],
-  'admin-imgtc.html': [
-    { name: 'uploadFiles', note: '同 admin.html，上传走 openUploader' },
-  ],
   'index.html': [
     { name: 'getFileIconClass', note: '图标已改用 kv-icon + getFileIcon，这个返回 CSS 类名的实现无人用' },
     { name: 'getCleanFilePath', note: '与 getCleanFileUrl 重复；保留的那条才有引用' },

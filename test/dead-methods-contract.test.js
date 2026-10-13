@@ -31,11 +31,9 @@ describe('pruned dead methods stay pruned', function () {
   const APP_FILES = {
     'index.html': ['upload-app.js', 'upload-media.js', 'upload-image.js'],
     'admin.html': ['admin-app.js', 'admin-tokens.js', 'admin-ui-design.js'],
-    'admin-imgtc.html': ['admin-imgtc-app.js'],
     'gallery.html': ['gallery-app.js'],
     'video.html': ['video-app.js'],
     'preview.html': ['preview-app.js', 'preview-parsers.js'],
-    'admin-waterfall.html': [],
     'block-img.html': [],
     'whitelist-on.html': [],
   };
@@ -51,7 +49,6 @@ describe('pruned dead methods stay pruned', function () {
       'shouldShowImage',
       'viewModeIcon',
     ],
-    'admin-imgtc.html': ['uploadFiles'],
     'index.html': [
       'getFileIconClass',
       'getCleanFilePath',
@@ -112,8 +109,7 @@ describe('pruned dead methods stay pruned', function () {
    */
   describe('no template or code reference points at a missing method', function () {
     const PAGES = ['index.html', 'gallery.html', 'video.html', 'admin.html',
-      'admin-imgtc.html', 'admin-waterfall.html', 'preview.html',
-      'block-img.html', 'whitelist-on.html'];
+      'preview.html', 'block-img.html', 'whitelist-on.html'];
 
     for (const page of PAGES) {
       it(`${page} defines everything it references`, function () {

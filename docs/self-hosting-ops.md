@@ -115,7 +115,10 @@ curl -s -b /tmp/kvault-cookies.txt https://tg.yorushika.cyou/admin.html | grep -
 
 ## 已知问题
 
-- **`admin-imgtc.html` 的 `updateStats` 有崩溃风险**：`Object.keys(this.fileConfig).find(t => this.fileConfig[t].exts...)`
+- **`fileType` 越界会让文件列表整体不渲染**：`fileType` 从 localStorage 读回，
+  而 fileConfig 的键会随版本增减。旧版图床页曾因此崩过（页面已下线），
+  同一个隐患在 `admin-app.js` 里存在过 —— 现在恢复设置时用
+  `hasOwnProperty` 规整，筛选处也判空兜底（`test/file-type-filter.test.js` 盯着）。
   在 `fileConfig` 出现没有 `exts` 的键时会抛 `TypeError: Cannot read properties of undefined (reading 'exts')`。
   目前 4 个键（image/video/audio/document）都有 `exts`，所以只在特定数据下才触发，
   线上观察到过一次间歇性报错。这个问题在 `438a9d6` 之前就存在。

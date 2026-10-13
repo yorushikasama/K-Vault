@@ -161,9 +161,9 @@ describe('dead CSS contract', function () {
     // 不只原来那两个文件：这次 prune 覆盖了 12 个样式表，任何一个括号失衡
     // 都会静默吞掉后面的样式。
     const prunedSheets = [
-      'mobile-refactor.css', 'admin-imgtc.css', 'index.css', 'theme.css',
+      'mobile-refactor.css', 'index.css', 'theme.css',
       'gallery.css', 'preview.css', 'block-img.css',
-      'whitelist-on.css', 'admin-waterfall.css', 'login.css', 'admin.css',
+      'whitelist-on.css', 'login.css', 'admin.css',
     ];
     for (const sheet of prunedSheets) {
       it(`${sheet} has balanced braces and closed comments`, function () {

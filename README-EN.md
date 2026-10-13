@@ -42,7 +42,7 @@
 - **Online Preview** - Supports preview for images, videos, audio, and documents (pdf, docx, txt)
 - **Chunked Upload** - Supports files up to 100MB (with R2/S3)
 - **Guest Upload** - Optional guest upload with file size and daily upload limits
-- **Multiple Views** - Grid, list, and waterfall management views
+- **Multiple Views** - Grid and list views in the files console; grid or masonry in the gallery
 - **Storage Classification** - Clearly distinguishes files from different storage backends
 - **Dual Deployment Modes** - Keep Cloudflare Pages deployment, and add Docker self-host deployment (`docker compose up -d`)
 - **Dynamic Storage Config Management** - Add/Edit/Delete/Test storage configs and switch default storage via admin API

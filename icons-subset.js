@@ -1,7 +1,7 @@
 /**
  * Lucide 1.49.0 子集 — 由 scripts/build-icon-subset.cjs 生成，请勿手改。
  *
- * 只包含仓库实际用到的 133 个图标（全量 2117 个）。
+ * 只包含仓库实际用到的 126 个图标（全量 2117 个）。
  * 暴露形状与官方 UMD 一致（window.lucide.icons / createIcons / 具名导出），
  * 因此 icons.js、theme-core.js、admin.html 的 kv-icon 都无需改动。
  *
@@ -154,22 +154,6 @@ const defaultAttributes = {
     ["path", { d: "M10 12h4" }]
   ];
 
-  const ArrowDownAZ = [
-    ["path", { d: "m3 16 4 4 4-4" }],
-    ["path", { d: "M7 20V4" }],
-    ["path", { d: "M20 8h-5" }],
-    ["path", { d: "M15 10V6.5a2.5 2.5 0 0 1 5 0V10" }],
-    ["path", { d: "M15 14h5l-5 6h5" }]
-  ];
-
-  const ArrowDownWideNarrow = [
-    ["path", { d: "m3 16 4 4 4-4" }],
-    ["path", { d: "M7 20V4" }],
-    ["path", { d: "M11 4h10" }],
-    ["path", { d: "M11 8h7" }],
-    ["path", { d: "M11 12h4" }]
-  ];
-
   const ArrowLeft = [
     ["path", { d: "m12 19-7-7 7-7" }],
     ["path", { d: "M19 12H5" }]
@@ -247,11 +231,6 @@ const defaultAttributes = {
     ["path", { d: "M7 15h4M15 15h2M7 11h2M13 11h4" }]
   ];
 
-  const ChartLine = [
-    ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16" }],
-    ["path", { d: "m19 9-5 5-4-4-3 3" }]
-  ];
-
   const Check = [["path", { d: "M20 6 9 17l-5-5" }]];
 
   const ChevronDown = [["path", { d: "m6 9 6 6 6-6" }]];
@@ -299,12 +278,6 @@ const defaultAttributes = {
   ];
 
   const Cloud = [["path", { d: "M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" }]];
-
-  const CloudDownload = [
-    ["path", { d: "M12 13v8l-4-4" }],
-    ["path", { d: "m12 21 4-4" }],
-    ["path", { d: "M4.393 15.269A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.436 8.284" }]
-  ];
 
   const CloudUpload = [
     ["path", { d: "M12 13v8" }],
@@ -520,18 +493,6 @@ const defaultAttributes = {
     ["path", { d: "m20 17-1.296-1.296a2.41 2.41 0 0 0-3.408 0L9 22" }]
   ];
 
-  const FileOutput = [
-    [
-      "path",
-      {
-        d: "M4.226 20.925A2 2 0 0 0 6 22h12a2 2 0 0 0 2-2V8a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v3.127"
-      }
-    ],
-    ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5" }],
-    ["path", { d: "m5 11-3 3" }],
-    ["path", { d: "m5 17-3-3h10" }]
-  ];
-
   const FileSpreadsheet = [
     [
       "path",
@@ -692,15 +653,6 @@ const defaultAttributes = {
     ["path", { d: "M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1" }]
   ];
 
-  const Heart = [
-    [
-      "path",
-      {
-        d: "M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"
-      }
-    ]
-  ];
-
   const House = [
     ["path", { d: "M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" }],
     [
@@ -785,14 +737,6 @@ const defaultAttributes = {
     ["path", { d: "M8 5h13" }],
     ["path", { d: "M8 12h13" }],
     ["path", { d: "M8 19h13" }]
-  ];
-
-  const ListTodo = [
-    ["path", { d: "M13 5h8" }],
-    ["path", { d: "M13 12h8" }],
-    ["path", { d: "M13 19h8" }],
-    ["path", { d: "m3 17 2 2 4-4" }],
-    ["rect", { x: "3", y: "4", width: "6", height: "6", rx: "1" }]
   ];
 
   const LoaderCircle = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56" }]];
@@ -1166,8 +1110,6 @@ const defaultAttributes = {
     Activity: Activity,
     Album: SquareBookmark,
     Archive: Archive,
-    ArrowDownAZ: ArrowDownAZ,
-    ArrowDownWideNarrow: ArrowDownWideNarrow,
     ArrowLeft: ArrowLeft,
     ArrowUpRight: ArrowUpRight,
     AudioLines: AudioLines,
@@ -1177,7 +1119,6 @@ const defaultAttributes = {
     BookmarkCheck: BookmarkCheck,
     Bot: Bot,
     Box: Box,
-    ChartLine: ChartLine,
     Check: Check,
     ChevronDown: ChevronDown,
     ChevronLeft: ChevronLeft,
@@ -1190,7 +1131,6 @@ const defaultAttributes = {
     Clipboard: Clipboard,
     ClipboardCheck: ClipboardCheck,
     Cloud: Cloud,
-    CloudDownload: CloudDownload,
     CloudUpload: CloudUpload,
     Code: Code,
     Compass: Compass,
@@ -1214,7 +1154,6 @@ const defaultAttributes = {
     FileCode: FileCode,
     FileDown: FileDown,
     FileImage: FileImage,
-    FileOutput: FileOutput,
     FileSpreadsheet: FileSpreadsheet,
     FileText: FileText,
     FileVideoCamera: FileVideoCamera,
@@ -1232,7 +1171,6 @@ const defaultAttributes = {
     Group: Group,
     Heading1: Heading1,
     Heading2: Heading2,
-    Heart: Heart,
     House: House,
     Image: Image,
     ImageOff: ImageOff,
@@ -1244,7 +1182,6 @@ const defaultAttributes = {
     LayoutGrid: LayoutGrid,
     Link: Link,
     List: List,
-    ListTodo: ListTodo,
     LoaderCircle: LoaderCircle,
     Lock: Lock,
     LockOpen: LockOpen,

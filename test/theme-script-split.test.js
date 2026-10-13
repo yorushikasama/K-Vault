@@ -95,7 +95,10 @@ describe('theme script split', function () {
   });
 
   it('loads the theme core synchronously in head', function () {
-    assert.ok(themedPages.length >= 9, '加载主题脚本的页面数不对');
+    // 不再断言页面数量。themedPages 就是仓库里全部 .html，而下面这个循环
+    // 已经逐页检查了 theme-core.js 在 <head> 里且没有 defer/async ——
+    // 数量断言不提供额外保证，只会在下线/新增页面时变成一条误导性的失败
+    // （这里曾写死 >= 9，删掉两个页面后它报的是「页面数不对」）。
     for (const page of themedPages) {
       const src = read(page);
       const head = src.slice(0, src.indexOf('</head>'));

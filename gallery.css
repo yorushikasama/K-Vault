@@ -108,6 +108,43 @@
       gap: 20px;
     }
 
+    /* 瀑布流：用 column-count 而不是 grid 的 dense 排列。
+     *
+     * grid 做瀑布流要么 grid-auto-rows: 1px + JS 量高，要么 dense 配
+     * row-span —— 都要脚本参与，且 resize 时得重算一遍。这里用 CSS 多列：
+     * 浏览器自己按内容高度分列，图多高就占多高，零 JS。
+     *
+     * 代价是排列顺序变成「先往下再往右」（column-fill 默认 balance），
+     * 方格则是「先往右再往下」。这是两者的固有差别，不是 bug。
+     * break-inside: avoid 是关键 —— 少了它，一张高图会被列边界切成两半。 */
+    .image-grid.is-masonry {
+      display: block;
+      column-count: 5;
+      column-gap: 20px;
+    }
+
+    .image-grid.is-masonry .image-card {
+      /* 方格靠 aspect-ratio: 1 撑成正方形；瀑布流要让高度由图片决定，
+         否则 column-count 排出来仍是一片等高方块，根本不成瀑布。 */
+      aspect-ratio: auto;
+      display: block;
+      width: 100%;
+      margin-bottom: 20px;
+      break-inside: avoid;
+    }
+
+    .image-grid.is-masonry .image-card img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    /* 占位卡在瀑布流里没有图片撑高度，必须自己给一个高度，
+       否则 RAW / PSD 那些卡会塌成 0 高，布局就散了。 */
+    .image-grid.is-masonry .image-card-placeholder {
+      min-height: 160px;
+    }
+
     .image-card {
       position: relative;
       aspect-ratio: 1;
@@ -423,9 +460,20 @@
         justify-content: center;
       }
 
-      .image-grid { 
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-        gap: 10px; 
+      .image-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 10px;
+      }
+
+      /* 窄屏减列而不是改网格轨道：瀑布流用的是 column-count，
+         这里给 grid 写的 grid-template-columns 对它无效。 */
+      .image-grid.is-masonry {
+        column-count: 3;
+        column-gap: 10px;
+      }
+
+      .image-grid.is-masonry .image-card {
+        margin-bottom: 10px;
       }
       
       .image-card-overlay {
@@ -489,9 +537,20 @@
         border-radius: var(--radius-sm);
       }
 
-      .image-grid { 
-        grid-template-columns: repeat(2, 1fr); 
-        gap: 8px; 
+      .image-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+
+      /* 手机上瀑布流收到 2 列。再窄就只剩一列，那与方格的
+         两列没有区别，不如让用户切回方格。 */
+      .image-grid.is-masonry {
+        column-count: 2;
+        column-gap: 8px;
+      }
+
+      .image-grid.is-masonry .image-card {
+        margin-bottom: 8px;
       }
       
       .image-card {

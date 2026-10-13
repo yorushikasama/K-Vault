@@ -34,7 +34,7 @@ RUN npm ci --omit=dev
 COPY server/ ./
 
 WORKDIR /app
-COPY index.html admin.html gallery.html video.html login.html preview.html block-img.html whitelist-on.html admin-imgtc.html admin-waterfall.html /usr/share/nginx/html/
+COPY index.html admin.html gallery.html video.html login.html preview.html block-img.html whitelist-on.html /usr/share/nginx/html/
 COPY *.css *.js *.svg *.png *.ico /usr/share/nginx/html/
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/entrypoint.sh /usr/local/bin/yoruvault-entrypoint

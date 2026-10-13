@@ -18,8 +18,8 @@ describe('shared admin module contract', function () {
   const root = path.resolve(__dirname, '..');
   const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
   // 应用逻辑已拆到根级 app 文件：加载顺序与合并/重复检查都针对 app 文件。
-  const PAGES = ['admin.html', 'admin-imgtc.html'];
-  const APP_FILES = { 'admin.html': 'admin-app.js', 'admin-imgtc.html': 'admin-imgtc-app.js' };
+  const PAGES = ['admin.html'];
+  const APP_FILES = { 'admin.html': 'admin-app.js' };
 
   it('exists and exposes the three Vue option sections', function () {
     const src = read('admin-shared.js');

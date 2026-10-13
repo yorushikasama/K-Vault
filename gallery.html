@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="/ui-buttons.css?v=55f77f600e">
   <!-- 应用外壳（顶栏）各分区页共用，因此排在页面私有样式之前。 -->
   <link rel="stylesheet" href="/app-shell.css?v=2163c4e540">
-  <link rel="stylesheet" href="/gallery.css?v=0adadca23c">
+  <link rel="stylesheet" href="/gallery.css?v=b4d4649db3">
 <script src="/kv-shared.js?v=c7a66484c9"></script>
   <link rel="stylesheet" href="/mobile-refactor.css?v=1fcd9985a2">
 </head>
@@ -78,9 +78,26 @@
         </button>
       </div>
       <div class="toolbar-right">
-        <span class="format-label">链接格式</span>
-        <div class="segmented" role="group" aria-label="链接格式">
-          <button class="btn" :aria-pressed="linkFormat === 'url' ? 'true' : 'false'" @click="linkFormat = 'url'">URL</button>
+        <!-- 布局切换。瀑布流曾是一个独立页面（admin-waterfall.html），
+             它的独有价值只有 column-count 排版，其余功能都被图库覆盖，
+             所以并进来当视图开关而不是保留第二个页面。 -->
+        <span class="format-label" aria-hidden="true">布局</span>
+        <div class="segmented" role="group" aria-label="图片布局">
+          <button class="btn" :aria-pressed="viewMode === 'grid' ? 'true' : 'false'"
+                  title="等宽方格" @click="viewMode = 'grid'">
+            <i data-lucide="layout-grid"></i><span>方格</span>
+          </button>
+          <button class="btn" :aria-pressed="viewMode === 'masonry' ? 'true' : 'false'"
+                  title="按原始比例竖排，高度随图片" @click="viewMode = 'masonry'">
+            <i data-lucide="waves-ladder"></i><span>瀑布流</span>
+          </button>
+        </div>
+        <!-- 每种格式的实际产物写在 title 里，复制前就能看清会得到什么。 -->
+        <span class="format-label" aria-hidden="true">复制格式</span>
+        <div class="segmented" role="group" aria-label="复制链接的格式">
+          <button class="btn" :aria-pressed="linkFormat === 'url' ? 'true' : 'false'"
+                  title="只复制直链地址"
+                  @click="linkFormat = 'url'">直链</button>
           <button class="btn" :aria-pressed="linkFormat === 'markdown' ? 'true' : 'false'" @click="linkFormat = 'markdown'">MD</button>
           <button class="btn" :aria-pressed="linkFormat === 'html' ? 'true' : 'false'" @click="linkFormat = 'html'">HTML</button>
           <button class="btn" :aria-pressed="linkFormat === 'bbcode' ? 'true' : 'false'" @click="linkFormat = 'bbcode'">BB</button>
@@ -88,8 +105,14 @@
       </div>
     </div>
 
-    <!-- 图片网格 -->
-    <div class="image-grid" v-if="!loading || images.length > 0">
+    <!-- 图片网格。
+     viewMode 只切换布局，不切换数据：两种视图渲染同一批卡片、同一套
+     选择/复制/删除，所以切换视图不会丢选中态。原先瀑布流是
+     admin-waterfall.html 这个独立页面，与图库功能重叠却少了选择、
+     复制链接、删除，还自带一份过期的图片清单 —— 并进来之后这些都共用。 -->
+    <div class="image-grid"
+         :class="{ 'is-masonry': viewMode === 'masonry' }"
+         v-if="!loading || images.length > 0">
       <div class="image-card"
            v-for="(img, index) in filteredImages"
            :key="img.name"
@@ -232,8 +255,8 @@
   <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js" integrity="sha384-ULpZhk1pvhc/UK5ktA9kwb2guy9ovNSTyxPNHANnA35YjBQgdwI+AhLkixDvdlw4" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <!-- 必须在下面 new Vue 之前：icons.js 用 Vue.mixin 注册渲染钩子，而 Vue.mixin
        只作用于之后创建的实例。放在后面的话 v-if 里的图标永远不会被替换。 -->
-  <script src="/icons-subset.js?v=7a1b690b57"></script>
+  <script src="/icons-subset.js?v=1ab0ddfccc"></script>
   <script src="/icons.js?v=fc3fc216e0"></script>
-  <script src="/gallery-app.js?v=7f0ded0a41"></script>
+  <script src="/gallery-app.js?v=57f109488c"></script>
 </body>
 </html>

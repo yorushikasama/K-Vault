@@ -55,7 +55,6 @@ const DEAD_CLASSES = [
 // index.css 也有同样一批死规则（workbench 接管后没人再加载它的那部分功能）。
 const TARGETS = [
   'mobile-refactor.css',
-  'admin-imgtc.css',
   'index.css',
   'theme.css',
   'ui-buttons.css',
@@ -64,7 +63,6 @@ const TARGETS = [
   'preview.css',
   'block-img.css',
   'whitelist-on.css',
-  'admin-waterfall.css',
   'login.css',
   'admin.css',
 ].filter((f) => fs.existsSync(path.join(ROOT, f)));
