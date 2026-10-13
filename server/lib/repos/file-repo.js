@@ -538,11 +538,13 @@ class FileRepository {
 
     for (const path of allPaths) {
       if (getFolderParent(path) !== parentPath) continue;
+      const counts = fileCountMap.get(path) || { fileCount: 0, videoCount: 0 };
       folders.push({
         path,
         name: getFolderName(path),
         parentPath,
-        fileCount: fileCountMap.get(path) || 0,
+        fileCount: counts.fileCount,
+        videoCount: counts.videoCount,
       });
     }
 
@@ -562,21 +564,25 @@ class FileRepository {
       parentChildrenMap.get(parentPath).add(path);
     }
 
+    const rootCounts = fileCountMap.get('') || { fileCount: 0, videoCount: 0 };
     const nodes = [{
       path: '',
       name: 'All Files',
       parentPath: '',
       childCount: (parentChildrenMap.get('') || new Set()).size,
-      fileCount: fileCountMap.get('') || 0,
+      fileCount: rootCounts.fileCount,
+      videoCount: rootCounts.videoCount,
     }];
 
     for (const path of Array.from(pathSet).sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }))) {
+      const counts = fileCountMap.get(path) || { fileCount: 0, videoCount: 0 };
       nodes.push({
         path,
         name: getFolderName(path),
         parentPath: getFolderParent(path),
         childCount: (parentChildrenMap.get(path) || new Set()).size,
-        fileCount: fileCountMap.get(path) || 0,
+        fileCount: counts.fileCount,
+        videoCount: counts.videoCount,
       });
     }
 
@@ -608,18 +614,30 @@ class FileRepository {
     return paths;
   }
 
+  /* 每个目录的文件数与视频数，一次查出来。
+     为什么要视频数：目录树徽标若给文件数，而视频页只显示视频，用户就会在
+     /douyin 看到「文件 8」再看到「视频 5」，两个数都不算错却互相矛盾。
+     目录树是那个矛盾最先被看到的地方，所以它得能自己解释。
+     这里按 file_name 的扩展名判定，与 inferFileType 同一口径 —— 不按
+     mime_type，否则服务端存的 mime 和用户看到的扩展名会不一致。 */
   buildFolderFileCountMap(filters = {}) {
     const map = new Map();
+    const videoMap = new Map();
     const storageClause = this.buildStorageClause(filters.storageType);
     const rows = all(
       this.db,
-      `SELECT folder_path, COUNT(1) AS c
+      `SELECT folder_path, file_name, COUNT(1) AS c
        FROM files ${storageClause.whereClause}
-       GROUP BY folder_path`,
+       GROUP BY folder_path, file_name`,
       storageClause.params
     );
     for (const row of rows) {
-      map.set(normalizeFolderPath(row.folder_path), Number(row.c || 0));
+      const path = normalizeFolderPath(row.folder_path);
+      const count = Number(row.c || 0);
+      const entry = map.get(path) || { fileCount: 0, videoCount: 0 };
+      entry.fileCount += count;
+      if (isVideoFileName(row.file_name)) entry.videoCount += count;
+      map.set(path, entry);
     }
     return map;
   }
@@ -706,10 +724,34 @@ class FileRepository {
   }
 }
 
+function isVideoFileName(fileName) {
+  const ext = String(fileName || '').split('.').pop().toLowerCase();
+  return inferFileType(ext) === 'video';
+}
+
 function inferFileType(ext) {
-  const image = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'ico', 'svg', 'heic', 'heif', 'avif']);
-  const video = new Set(['mp4', 'webm', 'ogg', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'm4v', '3gp', 'ts']);
-  const audio = new Set(['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'ape', 'opus']);
+  // 与 kv-shared.js 的 IMAGE_EXTS / VIDEO_EXTS / AUDIO_EXTS 保持同一份内容。
+  // 这份清单此前是第四个副本，且少了一半的视频格式：ogv、m3u8、mts、m2ts、
+  // f4v、rm、rmvb、vob、asf、divx、mxf 都不在里面。用户目录里若有这些容器，
+  // 服务端会把它算成「文档」，于是目录树徽标上的视频数会随格式而变 ——
+  // 同一个目录、同一个口径，每次数出不同的数。
+  // 一致性由 test/video-gallery-parity.test.js 钉住。
+  const image = new Set([
+    'jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp', 'png', 'apng', 'gif', 'webp', 'avif',
+    'bmp', 'svg', 'ico', 'tif', 'tiff', 'heic', 'heif', 'heifs', 'heifs2', 'avci',
+    'jxl', 'raw', 'cr2', 'cr3', 'nef', 'arw', 'dng', 'orf', 'raf', 'rw2',
+    'pef', 'srw', 'sr2', 'erf', 'mrw', 'x3f', 'kdc', '3fr', 'psd', 'psb', 'ai',
+  ]);
+  const video = new Set([
+    'mp4', 'webm', 'ogg', 'ogv', 'avi', 'mov', 'wmv', 'flv', 'mkv',
+    'm4v', 'm3u8', '3gp', 'ts', 'mts', 'm2ts', 'f4v', 'rm', 'rmvb',
+    'vob', 'asf', 'divx', 'mxf',
+  ]);
+  const audio = new Set([
+    'mp3', 'mpeg', 'wav', 'ogg', 'oga', 'flac', 'aac', 'm4a', 'wma',
+    'ape', 'opus', 'weba', 'midi', 'mid', 'aif', 'aiff', 'alac', 'dsf',
+    'dff', 'amr', 'ac3', 'caf', 'mka',
+  ]);
 
   if (image.has(ext)) return 'image';
   if (video.has(ext)) return 'video';

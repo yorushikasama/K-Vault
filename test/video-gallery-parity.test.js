@@ -24,6 +24,7 @@ describe('video library mirrors the gallery derivation chain', function () {
   const galleryHtml = read('gallery.html');
   const shared = read('kv-shared.js');
   const apiList = read('functions/api/manage/list.js');
+  const nodeRepo = read('server/lib/repos/file-repo.js');
   const adminApp = read('admin-app.js');
   const adminHtml = read('admin.html');
 
@@ -275,9 +276,35 @@ describe('video library mirrors the gallery derivation chain', function () {
     // 目录树徽标要是视频数而不是文件数，否则「文件 8 / 视频 5」两个数字
     // 互相矛盾，而目录树是那个矛盾最先被看到的地方。
     assert.match(foldersApi, /videoCount: videoCountByFolder\.get\(pathValue\) \|\| 0/,
-      'folders 接口要按目录给视频数');
+      'Workers 版 folders 接口要按目录给视频数');
     assert.match(foldersApi, /if \(isVideoName\(record\?\.name\)\)/,
       '视频数必须按扩展名判定，不能按 mimeType');
+
+    // 真正在跑的是 Node 端那份：/api/status 报 mode=docker-node，
+    // 目录树由 server/lib/repos/file-repo.js 的 listFolderTree 生成。
+    // 上一版只改了 functions/ 那份，线上返回里根本没有 videoCount ——
+    // 改错运行时，测试却全绿。两条路径都必须钉住。
+    assert.match(nodeRepo, /videoCount: counts\.videoCount/,
+      'Node 版 listFolderTree 要返回 videoCount');
+    assert.match(nodeRepo, /buildFolderFileCountMap[\s\S]*?entry\.videoCount \+= count/,
+      'Node 版要按目录累计视频数');
+  });
+
+  it('the Node repository video list matches the shared list too', function () {
+    // inferFileType 曾是第四个副本，且少了一半视频格式（ogv/m3u8/mts/rmvb…）。
+    // 少了它们的直接后果：目录里有这些容器时服务端判成「文档」，视频页
+    // 按前端清单显示它、目录树却不计入 —— 同一批文件在两页给出两个数，
+    // 而两个数都不算错。
+    assert.match(nodeRepo, /function inferFileType\(ext\)/, '找不到 inferFileType');
+    assert.match(nodeRepo, /function isVideoFileName\(fileName\)/,
+      '目录计数应复用 inferFileType，而不是再抄一份清单');
+    for (const ext of ['ogv', 'm3u8', 'mts', 'm2ts', 'f4v', 'rm', 'rmvb', 'vob', 'asf', 'divx', 'mxf']) {
+      assert.match(
+        nodeRepo,
+        new RegExp(`'${ext}'`),
+        `inferFileType 缺少 ${ext}：这种容器的视频会被算成文档`
+      );
+    }
   });
 
   it('the folders endpoint video list matches the shared list', function () {
