@@ -1705,20 +1705,12 @@
 
           // 从 URL 中提取干净的文件路径（不带域名，格式：/file/xxx.ext）
           
-          // 文件类型判断方法
+          // 文件类型判断方法。扩展名清单改用 KVShared 的统一版本 ——
+          // 这里原来自己抄了一份 8 项的，不含 avif / heic / tiff，于是
+          // 会出现「图库认为是图片、上传页却当成普通文件」。kv-shared.js
+          // 在本文件之前加载。
           isImageFile(filename) {
-            if (!filename) return false;
-            const ext = this.getFileExt(filename).toLowerCase();
-            return [
-              "jpg",
-              "jpeg",
-              "png",
-              "gif",
-              "webp",
-              "bmp",
-              "svg",
-              "ico",
-            ].includes(ext);
+            return KVShared.isImageName(this.getFileExt(filename));
           },
 
           getFileExt(filename) {

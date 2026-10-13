@@ -17,7 +17,7 @@
   <!-- 应用外壳（顶栏）四个分区共用，因此排在页面私有样式之前。 -->
   <link rel="stylesheet" href="/app-shell.css?v=140b992d46">
   <link rel="stylesheet" href="/gallery.css?v=e316ed714e">
-<script src="/kv-shared.js?v=5901ac7854"></script>
+<script src="/kv-shared.js?v=2c55b4fa2e"></script>
   <link rel="stylesheet" href="/mobile-refactor.css?v=2f0292c228">
 </head>
 <body>
@@ -58,7 +58,15 @@
         <div class="header-search">
           <input id="gallery-search" type="text" v-model="searchQuery" placeholder="搜索文件名..." @input="handleSearch">
         </div>
-        <span class="stat-badge"><i data-lucide="images"></i> 总数<strong>{{ totalCount }}</strong></span>
+        <!-- totalCount 取的是 searchedImages.length，也就是**搜索过滤之后**的图片数，
+             与网格里看到的严格一致。搜索时它会跟着变，这正是"总数"该有的
+             行为：用户看到的每一个数字都描述他此刻屏幕上看到的东西。
+             标签跟着语义走：搜索时叫"匹配"，平时叫"总数"。 -->
+        <span class="stat-badge">
+          <i data-lucide="images"></i>
+          <template v-if="searchQuery.trim()">匹配<strong>{{ totalCount }}</strong></template>
+          <template v-else>图片<strong>{{ totalCount }}</strong></template>
+        </span>
         <span class="stat-badge"><i data-lucide="square-check"></i> 已选<strong>{{ selectedCount }}</strong></span>
         <button class="btn btn-sm btn-ghost" @click="selectAll">
           <kv-icon :name="isAllSelected ? 'square-check' : 'square'"></kv-icon>
@@ -122,14 +130,29 @@
       <div>加载中...</div>
     </div>
 
-    <!-- 空状态 -->
+    <!-- 空状态。
+
+         分两种，因为它们要用户做的事完全不同：
+           图片库里一张图都没有  -> 去上传（附一个"清理占位文件"的入口，
+                                 因为最常见的成因就是存了非图片文件）
+           有图但搜索没匹配上      -> 换个搜索词，"去上传"在这里是误导
+         此前两种情况共用一个文案，搜索无结果时却让用户去上传，方向是错的。 -->
     <div class="empty-state" v-if="!loading && filteredImages.length === 0">
       <i data-lucide="inbox"></i>
-      <div style="font-size: 1.2em; margin-bottom: 8px;">没有找到图片</div>
-      <div>{{ searchQuery ? '尝试其他搜索词' : '上传一些图片开始使用' }}</div>
-      <a href="./" class="btn btn-primary" style="margin-top: 20px;">
-        <i data-lucide="cloud-upload"></i><span>去上传</span>
-      </a>
+      <template v-if="searchQuery.trim()">
+        <div style="font-size: 1.2em; margin-bottom: 8px;">没有匹配的图片</div>
+        <div>试试其他搜索词，或清空搜索查看全部 {{ imageItems.length }} 张</div>
+        <button class="btn" type="button" style="margin-top: 20px;" @click="searchQuery = ''">
+          <i data-lucide="x"></i><span>清空搜索</span>
+        </button>
+      </template>
+      <template v-else>
+        <div style="font-size: 1.2em; margin-bottom: 8px;">这里还没有图片</div>
+        <div>上传图片后会出现在这里</div>
+        <a href="./" class="btn btn-primary" style="margin-top: 20px;">
+          <i data-lucide="cloud-upload"></i><span>去上传</span>
+        </a>
+      </template>
     </div>
 
     <!-- 分页 -->
@@ -200,6 +223,6 @@
        只作用于之后创建的实例。放在后面的话 v-if 里的图标永远不会被替换。 -->
   <script src="/icons-subset.js?v=a139a660aa"></script>
   <script src="/icons.js?v=fc3fc216e0"></script>
-  <script src="/gallery-app.js?v=9b254f4891"></script>
+  <script src="/gallery-app.js?v=573eb12657"></script>
 </body>
 </html>

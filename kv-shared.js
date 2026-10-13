@@ -189,7 +189,41 @@
   // ---------- 预览目标判定 ----------
 
   var PREVIEW_PAGE = "/preview.html";
-  var PREVIEW_IMAGE_EXTS = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg", "ico"];
+
+  /* 图片扩展名的**唯一**清单。
+   *
+   * 此前全站有五份互不相同的清单（preview-app / upload-app / 本文件 /
+   * functions/api/manage/list / server 的 ytdlp-options），并集 18 个扩展名，
+   * 而没有任何一份是完整的：avif（本站自己的壁纸就是 avif）、heic、tiff
+   * 在图库那份里就不存在 —— 于是这些图片存了却永远不会出现在图库里。
+   * 同一件事被抄五遍、抄出五个答案，这类 bug 就会反复长出来。
+   *
+   * 口径取各清单的并集：有争议的 jfif / pjpeg / pjp 都是 jpeg 的别名
+   * （同一批文件的 MIME/扩展名在不同上传路径下写法不同），归进来省事；
+   * jxl 目前浏览器还基本不支持预览，但列出它总比漏掉强 —— 图库的职责是
+   * 「把图片都列出来」，预览打不开是另一回事。
+   *
+   * 服务端（functions/api/manage/list.js）无法 import 本文件，那份靠
+   * webdav-page-contract / upload-file-type 这类测试对齐；前端这几处
+   * 一律用下面的 isImageName()。 */
+  var IMAGE_EXTS = [
+    "jpg", "jpeg", "jfif", "pjpeg", "pjp",
+    "png", "apng",
+    "gif", "webp", "avif", "bmp",
+    "tif", "tiff",
+    "svg", "ico",
+    "heic", "heif",
+    "jxl",
+  ];
+
+  /** 按扩展名判定是否图片。取最后一段，所以 a.tar.gz 会看 gz。 */
+  function isImageName(name) {
+    var ext = String(name || "").split(".").pop().toLowerCase();
+    return IMAGE_EXTS.indexOf(ext) !== -1;
+  }
+
+  /* 预览分支沿用同一份清单，避免"图库认为是图片、预览却当普通文件"。 */
+  var PREVIEW_IMAGE_EXTS = IMAGE_EXTS;
   var PREVIEW_VIDEO_EXTS = ["mp4", "webm", "ogg", "ogv", "mov", "m4v"];
   var PREVIEW_AUDIO_EXTS = ["mp3", "wav", "ogg", "oga", "flac", "aac", "m4a", "opus"];
   var PREVIEW_DOC_EXTS = ["pdf", "txt", "md", "json", "xml", "csv", "docx", "xlsx", "pptx"];
@@ -297,6 +331,8 @@
     normalizeFolderPath: normalizeFolderPath,
     ensureAuth: ensureAuth,
     buildPreviewTarget: buildPreviewTarget,
+    isImageName: isImageName,
+    IMAGE_EXTS: IMAGE_EXTS,
     PREVIEW_PAGE: PREVIEW_PAGE,
     formatLink: formatLink,
     fileIconOf: fileIconOf,

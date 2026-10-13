@@ -1,6 +1,21 @@
 ﻿const INVALID_PREFIXES = ['session:', 'chunk:', 'upload:', 'temp:'];
 
-const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'ico', 'svg', 'heic', 'heif', 'avif']);
+// 图片扩展名。与前端 kv-shared.js 的 IMAGE_EXTS 保持同一份内容：
+// 函数跑在 Cloudflare Workers 上，import 不了浏览器脚本，所以这里只能
+// 抄一份 —— 但两者的一致性由 test/gallery-list-contract.test.js 钉住，
+// 任何一边漏项测试就会失败。
+// 两边必须一致的理由：这里推断出的 fileType 决定 API 侧怎么描述这个文件，
+// 图库前端还会按扩展名再过滤一次。口径不同就会出现「fileType 说是 image、
+// 但图库里列不出来」。
+const IMAGE_EXTS = new Set([
+  'jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp',
+  'png', 'apng',
+  'gif', 'webp', 'avif', 'bmp',
+  'tif', 'tiff',
+  'svg', 'ico',
+  'heic', 'heif',
+  'jxl',
+]);
 const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogg', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'm4v', '3gp', 'ts']);
 const AUDIO_EXTS = new Set(['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'ape', 'opus']);
 

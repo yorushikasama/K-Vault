@@ -10,7 +10,10 @@
         parseEmailMessage, firstMboxMessage, decodeMimeWords,
       } = window.KVPreviewParsers;
 
-      const IMAGE_EXTS = new Set(["jpg", "jpeg", "jfif", "pjpeg", "pjp", "png", "apng", "gif", "webp", "bmp", "tif", "tiff", "svg", "ico", "avif", "heic", "heif", "jxl"]);
+      // 图片清单改用 KVShared 的统一版本（kv-shared.js 在本文件之前加载）。
+      // 这里的私有副本曾是全站最全的一份（18 项），但既然唯一清单已经放到
+      // 共享层，就不该再留第二份 —— 抄一份就多一次漂移的机会。
+      const IMAGE_EXTS = new Set(window.KVShared.IMAGE_EXTS);
       const VIDEO_EXTS = new Set(["mp4", "webm", "ogg", "ogv", "mov", "m4v", "m3u8", "avi", "mkv", "wmv", "flv", "3gp", "ts", "mts", "m2ts"]);
       const AUDIO_EXTS = new Set(["mp3", "mpeg", "wav", "ogg", "oga", "flac", "aac", "m4a", "opus", "weba", "midi", "mid", "wma", "ape", "aif", "aiff"]);
       const MARKDOWN_EXTS = new Set(["md", "markdown", "mdown"]);

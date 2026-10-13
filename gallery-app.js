@@ -27,52 +27,55 @@
         searchTimer: null
       },
       computed: {
+        /* 图库 = 只看图片，全页只有一个口径。
+         *
+         * 此前这里有三处各自重写「是不是图片」和「匹配不匹配搜索」：
+         * filteredImages 一份、totalPages 一份，而 totalCount 用的
+         * images.length —— 一份**不过滤**的原始列表。于是同一批文件被数了
+         * 两遍且结果不同：存了 6 个非图片文件时，页头写「总数 6」而正文写
+         * 「没有找到图片」，两个数字都在自己的逻辑里是对的，放在一起就是
+         * 自相矛盾。用户看到的正是这个。
+         *
+         * 现在收敛成一条派生链，每一层只做一件事：
+         *   images            服务端返回的原始文件（不过滤）
+         *   imageItems        只留图片          <- 图库的身份由此定义
+         *   searchedImages    再按搜索词过滤
+         *   pagedImages       最后切片
+         * 计数一律取 searchedImages.length，与网格看到的内容严格一致。 */
+        imageItems() {
+          return this.images.filter((img) => KVShared.isImageName(img.name));
+        },
+
+        searchedImages() {
+          const query = this.searchQuery.trim().toLowerCase();
+          if (!query) return this.imageItems;
+          return this.imageItems.filter((img) => {
+            const name = String(img.metadata?.fileName || img.name || '').toLowerCase();
+            return name.includes(query);
+          });
+        },
+
         filteredImages() {
-          let result = this.images;
-          
-          // 只显示图片类型
-          const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'];
-          result = result.filter(img => {
-            const ext = img.name.split('.').pop().toLowerCase();
-            return imageExts.includes(ext);
-          });
-
-          // 搜索过滤
-          if (this.searchQuery.trim()) {
-            const query = this.searchQuery.toLowerCase();
-            result = result.filter(img => {
-              const name = (img.metadata?.fileName || img.name).toLowerCase();
-              return name.includes(query);
-            });
-          }
-
-          // 分页
           const start = (this.currentPage - 1) * this.pageSize;
-          return result.slice(start, start + this.pageSize);
+          return this.searchedImages.slice(start, start + this.pageSize);
         },
+
+        /* 与网格、搜索、分页严格同源：搜索「png」时这里也只数匹配到的图片，
+           不再出现「总数 6 / 搜索结果 1」这种对不上的情况。 */
         totalCount() {
-          return this.images.length;
+          return this.searchedImages.length;
         },
+
         selectedCount() {
-          return this.images.filter(img => img.selected).length;
+          return this.imageItems.filter((img) => img.selected).length;
         },
+
         isAllSelected() {
-          return this.filteredImages.length > 0 && this.filteredImages.every(img => img.selected);
+          return this.filteredImages.length > 0 && this.filteredImages.every((img) => img.selected);
         },
+
         totalPages() {
-          const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'];
-          let filtered = this.images.filter(img => {
-            const ext = img.name.split('.').pop().toLowerCase();
-            return imageExts.includes(ext);
-          });
-          if (this.searchQuery.trim()) {
-            const query = this.searchQuery.toLowerCase();
-            filtered = filtered.filter(img => {
-              const name = (img.metadata?.fileName || img.name).toLowerCase();
-              return name.includes(query);
-            });
-          }
-          return Math.ceil(filtered.length / this.pageSize);
+          return Math.ceil(this.searchedImages.length / this.pageSize);
         },
         displayPages() {
           const pages = [];
