@@ -36,7 +36,7 @@ curl -X POST "https://your-yoruvault-domain/api/admin/tokens" \
 
 | 字段 | 说明 | 违规返回 |
 | --- | --- | --- |
-| `allowedStorages` | 限定存储后端（telegram / r2 / s3 / discord / huggingface / webdav / github） | 403 `POLICY_DENIED` |
+| `allowedStorages` | 限定存储后端（telegram / r2 / s3 / discord / huggingface / github） | 403 `POLICY_DENIED` |
 | `folderPrefix` | 限定目录前缀 | 403 `POLICY_DENIED` |
 | `maxFileSize` | 单文件字节上限（管理界面按 MB 输入，自动换算） | 413 `POLICY_FILE_TOO_LARGE` |
 
@@ -88,7 +88,7 @@ curl -H "Authorization: Bearer $YORUVAULT_API_TOKEN" "https://your-yoruvault-dom
 | 参数 | 位置 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `file` | form-data | 是 | 文件本体 |
-| `storage` | form-data | 否 | telegram / r2 / s3 / discord / huggingface / webdav / github，缺省用默认存储 |
+| `storage` | form-data | 否 | telegram / r2 / s3 / discord / huggingface / github，缺省用默认存储 |
 | `folderPath` | form-data | 否 | 目录前缀 |
 | `slug` | form-data | 否 | 自定义分享 slug（冲突返回 409 `SLUG_CONFLICT`） |
 | `expires_in` | form-data | 否 | 分享链接有效秒数 |

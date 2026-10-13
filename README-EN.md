@@ -27,15 +27,14 @@
 </p>
 <p align="center">
    <img src="demo/图片浏览页面.webp" alt="Image Browse Page" width="300" />
-   <img src="demo/WebDAV页面.webp" alt="WebDAV Page" width="300" />
-</p>
+   </p>
 
 ## Features
 
 - **Unlimited Storage** - Upload unlimited images and files
 - **Completely Free** - Hosted on Cloudflare, zero cost within the free quota
 - **Free Domain** - Uses `*.pages.dev` subdomain, and also supports custom domains
-- **Multiple Storage Backends** - Supports Telegram, Cloudflare R2, S3-compatible storage, Discord, HuggingFace, WebDAV, and GitHub
+- **Multiple Storage Backends** - Supports Telegram, Cloudflare R2, S3-compatible storage, Discord, HuggingFace, and GitHub
 - **Telegram Webhook Backlink** - Bot can automatically reply with direct links after receiving files in channels/groups
 - **KV Write Optimization** - Telegram can use signed direct links to significantly reduce KV read/write usage
 - **Content Moderation** - Optional image moderation API to automatically block inappropriate content
@@ -72,7 +71,6 @@ A lightweight workflow note is included in `.github/workflows/pages-deploy.yml`.
 
 Recommended architecture for multi-cloud mounts:
 
-- Use `WebDAV` adapter in YoruVault as a mounted entry.
 - Use `alist/openlist` as aggregation layer for other providers.
 - This keeps YoruVault focused on UX/link/auth while reducing adapter maintenance complexity.
 
@@ -89,13 +87,12 @@ Both modes expose the same main entrypoints:
 
 - Upload UI: `/`
 - Admin console: `/admin.html`
-- WebDAV page: `/webdav.html`
 - Admin/API routes: `/api/*`
 - Browser upload: `POST /upload`
 - API Token upload: `/api/v1/upload`
 - Direct/share links: `/file/*`, `/share/*`, `/s/*`
 
-The Docker image runs Nginx and the Node API inside one container. From the user's perspective, the UI, admin console, WebDAV page, API Token upload, direct links, short links, and storage profile management should match the Cloudflare Pages deployment.
+The Docker image runs Nginx and the Node API inside one container. From the user's perspective, the UI, admin console, API Token upload, direct links, short links, and storage profile management should match the Cloudflare Pages deployment.
 
 ### Option 1: Cloudflare Pages
 
@@ -135,7 +132,7 @@ Use this when you want Cloudflare-hosted static pages, Pages Functions, KV, and 
 | `BASIC_USER` | Admin username | Optional |
 | `BASIC_PASS` | Admin password | Optional |
 
-You can also use R2, S3-compatible storage, Discord, HuggingFace, WebDAV, or GitHub. See the Storage Configuration section below for backend-specific variables.
+You can also use R2, S3-compatible storage, Discord, HuggingFace, or GitHub. See the Storage Configuration section below for backend-specific variables.
 
 5. **Redeploy**
    - Environment variable or binding changes require a new deployment.
@@ -170,7 +167,6 @@ Open:
 
 - Upload UI: `http://<host>:8080/`
 - Admin: `http://<host>:8080/admin.html`
-- WebDAV page: `http://<host>:8080/webdav.html`
 - Health check: `http://<host>:8080/api/health`
 
 On first start, if `CONFIG_ENCRYPTION_KEY` and `SESSION_SECRET` are not provided, the container generates persistent values in `/app/data/runtime.env`. Recreating the container keeps them as long as the Docker volume is kept.
@@ -209,37 +205,15 @@ Common Docker variables:
 | :--- | :--- |
 | `BASIC_USER` / `BASIC_PASS` | Admin login credentials, recommended for public deployments |
 | `PUBLIC_BASE_URL` | Public URL used for generated links and webhooks |
-| `DEFAULT_STORAGE_TYPE` | Default storage: `telegram` / `r2` / `s3` / `discord` / `huggingface` / `webdav` / `github` |
+| `DEFAULT_STORAGE_TYPE` | Default storage: `telegram` / `r2` / `s3` / `discord` / `huggingface` / `github` |
 | `TG_BOT_TOKEN` + `TG_CHAT_ID` | Telegram bootstrap storage variables for Docker |
-| `R2_*` / `S3_*` / `WEBDAV_*` / `GITHUB_*` / `HF_*` | Other storage backend configuration |
+| `R2_*` / `S3_*` / `GITHUB_*` / `HF_*` | Other storage backend configuration |
 | `UPLOAD_MAX_SIZE` / `CHUNK_SIZE` | Upload limits and chunk size |
 | `WEB_PORT` | Public Compose port, default `8080` |
 
-You can also start Docker first and add/test/switch storage profiles later in the admin console. The WebDAV page, API Tokens, API v1 uploads, direct links, and short links all use the same `8080` entrypoint.
+You can also start Docker first and add/test/switch storage profiles later in the admin console. API Tokens, API v1 uploads, direct links, and short links all use the same `8080` entrypoint.
 
 For full Docker guide, see [README-DOCKER.md](README-DOCKER.md).
-
-### WebDAV Regression Validation (Works for Pages and Docker)
-
-After deployment, run at least one WebDAV smoke check to verify the full flow: config test -> upload -> download -> delete.
-
-Example:
-
-```bash
-BASE_URL=https://your-domain \
-BASIC_USER=admin BASIC_PASS=your_password \
-SMOKE_STORAGE_TYPE=webdav \
-SMOKE_STORAGE_CONFIG_JSON='{"baseUrl":"https://dav.example.com","username":"u","password":"p","rootPath":"uploads"}' \
-node scripts/storage-regression.js
-```
-
-Validation criteria:
-
-- `webdav.connected` in `/api/status` must be `true`
-- Docker/self-hosted deployments can additionally verify `/api/storage/:id/test` returns `connected=true`
-- WebDAV `upload / download / delete` in the regression script must all pass
-
-For Docker deployment, simply change `BASE_URL` to your self-hosted address, for example `http://localhost:8080`.
 
 ---
 
@@ -501,7 +475,6 @@ Allows non-logged-in users to upload files. Site owners can configure whether it
 | Page | Path | Description |
 | :--- | :--- | :--- |
 | Home/Upload | `/` | Batch upload, drag-and-drop, paste upload |
-| WebDAV Page | `/webdav.html` | Dedicated WebDAV upload page with root-style UI |
 | Gallery | `/gallery.html` | Image grid browsing |
 | Admin Panel | `/admin.html` | File management, blacklist/whitelist |
 | File Preview | `/preview.html` | Multi-format file preview |

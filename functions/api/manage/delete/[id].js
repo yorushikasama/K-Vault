@@ -1,11 +1,10 @@
 ﻿import { createS3Client } from '../../../utils/s3client.js';
 import { deleteDiscordMessage } from '../../../utils/discord.js';
 import { deleteHuggingFaceFile } from '../../../utils/huggingface.js';
-import { deleteWebDAVFile } from '../../../utils/webdav.js';
 import { deleteGitHubFile } from '../../../utils/github.js';
 import { buildTelegramBotApiUrl } from '../../../utils/telegram.js';
 
-const STORAGE_PREFIXES = ['img:', 'vid:', 'aud:', 'doc:', 'r2:', 's3:', 'discord:', 'hf:', 'webdav:', 'github:', ''];
+const STORAGE_PREFIXES = ['img:', 'vid:', 'aud:', 'doc:', 'r2:', 's3:', 'discord:', 'hf:', 'github:', ''];
 
 export async function onRequest(context) {
   const { request, env, params } = context;
@@ -115,29 +114,6 @@ export async function onRequest(context) {
       return jsonResponse({
         success: true,
         message: hfDeleted ? 'Deleted from HuggingFace and KV.' : 'KV deleted (HuggingFace best-effort).',
-        fileId,
-        kvKey,
-      });
-    }
-
-    if (storageType === 'webdav' || fileId.startsWith('webdav:')) {
-      let webdavDeleted = false;
-      try {
-        const webdavPath = metadata.webdavPath || metadata.path || fileId.replace(/^webdav:/, '');
-        if (webdavPath) {
-          webdavDeleted = await deleteWebDAVFile(webdavPath, env);
-        }
-      } catch (error) {
-        console.error('WebDAV delete error (best-effort):', error);
-      }
-
-      await cleanupShareSlugMapping(env, metadata, kvKey);
-      await env.img_url.delete(kvKey);
-      await purgeEdgeCache(request, fileId);
-
-      return jsonResponse({
-        success: true,
-        message: webdavDeleted ? 'Deleted from WebDAV and KV.' : 'KV deleted (WebDAV best-effort).',
         fileId,
         kvKey,
       });

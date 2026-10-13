@@ -1,4 +1,4 @@
-﻿const STORAGE_PREFIXES = ['img:', 'vid:', 'aud:', 'doc:', 'r2:', 's3:', 'discord:', 'hf:', 'webdav:', 'github:', ''];
+﻿const STORAGE_PREFIXES = ['img:', 'vid:', 'aud:', 'doc:', 'r2:', 's3:', 'discord:', 'hf:', 'github:', ''];
 
 const INVALID_PREFIXES = ['session:', 'chunk:', 'upload:', 'temp:', 'folder:'];
 

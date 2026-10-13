@@ -1081,11 +1081,6 @@
                 directThreshold: this.uploadConfig.smallFileThreshold,
                 supportsChunkUpload: true,
               },
-              webdav: {
-                maxBytes: this.uploadConfig.maxSize,
-                directThreshold: this.uploadConfig.smallFileThreshold,
-                supportsChunkUpload: true,
-              },
               github: {
                 maxBytes: this.uploadConfig.maxSize,
                 directThreshold: this.uploadConfig.smallFileThreshold,

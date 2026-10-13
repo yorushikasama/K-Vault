@@ -61,7 +61,6 @@ const TARGETS = [
   'ui-buttons.css',
   'gallery.css',
   'video.css',
-  'webdav.css',
   'preview.css',
   'block-img.css',
   'whitelist-on.css',

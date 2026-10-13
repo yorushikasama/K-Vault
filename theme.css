@@ -922,12 +922,12 @@ html[data-theme="dark"] .el-button--danger {
   --ui-ease: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* -- Layout -----------------------------------------------------------
-     内容宽度原先各页自定，从 900px 到 1600px 都有（admin 900、webdav 980、
+     内容宽度原先各页自定，从 900px 到 1600px 都有（admin 900、旧 webdav 980、
      index 1400、waterfall 1460、gallery 1600）。页面之间跳转时内容区会
      横向错位，看起来像几个不相关的站点拼在一起。收敛成三档，按内容密度选：
 
        --ui-width-prose   阅读型单列（登录、提示页、窄表单）
-       --ui-width-content 常规工作区（文件、图库、预览、WebDAV）
+       --ui-width-content 常规工作区（文件、图库、视频、预览）
        --ui-width-wide    密集网格（瀑布流、需要铺满的大列表）
 
      各页的 max-width 一律引用这三档，不再写字面量。 */

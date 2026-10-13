@@ -3,7 +3,7 @@ import { parseSignedTelegramFileId, shouldWriteTelegramMetadata } from '../../ut
 import { checkUploadPolicy } from '../../utils/policy-enforce.js';
 import { apiError, apiSuccess, buildAbsoluteUrl, parsePositiveInt } from '../../utils/api-v1.js';
 
-const STORAGE_PREFIXES = ['r2:', 's3:', 'discord:', 'hf:', 'webdav:', 'github:', 'img:', 'vid:', 'aud:', 'doc:', ''];
+const STORAGE_PREFIXES = ['r2:', 's3:', 'discord:', 'hf:', 'github:', 'img:', 'vid:', 'aud:', 'doc:', ''];
 const SHARE_SLUG_KEY_PREFIX = 'share_slug:';
 const IDEMPOTENCY_TTL_SECONDS = 24 * 3600;
 const DEDUP_TTL_SECONDS = 90 * 24 * 3600;
@@ -67,7 +67,6 @@ function normalizeStorageType(name = '', metadata = {}) {
   if (keyName.startsWith('s3:')) return 's3';
   if (keyName.startsWith('discord:')) return 'discord';
   if (keyName.startsWith('hf:')) return 'huggingface';
-  if (keyName.startsWith('webdav:')) return 'webdav';
   if (keyName.startsWith('github:')) return 'github';
   return 'telegram';
 }

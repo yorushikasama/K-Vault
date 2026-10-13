@@ -27,21 +27,20 @@
 </p>
 <p align="center">
   <img src="demo/图片浏览页面.webp" alt="图片浏览页面" width="300" />
-  <img src="demo/WebDAV页面.webp" alt="WebDAV页面" width="300" />
-</p>
+  </p>
 
 ## 功能特性
 
 - **无限存储** - 不限数量的图片和文件上传
 - **完全免费** - 托管于 Cloudflare，免费额度内零成本
 - **免费域名** - 使用 `*.pages.dev` 二级域名，也支持自定义域名
-- **多存储后端** - 支持 Telegram、Cloudflare R2、S3 兼容存储、Discord、HuggingFace、WebDAV、GitHub
+- **多存储后端** - 支持 Telegram、Cloudflare R2、S3 兼容存储、Discord、HuggingFace、GitHub
 - **Telegram Webhook 回链** - 机器人在频道/群接收文件后自动回复直链
 - **KV 写入优化** - Telegram 可启用签名直链，显著降低 KV 读写消耗
 - **内容审核** - 可选的图片审核 API，自动屏蔽不良内容
 - **多格式支持** - 图片、视频、音频、文档、压缩包等
 - **在线预览** - 支持图片、视频、音频、文档（pdf、docx、txt）格式的预览
-- **分片上传** - 支持最大 200MB 文件（受 `UPLOAD_MAX_SIZE` 约束；分片按序流式转存，内存峰值与文件体积无关。建议配合 R2/S3/WebDAV/GitHub，Telegram 网页上传按平台限制处理）
+- **分片上传** - 支持最大 200MB 文件（受 `UPLOAD_MAX_SIZE` 约束；分片按序流式转存，内存峰值与文件体积无关。建议配合 R2/S3/GitHub，Telegram 网页上传按平台限制处理）
 - **视频链接解析** - Docker/自托管模式集成 yt-dlp，粘贴抖音 / B站 / YouTube 等分享链接即可解析并转存；支持清晰度/预设选择、字幕与封面、元数据与章节嵌入、NFO 生成、时间区间裁剪、SponsorBlock、合集选集、直播录制，以及带进度回报的后台下载任务
 - **访客上传** - 可选的访客上传功能，支持文件大小和每日次数限制
 - **API Token 认证** - 支持 `curl` / ShareX / 脚本等程序化上传与调用
@@ -50,7 +49,7 @@
 - **双模部署** - 保留 Cloudflare Pages 部署，同时新增 Docker 自托管（`docker compose up -d`）
 - **动态存储配置管理** - 支持在管理端通过 API 对存储配置进行新增/编辑/删除/测试/设为默认
 - **可插拔设置存储（Docker）** - 基础站点设置可使用 `sqlite`（默认）或 Redis 协议后端（Upstash / Redis / KVrocks）
-- **前端路径简化** - 以根路径页面为主流程（`/`、`/admin.html`、`/webdav.html`）
+- **前端路径简化** - 以根路径页面为主流程（`/`、`/admin.html`）
 - **GitHub Actions 镜像构建** - 主分支/Tag 自动构建并推送单镜像 `ghcr.io/katelya77/k-vault`
 
 
@@ -61,19 +60,18 @@
 YoruVault 只保留两类正式部署方式：
 
 1. **Cloudflare Pages 部署**：使用 Cloudflare Pages 静态页面 + Pages Functions，适合免费额度、边缘函数、Cloudflare KV/R2 场景。
-2. **Docker 部署**：使用单镜像 `ghcr.io/katelya77/k-vault:latest`，适合 VPS/NAS/内网部署，也适合 WebDAV、S3、GitHub、HuggingFace 等多存储后端长期自托管。
+2. **Docker 部署**：使用单镜像 `ghcr.io/katelya77/k-vault:latest`，适合 VPS/NAS/内网部署，也适合 S3、GitHub、HuggingFace 等多存储后端长期自托管。
 
 两种部署方式使用同一套根目录页面和同一组主入口：
 
 - 上传首页：`/`
 - 管理后台：`/admin.html`
-- WebDAV 页面：`/webdav.html`
 - 管理/API 接口：`/api/*`
 - 普通上传：`POST /upload`
 - API Token 上传：`/api/v1/upload`
 - 文件直链/分享：`/file/*`、`/share/*`、`/s/*`
 
-Docker 版本由 Nginx 在容器内代理到 Node API，对外仍是一个端口，因此用户看到的 UI、管理后台、WebDAV 页面、API Token 上传和多存储配置流程应与 Cloudflare Pages 部署保持一致。
+Docker 版本由 Nginx 在容器内代理到 Node API，对外仍是一个端口，因此用户看到的 UI、管理后台、API Token 上传和多存储配置流程应与 Cloudflare Pages 部署保持一致。
 
 ### 方式一：Cloudflare Pages 部署
 
@@ -97,7 +95,7 @@ Docker 版本由 Nginx 在容器内代理到 Node API，对外仍是一个端口
 | Deploy command | 留空 |
 
 > 不要在 Pages Git 集成里填写 `npx wrangler deploy`。这是 Workers 部署命令，不是 Pages 部署命令；填错会出现 `The detected framework ("Hono") cannot be automatically configured` 一类错误。
-> 本项目的 Cloudflare Pages 入口就是仓库根目录静态页面（`/`、`/admin.html`、`/webdav.html`）加 `functions/`。不要填写 `npm run build` 或 `frontend/dist`，否则会偏离当前根目录 UI 部署方式。
+> 本项目的 Cloudflare Pages 入口就是仓库根目录静态页面（`/`、`/admin.html`）加 `functions/`。不要填写 `npm run build` 或 `frontend/dist`，否则会偏离当前根目录 UI 部署方式。
 
 3. **绑定 KV（图片管理、分片任务、基础配置必需）**
    - 进入 Cloudflare Dashboard → `Workers 和 Pages` → `KV`
@@ -116,7 +114,7 @@ Docker 版本由 Nginx 在容器内代理到 Node API，对外仍是一个端口
 | `BASIC_USER` | 管理后台用户名 | 可选 |
 | `BASIC_PASS` | 管理后台密码 | 可选 |
 
-也可以使用 R2、S3、Discord、HuggingFace、WebDAV、GitHub 等后端。对应变量见下方“存储配置”章节；改完环境变量后必须重新部署。
+也可以使用 R2、S3、Discord、HuggingFace、GitHub 等后端。对应变量见下方“存储配置”章节；改完环境变量后必须重新部署。
 
 5. **重新部署**
    - 修改环境变量或绑定后必须重新部署，运行中的部署不会自动读取新配置。
@@ -161,7 +159,6 @@ docker run -d \
 
 - 上传首页：`http://<host>:8080/`
 - 管理后台：`http://<host>:8080/admin.html`
-- WebDAV 页面：`http://<host>:8080/webdav.html`
 - 健康检查：`http://<host>:8080/api/health`
 
 首次启动时，如果没有提供 `CONFIG_ENCRYPTION_KEY` 和 `SESSION_SECRET`，容器会自动生成并保存到数据卷的 `/app/data/runtime.env`。删除容器不会丢失这些密钥；删除数据卷才会丢失。
@@ -205,39 +202,17 @@ docker compose up -d
 | :--- | :--- |
 | `BASIC_USER` / `BASIC_PASS` | 后台登录账号，公网部署建议设置 |
 | `PUBLIC_BASE_URL` | 外部访问域名，用于生成回链和 webhook URL |
-| `DEFAULT_STORAGE_TYPE` | 默认存储类型：`telegram` / `r2` / `s3` / `discord` / `huggingface` / `webdav` / `github` |
+| `DEFAULT_STORAGE_TYPE` | 默认存储类型：`telegram` / `r2` / `s3` / `discord` / `huggingface` / `github` |
 | `TG_BOT_TOKEN` + `TG_CHAT_ID` | Docker 下的 Telegram 默认存储变量 |
-| `R2_*` / `S3_*` / `WEBDAV_*` / `GITHUB_*` / `HF_*` | 其他存储后端配置 |
+| `R2_*` / `S3_*` / `GITHUB_*` / `HF_*` | 其他存储后端配置 |
 | `UPLOAD_MAX_SIZE` / `CHUNK_SIZE` | 上传限制和分片大小 |
 | `WEB_PORT` | Compose 对外端口，默认 `8080` |
 
-Docker 下也可以不预先写存储环境变量，启动后到管理后台新增/测试/切换存储配置。WebDAV 页面、API Token、API v1 上传、短链和文件直链都走同一个 `8080` 入口。
+Docker 下也可以不预先写存储环境变量，启动后到管理后台新增/测试/切换存储配置。API Token、API v1 上传、短链和文件直链都走同一个 `8080` 入口。
 
 完整 Docker 说明请查看 [README-DOCKER.md](README-DOCKER.md)。
 
-### WebDAV 回归验证（Cloudflare Pages / Docker 通用）
 
-部署完成后，建议至少执行一次 WebDAV 烟测，确认“配置测试 -> 上传 -> 下载 -> 删除”完整闭环。
-
-示例：
-
-```bash
-BASE_URL=https://你的域名 \
-BASIC_USER=admin BASIC_PASS=your_password \
-SMOKE_STORAGE_TYPE=webdav \
-SMOKE_STORAGE_CONFIG_JSON='{"baseUrl":"https://dav.example.com","username":"u","password":"p","rootPath":"uploads"}' \
-node scripts/storage-regression.js
-```
-
-校验标准：
-
-- `/api/status` 中 `webdav.connected` 必须为 `true`
-- Docker 自托管部署可额外校验 `/api/storage/:id/test` 返回 `connected=true`
-- 回归脚本中的 WebDAV `upload / download / delete` 三步必须全部通过
-
-如果是 Docker 部署，只需把 `BASE_URL` 换成你的自托管地址，例如 `http://localhost:8080`。
-
-### Docker 登录 API（curl 示例）
 
 `/api/auth/login` 同时兼容两种请求体：
 
@@ -350,7 +325,7 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 
 ### 前端 UI 设计配置（跨端同步）
 
-支持在后台统一设置全站 UI 风格（首页、图库、后台、WebDAV、登录页）。
+支持在后台统一设置全站 UI 风格（首页、图库、视频、后台、登录页）。
 
 **入口位置：**
 
@@ -497,37 +472,7 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
 - LFS 上传：最大 50GB/文件
 - 免费用户仓库总大小：约 50GB
 
-### WebDAV 存储（可选）
 
-适合对接 alist/openlist、NAS、群晖、坚果云等支持 WebDAV 的存储服务。  
-你可以把 WebDAV 作为统一挂载入口，后台继续按目录管理文件，已生成的 `/file/...` 直链不受目录调整影响。
-其中 alist/openlist 建议直接填写其 WebDAV 挂载地址（例如 `https://example.com/dav`），不要填管理后台地址。
-
-**环境变量：**
-
-| 变量名 | 说明 | 示例 |
-| :--- | :--- | :--- |
-| `WEBDAV_BASE_URL` | WebDAV 基础地址（不带结尾 `/`） | `https://dav.example.com/dav` |
-| `WEBDAV_USERNAME` | WebDAV 用户名（Basic 认证） | `alice` |
-| `WEBDAV_PASSWORD` | WebDAV 密码（Basic 认证） | `your-password` |
-| `WEBDAV_BEARER_TOKEN` | Bearer Token（与用户名/密码二选一） | `eyJhbGciOi...` |
-| `WEBDAV_TOKEN` | Bearer Token 兼容变量名（可选） | `eyJhbGciOi...` |
-| `WEBDAV_ROOT_PATH` | 可选，WebDAV 根目录前缀 | `k-vault/uploads` |
-
-**部署步骤：**
-
-1. 在你的 WebDAV 服务端准备一个可写目录，并确认具备 `PUT/GET/DELETE/MKCOL` 权限。
-2. 在 Cloudflare Pages 项目中添加上述 `WEBDAV_*` 变量（认证方式二选一：`用户名+密码` 或 `Bearer Token`）。
-3. 重新部署后，访问 `/api/status` 检查 `webdav.connected` 与 `webdav.enabled`，或直接打开 `/webdav.html` 测试上传。
-4. Docker 自托管场景下，可以在管理后台新增 WebDAV 配置；如果通过 `.env` 填写变量，则重启容器（`docker compose up -d` 或 `docker restart yoruvault`）。
-
-**常见问题：**
-
-- `Not configured`：通常是 `WEBDAV_BASE_URL` 为空，或认证变量未正确填写。
-- `401/403`：认证失败，请检查账号密码或 Token。
-- 上传失败且提示 `MKCOL`：说明服务端不允许建目录或路径权限不足，请调整 WebDAV 权限。
-
-### GitHub 存储（可选）
 
 支持将文件存到 GitHub 仓库，提供两种模式：
 
@@ -811,7 +756,7 @@ curl -u admin:your_password -X POST http://127.0.0.1:8787/api/resolve-url \
 | `MEDIA_RESOLVE_COOKIES_FILE` | cookies.txt 路径（解锁 B站 1080P+ / 抖音） | - |
 | `MEDIA_RESOLVE_COOKIES_BY_HOST` | 按站点各自的 cookies.txt（`host=path`，`;`/换行分隔） | - |
 | `MEDIA_RESOLVE_PROXY` | 访问平台时使用的代理 | - |
-| `DEFAULT_STORAGE_TYPE` | 启动时默认存储类型（`telegram`/`r2`/`s3`/`discord`/`huggingface`/`webdav`/`github`） | `telegram` |
+| `DEFAULT_STORAGE_TYPE` | 启动时默认存储类型（`telegram` / `r2` / `s3` / `discord` / `huggingface` / `github`） | `telegram` |
 | `SETTINGS_STORE` | 基础设置存储后端（`sqlite` 或 `redis`） | `sqlite` |
 | `SETTINGS_REDIS_URL` | Redis URL（Upstash/Redis/KVrocks，`SETTINGS_STORE=redis` 时必填） | - |
 | `SETTINGS_REDIS_PREFIX` | Redis 键前缀 | `k-vault` |
@@ -825,7 +770,6 @@ curl -u admin:your_password -X POST http://127.0.0.1:8787/api/resolve-url \
 | 页面 | 路径 | 说明 |
 | :--- | :--- | :--- |
 | 首页/上传 | `/` | 批量上传、拖拽、粘贴上传 |
-| WebDAV 独立页 | `/webdav.html` | WebDAV 上传/状态检查/URL 上传 |
 | 图片浏览 | `/gallery.html` | 图片网格浏览 |
 | 管理后台 | `/admin.html` | 文件管理、黑白名单 |
 | 文件预览 | `/preview.html` | 多格式文件预览 |
@@ -893,12 +837,6 @@ curl -u admin:your_password -X POST http://127.0.0.1:8787/api/resolve-url \
 | `DISCORD_CHANNEL_ID` | Discord 频道 ID | 可选 |
 | `HF_TOKEN` | HuggingFace Token | 可选 |
 | `HF_REPO` | HuggingFace 仓库 ID | 可选 |
-| `WEBDAV_BASE_URL` | WebDAV 基础地址 | 可选 |
-| `WEBDAV_USERNAME` | WebDAV 用户名（Basic 认证） | 可选 |
-| `WEBDAV_PASSWORD` | WebDAV 密码（Basic 认证） | 可选 |
-| `WEBDAV_BEARER_TOKEN` | WebDAV Bearer Token（与用户名/密码二选一） | 可选 |
-| `WEBDAV_TOKEN` | WebDAV Bearer Token 兼容变量名 | 可选 |
-| `WEBDAV_ROOT_PATH` | WebDAV 根目录前缀 | 可选 |
 | `GITHUB_TOKEN` | GitHub Token（仓库写权限） | 可选 |
 | `GITHUB_REPO` | GitHub 仓库（`owner/repo`） | 可选 |
 | `GITHUB_MODE` | GitHub 存储模式（`releases`/`contents`） | 可选 |
@@ -1115,7 +1053,7 @@ YoruVault 的早期实现与功能演进参考并受益于多个开源项目、�
 
 - [Telegraph-Image](https://github.com/cf-pages/Telegraph-Image)：YoruVault 早期 Serverless 图床形态的重要上游参考之一。
 - [CloudFlare-ImgBed](https://github.com/MarSeventh/CloudFlare-ImgBed)：优秀的同类开源图床项目，对社区图床方案、多存储后端设计方向以及相关项目生态具有参考价值。
-- Linux.do 社区用户反馈：YoruVault 的多存储后端、Docker 部署形态、WebDAV 等功能方向，均受社区讨论与实际使用需求推动。
+- Linux.do 社区用户反馈：YoruVault 的多存储后端、Docker 部署形态等方向，均受社区讨论与实际使用需求推动。
 
 YoruVault 并非对上述项目的简单复制，而是在相关开源生态、社区反馈和实际使用需求的基础上，逐步整理、扩展和实现的个人项目。感谢所有开源项目作者与社区用户的贡献和建议。
 

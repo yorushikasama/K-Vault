@@ -12,7 +12,7 @@ ghcr.io/katelya77/k-vault:latest
 
 The image includes:
 
-- Root static pages: `/`, `/admin.html`, `/gallery.html`, `/webdav.html`
+- Root static pages: `/`, `/admin.html`, `/gallery.html`, `/video.html`
 - Node.js/Hono API
 - Nginx entrypoint and reverse proxy
 - SQLite database and chunk temp directory, persisted under `/app/data`
@@ -37,7 +37,6 @@ Open:
 
 - Upload UI: `http://<host>:8080/`
 - Admin console: `http://<host>:8080/admin.html`
-- WebDAV page: `http://<host>:8080/webdav.html`
 - Health check: `http://<host>:8080/api/health`
 
 On first start, if `CONFIG_ENCRYPTION_KEY` and `SESSION_SECRET` are not provided, the container generates persistent values in `/app/data/runtime.env`. Recreating the container keeps them as long as the `kvault_data` volume is kept.
@@ -102,17 +101,16 @@ Common variables:
 | :--- | :--- |
 | `BASIC_USER` / `BASIC_PASS` | Admin login credentials, recommended for public deployments |
 | `PUBLIC_BASE_URL` | External URL for direct links, share links, and webhooks |
-| `DEFAULT_STORAGE_TYPE` | Default storage: `telegram` / `r2` / `s3` / `discord` / `huggingface` / `webdav` / `github` |
+| `DEFAULT_STORAGE_TYPE` | Default storage: `telegram` / `r2` / `s3` / `discord` / `huggingface` / `github` |
 | `TG_BOT_TOKEN` + `TG_CHAT_ID` | Telegram |
 | `R2_ENDPOINT` / `R2_BUCKET` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | Cloudflare R2 |
 | `S3_ENDPOINT` / `S3_REGION` / `S3_BUCKET` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | S3-compatible storage |
-| `WEBDAV_BASE_URL` / `WEBDAV_USERNAME` / `WEBDAV_PASSWORD` / `WEBDAV_BEARER_TOKEN` / `WEBDAV_ROOT_PATH` | WebDAV |
 | `GITHUB_REPO` / `GITHUB_TOKEN` / `GITHUB_MODE` / `GITHUB_PREFIX` | GitHub |
 | `HF_TOKEN` / `HF_REPO` | HuggingFace |
 | `UPLOAD_MAX_SIZE` / `UPLOAD_SMALL_FILE_THRESHOLD` / `CHUNK_SIZE` | Upload limits and chunk settings |
 | `WEB_PORT` | Public Compose port, default `8080` |
 
-After WebDAV, GitHub, HuggingFace, S3/R2, or another backend is configured, the upload page storage buttons, `/webdav.html`, admin console, and `/api/status` show the same state. API Token uploads use `/api/v1/upload`; browser uploads use `POST /upload`.
+After GitHub, HuggingFace, S3/R2, or another backend is configured, the upload page storage buttons, admin console, and `/api/status` show the same state. API Token uploads use `/api/v1/upload`; browser uploads use `POST /upload`.
 
 ## Cloudflare Pages Parity
 
@@ -120,7 +118,6 @@ Docker and Cloudflare Pages use the same root static UI and main routes:
 
 - `/`: upload UI
 - `/admin.html`: admin, storage profiles, API Token management
-- `/webdav.html`: WebDAV upload/test page
 - `/api/*`: admin, status, auth, storage tests, API v1
 - `POST /upload`: browser upload
 - `/api/v1/upload`: API Token upload
@@ -131,7 +128,7 @@ Runtime difference:
 - Cloudflare Pages uses Pages Functions and KV/R2 bindings.
 - Docker uses the containerized Node API, SQLite, and the `/app/data` volume.
 
-The UI, main workflows, multi-storage backends, WebDAV page, API Token upload, and share links should behave the same for users.
+The UI, main workflows, multi-storage backends, API Token upload, and share links should behave the same for users.
 
 ## Optional Redis Settings Store
 
@@ -214,7 +211,7 @@ docker compose logs -f k-vault
 Inspect container env vars:
 
 ```bash
-docker compose exec k-vault sh -lc "env | grep -E 'DEFAULT_STORAGE_TYPE|TG_|R2_|S3_|HF_|GITHUB_|WEBDAV_|BASIC_|PUBLIC_BASE_URL'"
+docker compose exec k-vault sh -lc "env | grep -E 'DEFAULT_STORAGE_TYPE|TG_|R2_|S3_|HF_|GITHUB_|BASIC_|PUBLIC_BASE_URL'"
 ```
 
 Inspect storage profiles in SQLite:

@@ -81,7 +81,7 @@ paths:
                   format: binary
                 storage:
                   type: string
-                  enum: [telegram, r2, s3, discord, huggingface, webdav, github]
+                  enum: [telegram, r2, s3, discord, huggingface, github]
                 folderPath:
                   type: string
                 password:
@@ -343,7 +343,7 @@ components:
           type: array
           items:
             type: string
-            enum: [telegram, r2, s3, discord, huggingface, webdav, github]
+            enum: [telegram, r2, s3, discord, huggingface, github]
         allowedMimeTypes:
           type: array
           items: { type: string }

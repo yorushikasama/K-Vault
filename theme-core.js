@@ -135,7 +135,7 @@
       return;
     }
 
-    // 应用外壳（上传 / 文件 / 图库 / 视频 / WebDAV）共用的工具区。页面自带按钮时
+    // 应用外壳（上传 / 文件 / 图库 / 视频）共用的工具区。页面自带按钮时
     // 上面就已经返回了，走到这里说明这一页没有，把按钮注入到与其它分区
     // 相同的位置，四个页面的顶栏才是同一个样子。
     var shellTools = document.querySelector(".workspace-header .workspace-tools");

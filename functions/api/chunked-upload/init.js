@@ -38,7 +38,7 @@ export async function onRequestPost(context) {
       return jsonResponse({ error: '缺少必要参数' }, 400);
     }
 
-    const validModes = ['telegram', 'r2', 's3', 'discord', 'huggingface', 'webdav', 'github'];
+    const validModes = ['telegram', 'r2', 's3', 'discord', 'huggingface', 'github'];
     const normalizedStorage = validModes.includes(storageMode) ? storageMode : 'telegram';
 
     const validation = validateChunkUpload(normalizedStorage, normalizedFileSize);
@@ -146,7 +146,7 @@ function validateChunkUpload(storageMode, fileSize) {
       ok: false,
       status: 400,
       code: 'TELEGRAM_CHUNK_UNSUPPORTED',
-      message: 'Cloudflare Pages 上的 Telegram 网页上传仅适合 20MB 以内文件。更大的文件请切换到 R2/S3/WebDAV/GitHub，或把文件直接发到 Telegram 后使用 Webhook 回链。',
+      message: 'Cloudflare Pages 上的 Telegram 网页上传仅适合 20MB 以内文件。更大的文件请切换到 R2/S3/GitHub，或把文件直接发到 Telegram 后使用 Webhook 回链。',
     };
   }
 
@@ -155,7 +155,7 @@ function validateChunkUpload(storageMode, fileSize) {
       ok: false,
       status: 413,
       code: 'DISCORD_FILE_TOO_LARGE',
-      message: 'Discord 默认上传上限按 25MB 处理；更大的文件请使用 R2/S3/WebDAV/GitHub。',
+      message: 'Discord 默认上传上限按 25MB 处理；更大的文件请使用 R2/S3/GitHub。',
     };
   }
 

@@ -6,7 +6,6 @@ import { checkAuthentication, isAuthRequired } from '../../utils/auth.js';
 import { createS3Client } from '../../utils/s3client.js';
 import { uploadToDiscord } from '../../utils/discord.js';
 import { hasHuggingFaceConfig, uploadToHuggingFace } from '../../utils/huggingface.js';
-import { hasWebDAVConfig, normalizeWebDAVPath, uploadToWebDAV } from '../../utils/webdav.js';
 import { hasGitHubConfig, normalizeGitHubStoragePath, uploadToGitHub } from '../../utils/github.js';
 import {
   buildTelegramDirectLink,
@@ -146,24 +145,6 @@ export async function onRequestPost(context) {
       responseFileKey = `hf:${hfId}.${fileExtension}`;
       metadataKey = responseFileKey;
       extraMetadata.hfPath = hfPath;
-    } else if (storageType === 'webdav') {
-      if (!hasWebDAVConfig(env)) {
-        return jsonResponse({ error: 'WebDAV 未配置，无法完成上传' }, 500);
-      }
-      const arrayBuffer = await file.arrayBuffer();
-      const wdId = `wd_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      const publicId = `${wdId}.${fileExtension}`;
-      const webdavPath = joinStoragePath(folderPath, publicId);
-      const webdavResult = await uploadToWebDAV(
-        arrayBuffer,
-        webdavPath,
-        file.type || 'application/octet-stream',
-        env
-      );
-      responseFileKey = `webdav:${publicId}`;
-      metadataKey = responseFileKey;
-      extraMetadata.webdavPath = normalizeWebDAVPath(webdavResult.path || webdavPath);
-      extraMetadata.webdavEtag = webdavResult.etag || undefined;
     } else if (storageType === 'github') {
       if (!hasGitHubConfig(env)) {
         return jsonResponse({ error: 'GitHub 未配置，无法完成上传' }, 500);
@@ -285,7 +266,7 @@ function validateCompletionTarget(storageMode, fileSize) {
       ok: false,
       status: 400,
       code: 'TELEGRAM_CHUNK_UNSUPPORTED',
-      message: 'Cloudflare Pages 上的 Telegram 网页上传仅适合 20MB 以内文件。更大的文件请切换到 R2/S3/WebDAV/GitHub，或把文件直接发到 Telegram 后使用 Webhook 回链。',
+      message: 'Cloudflare Pages 上的 Telegram 网页上传仅适合 20MB 以内文件。更大的文件请切换到 R2/S3/GitHub，或把文件直接发到 Telegram 后使用 Webhook 回链。',
     };
   }
   if (storageMode === 'discord' && fileSize > 25 * MB) {
@@ -293,7 +274,7 @@ function validateCompletionTarget(storageMode, fileSize) {
       ok: false,
       status: 413,
       code: 'DISCORD_FILE_TOO_LARGE',
-      message: 'Discord 默认上传上限按 25MB 处理；更大的文件请使用 R2/S3/WebDAV/GitHub。',
+      message: 'Discord 默认上传上限按 25MB 处理；更大的文件请使用 R2/S3/GitHub。',
     };
   }
   if (storageMode === 'huggingface' && fileSize > 35 * MB) {

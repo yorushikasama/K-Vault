@@ -33,7 +33,7 @@ describe('pruned dead methods stay pruned', function () {
     'admin.html': ['admin-app.js', 'admin-tokens.js', 'admin-ui-design.js'],
     'admin-imgtc.html': ['admin-imgtc-app.js'],
     'gallery.html': ['gallery-app.js'],
-    'webdav.html': ['webdav-app.js'],
+    'video.html': ['video-app.js'],
     'preview.html': ['preview-app.js', 'preview-parsers.js'],
     'admin-waterfall.html': [],
     'block-img.html': [],
@@ -95,11 +95,6 @@ describe('pruned dead methods stay pruned', function () {
       assert.match(read('gallery.html'), /@click\.stop="previewImage\(/, 'gallery 模板里还在调用 previewImage，实现不能删');
     });
 
-    it('keeps webdav uploadFiles (standalone function, has call sites)', function () {
-      const src = read('webdav-app.js');
-      assert.match(src, /function uploadFiles\s*\(/, 'webdav 的 uploadFiles 被误删了');
-      assert.match(src, /uploadFiles\(\)\.catch/, 'webdav 里还有调用点，实现不能删');
-    });
   });
 
   /**
@@ -116,7 +111,7 @@ describe('pruned dead methods stay pruned', function () {
    * 死方法测试抓不到这一类：它只钉「删掉的别回来」，不查「引用的有没有」。
    */
   describe('no template or code reference points at a missing method', function () {
-    const PAGES = ['index.html', 'gallery.html', 'webdav.html', 'admin.html',
+    const PAGES = ['index.html', 'gallery.html', 'video.html', 'admin.html',
       'admin-imgtc.html', 'admin-waterfall.html', 'preview.html',
       'block-img.html', 'whitelist-on.html'];
 

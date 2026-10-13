@@ -9,7 +9,7 @@ YoruVault 是一个开源的图片/文件托管系统，目标是提供低成本
 - Cloudflare Pages：仓库根目录静态页面 + `functions/` 的 Serverless 运行形态
 - Docker/自托管：同一套仓库根目录静态页面 + Node.js/Hono 后端运行形态
 
-当前前端入口是仓库根目录下的静态页面，例如 `index.html`、`admin.html`、`gallery.html`、`webdav.html`、`login.html`、`preview.html`。旧版 `frontend/` Vite/Vue UI 与 `_nuxt/` 产物已不再作为项目 UI 入口。
+当前前端入口是仓库根目录下的静态页面，例如 `index.html`、`admin.html`、`gallery.html`、`video.html`、`login.html`、`preview.html`。旧版 `frontend/` Vite/Vue UI 与 `_nuxt/` 产物已不再作为项目 UI 入口。
 
 ## 技术架构
 
@@ -22,7 +22,6 @@ YoruVault 是一个开源的图片/文件托管系统，目标是提供低成本
   - `/`：上传首页
   - `/admin.html`：后台管理
   - `/gallery.html`：图片/文件浏览
-  - `/webdav.html`：WebDAV 场景页面
   - `/login.html`：登录页
   - `/preview.html`：文件预览页
 
@@ -39,7 +38,7 @@ YoruVault 是一个开源的图片/文件托管系统，目标是提供低成本
 
 ## 功能能力
 
-- 多后端文件存储：Telegram、R2、S3、Discord、HuggingFace、WebDAV、GitHub
+- 多后端文件存储：Telegram、R2、S3、Discord、HuggingFace、GitHub
 - 多种上传方式：普通上传、URL 上传、分片上传
 - 后台文件管理：搜索、筛选、目录、移动、重命名、删除、白名单/黑名单、收藏
 - API Token：支持 `upload`、`read`、`delete`、`paste` 权限

@@ -38,7 +38,7 @@ describe('deployment entrypoint contract', function () {
     const compose = fs.readFileSync(path.join(root, 'docker-compose.yml'), 'utf8');
     const imageWorkflow = fs.readFileSync(path.join(root, '.github', 'workflows', 'docker-image.yml'), 'utf8');
 
-    assert.match(dockerfile, /COPY index\.html admin\.html gallery\.html webdav\.html/);
+    assert.match(dockerfile, /COPY index\.html admin\.html gallery\.html video\.html/);
     assert.doesNotMatch(dockerfile, /_nuxt|frontend\/dist|frontend\/landing/);
     assert.match(dockerfile, /ENTRYPOINT \["yoruvault-entrypoint"\]/);
     assert.match(entrypoint, /ensure_secret CONFIG_ENCRYPTION_KEY/);

@@ -162,7 +162,7 @@ describe('dead CSS contract', function () {
     // 都会静默吞掉后面的样式。
     const prunedSheets = [
       'mobile-refactor.css', 'admin-imgtc.css', 'index.css', 'theme.css',
-      'gallery.css', 'webdav.css', 'preview.css', 'block-img.css',
+      'gallery.css', 'preview.css', 'block-img.css',
       'whitelist-on.css', 'admin-waterfall.css', 'login.css', 'admin.css',
     ];
     for (const sheet of prunedSheets) {

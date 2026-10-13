@@ -1,7 +1,6 @@
 ﻿import { createS3Client } from '../utils/s3client.js';
 import { getDiscordFileUrl } from '../utils/discord.js';
 import { getHuggingFaceFile } from '../utils/huggingface.js';
-import { getWebDAVFile } from '../utils/webdav.js';
 import { getGitHubFile } from '../utils/github.js';
 import {
   buildTelegramBotApiUrl,
@@ -10,7 +9,7 @@ import {
   shouldWriteTelegramMetadata,
 } from '../utils/telegram.js';
 
-const STORAGE_PREFIXES = ['img:', 'vid:', 'aud:', 'doc:', 'r2:', 's3:', 'discord:', 'hf:', 'webdav:', 'github:', ''];
+const STORAGE_PREFIXES = ['img:', 'vid:', 'aud:', 'doc:', 'r2:', 's3:', 'discord:', 'hf:', 'github:', ''];
 
 const MIME_TYPES = {
   mp4: 'video/mp4',
@@ -111,8 +110,6 @@ export async function onRequest(context) {
       response = await handleDiscordFile(context, fileId, record);
     } else if (storageType === 'huggingface') {
       response = await handleHFFile(context, fileId, record);
-    } else if (storageType === 'webdav') {
-      response = await handleWebDAVFile(context, fileId, record);
     } else if (storageType === 'github') {
       response = await handleGitHubFile(context, fileId, record);
     } else {
@@ -144,7 +141,6 @@ function inferStorageType(name, metadata = {}) {
   if (keyName.startsWith('s3:')) return 's3';
   if (keyName.startsWith('discord:')) return 'discord';
   if (keyName.startsWith('hf:')) return 'huggingface';
-  if (keyName.startsWith('webdav:')) return 'webdav';
   if (keyName.startsWith('github:')) return 'github';
   return 'telegram';
 }
@@ -660,41 +656,6 @@ async function handleHFFile(context, fileId, record = null) {
   if (!upstream.ok && upstream.status !== 206) {
     return errorResponse('File not found on HuggingFace', upstream.status || 404);
   }
-
-  const fileName = record.metadata.fileName || fileId;
-  const mimeType = getMimeType(fileName);
-
-  const headers = new Headers();
-  addResponseHeaders(headers, fileName, mimeType, upstream);
-
-  return new Response(upstream.body, {
-    status: upstream.status,
-    headers,
-  });
-}
-
-async function handleWebDAVFile(context, fileId, record = null) {
-  const { request, env } = context;
-  const requestUrl = new URL(request.url);
-
-  if (!record?.metadata) {
-    record = await findRecordByPrefixes(env, fileId, ['webdav:', 'img:', 'vid:', 'aud:', 'doc:', '']);
-  }
-  if (!record?.metadata) return errorResponse('File not found', 404);
-
-  if (shouldBlock(record.metadata)) {
-    return blockRedirect(requestUrl, request);
-  }
-  if (shouldWhitelistDeny(env, record.metadata)) {
-    return Response.redirect(`${requestUrl.origin}/whitelist-on.html`, 302);
-  }
-
-  const webdavPath = record.metadata.webdavPath || fileId.replace(/^webdav:/, '');
-  if (!webdavPath) return errorResponse('WebDAV path missing', 500);
-
-  const rangeHeader = request.headers.get('Range');
-  const upstream = await getWebDAVFile(webdavPath, env, rangeHeader ? { range: rangeHeader } : {});
-  if (!upstream) return errorResponse('File not found on WebDAV', 404);
 
   const fileName = record.metadata.fileName || fileId;
   const mimeType = getMimeType(fileName);

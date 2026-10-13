@@ -50,7 +50,6 @@ class StorageConfigRepository {
       s3: ['accessKeyId', 'secretAccessKey'],
       discord: ['botToken', 'webhookUrl'],
       huggingface: ['token'],
-      webdav: ['password', 'bearerToken', 'token'],
       github: ['token'],
     };
 
@@ -76,7 +75,6 @@ class StorageConfigRepository {
       s3: ['accessKeyId', 'secretAccessKey'],
       discord: ['botToken', 'webhookUrl'],
       huggingface: ['token'],
-      webdav: ['password', 'bearerToken', 'token'],
       github: ['token'],
     };
 
@@ -252,7 +250,6 @@ class StorageConfigRepository {
       s3: Boolean(bootstrap.s3?.endpoint && bootstrap.s3?.bucket && bootstrap.s3?.accessKeyId && bootstrap.s3?.secretAccessKey),
       discord: Boolean(bootstrap.discord?.webhookUrl || (bootstrap.discord?.botToken && bootstrap.discord?.channelId)),
       huggingface: Boolean(bootstrap.huggingface?.token && bootstrap.huggingface?.repo),
-      webdav: Boolean(bootstrap.webdav?.baseUrl && (bootstrap.webdav?.bearerToken || (bootstrap.webdav?.username && bootstrap.webdav?.password))),
       github: Boolean(bootstrap.github?.repo && bootstrap.github?.token),
     };
 
@@ -287,7 +284,6 @@ class StorageConfigRepository {
     ensureBootstrapType('s3', bootstrap.s3 || {}, 'S3 (Env Bootstrap)');
     ensureBootstrapType('discord', bootstrap.discord || {}, 'Discord (Env Bootstrap)');
     ensureBootstrapType('huggingface', bootstrap.huggingface || {}, 'HUGGINGFACE (Env Bootstrap)');
-    ensureBootstrapType('webdav', bootstrap.webdav || {}, 'WEBDAV (Env Bootstrap)');
     ensureBootstrapType('github', bootstrap.github || {}, 'GITHUB (Env Bootstrap)');
 
     if (!defaultExists) {

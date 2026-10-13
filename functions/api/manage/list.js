@@ -59,7 +59,6 @@ function inferStorageType(name, metadata = {}) {
   if (keyName.startsWith('s3:')) return 's3';
   if (keyName.startsWith('discord:')) return 'discord';
   if (keyName.startsWith('hf:')) return 'huggingface';
-  if (keyName.startsWith('webdav:')) return 'webdav';
   if (keyName.startsWith('github:')) return 'github';
   return 'telegram';
 }
@@ -142,7 +141,6 @@ function computeStats(files) {
       s3: 0,
       discord: 0,
       huggingface: 0,
-      webdav: 0,
       github: 0,
     },
   };

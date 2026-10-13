@@ -10,13 +10,13 @@
   <!-- Vue / Element / Sentry 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://js.sentry-cdn.com" crossorigin>
-  <link rel="stylesheet" href="/theme.css?v=0b56c71b52">
-  <script src="/theme-core.js?v=4b609a8b7e"></script>
+  <link rel="stylesheet" href="/theme.css?v=368e7b9f31">
+  <script src="/theme-core.js?v=0df3ba0224"></script>
   <script src="/accent-color.js?v=35dbe085ce"></script>
   <script defer src="/theme-effects.js?v=f32f70568d"></script>
   <!-- 应用外壳（顶栏）各分区页共用，因此排在页面私有样式之前：
-       上传/文件/图库/WebDAV 的顶栏必须逐字一样，页面样式只负责内容区。 -->
-  <link rel="stylesheet" href="/app-shell.css?v=3dda6774c7">
+       上传/文件/图库/视频的顶栏必须逐字一样，页面样式只负责内容区。 -->
+  <link rel="stylesheet" href="/app-shell.css?v=2163c4e540">
   <!-- Import CSS -->
   <link rel="stylesheet" href="./admin-imgtc.css?v=0f0b8de374">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css" integrity="sha384-ZUOUQ+hNJ+DV4HfNwHNFq4PcclqayiUDpCMsWD1lOpUQZ/go0ofwD/GLaYdzOcdx" crossorigin="anonymous" referrerpolicy="no-referrer">
@@ -26,10 +26,10 @@
        为 js.sentry-cdn.com 付一次 DNS + TLS + 脚本往返 —— 切页延迟里它是
        实打实的一块。真要上报时调 window.Sentry.captureException() 即可。 -->
   <script src="https://js.sentry-cdn.com/219f636ac7bde5edab2c3e16885cb535.min.js" data-lazy crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="/mobile-refactor.css?v=2f0292c228">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=1fcd9985a2">
   <link rel="stylesheet" href="/admin.css?v=9d5867910d">
-<script src="/kv-shared.js?v=bbf671511b"></script>
-  <link rel="stylesheet" href="/workbench.css?v=8dc5abbe60">
+<script src="/kv-shared.js?v=c7a66484c9"></script>
+  <link rel="stylesheet" href="/workbench.css?v=7d671ec1d3">
 </head>
 <body class="kv-workbench kv-files">
   <div id="app" v-cloak>
@@ -44,7 +44,6 @@
           <a href="./admin.html" aria-current="page">文件</a>
           <a href="./gallery.html">图库</a>
           <a href="./video.html">视频</a>
-          <a href="./webdav.html">WebDAV</a>
         </nav>
         <div class="workspace-tools">
           <el-dropdown @command="handleWebsite" trigger="click">
@@ -508,7 +507,7 @@
       </el-table>
       <div style="margin-top:14px;padding:10px 12px;background:#f5f7fa;border-radius:6px;border:1px solid #ebeef5;">
         <div style="font-size:13px;font-weight:600;color:#606266;margin-bottom:6px;"><i data-lucide="terminal"></i> 脚本 / Agent 调用示例</div>
-        <pre style="margin:0;font-size:12px;line-height:1.7;color:#476582;background:#fafbfc;border-radius:4px;padding:10px;overflow-x:auto;"># curl 上传（storage 可选 telegram/r2/s3/discord/huggingface/webdav/github）
+        <pre style="margin:0;font-size:12px;line-height:1.7;color:#476582;background:#fafbfc;border-radius:4px;padding:10px;overflow-x:auto;"># curl 上传（storage 可选 telegram/r2/s3/discord/huggingface/github）
 curl -H "Authorization: Bearer $KVAULT_API_TOKEN" \
   -F "file=@./image.png" -F "storage=r2" \
   {SITE_URL}/api/v1/upload
@@ -736,11 +735,11 @@ curl -X POST "{SITE_URL}/api/v1/import" \
 <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js" integrity="sha384-ULpZhk1pvhc/UK5ktA9kwb2guy9ovNSTyxPNHANnA35YjBQgdwI+AhLkixDvdlw4" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/index.js" integrity="sha384-+gBC+PMSL+TRFl/FIZXz0BFZ9goHb5wqIwBbAscP86Bd6JJJ1TS5MwaN1SAIjzGj" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <!-- Vue 与 Lucide 就绪后注册共享指令，再创建应用。 -->
-<script src="/icons-subset.js?v=a139a660aa"></script>
+<script src="/icons-subset.js?v=7a1b690b57"></script>
 <script src="/icons.js?v=fc3fc216e0"></script>
 <script src="/admin-shared.js?v=44f1a15913"></script>
 <script src="/admin-tokens.js?v=5085cfdc1c"></script>
-<script src="/admin-ui-design.js?v=3796d034be"></script>
-<script src="/admin-app.js?v=a79a400fdd"></script>
+<script src="/admin-ui-design.js?v=04415a6345"></script>
+<script src="/admin-app.js?v=a51e4810dc"></script>
 </body>
 </html>

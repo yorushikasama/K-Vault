@@ -1,7 +1,6 @@
 ﻿import { createS3Client } from '../utils/s3client.js';
 import { checkDiscordConnection } from '../utils/discord.js';
 import { checkHuggingFaceConnection, hasHuggingFaceConfig } from '../utils/huggingface.js';
-import { checkWebDAVConnection, hasWebDAVConfig } from '../utils/webdav.js';
 import { checkGitHubConnection, hasGitHubConfig } from '../utils/github.js';
 import { getGuestConfig } from '../utils/guest.js';
 import { buildTelegramBotApiUrl, getTelegramApiBase } from '../utils/telegram.js';
@@ -39,7 +38,6 @@ export async function onRequestGet(context) {
     s3: defaultStatusItem({ layer: 'direct' }),
     discord: defaultStatusItem({ layer: 'direct' }),
     huggingface: defaultStatusItem({ layer: 'direct' }),
-    webdav: defaultStatusItem({ layer: 'mounted' }),
     github: defaultStatusItem({ layer: 'direct' }),
     auth: { enabled: false, message: 'Disabled' },
     guestUpload: getGuestConfig(env),
@@ -50,7 +48,6 @@ export async function onRequestGet(context) {
       storageCapability('s3', 'S3', 'direct'),
       storageCapability('discord', 'Discord', 'direct'),
       storageCapability('huggingface', 'HuggingFace', 'direct'),
-      storageCapability('webdav', 'WebDAV', 'mounted'),
       storageCapability('github', 'GitHub', 'direct'),
     ],
   };
@@ -230,33 +227,6 @@ export async function onRequestGet(context) {
     );
   }
 
-  if (hasWebDAVConfig(env)) {
-    status.webdav.configured = true;
-    checks.push(
-      checkWebDAVConnection(env)
-        .then((result) => {
-          status.webdav = {
-            connected: Boolean(result?.connected),
-            enabled: Boolean(result?.connected),
-            configured: true,
-            layer: 'mounted',
-            message: result?.connected ? 'Connected' : (result?.message || 'WebDAV check failed'),
-            detail: result?.detail,
-            status: result?.status,
-          };
-        })
-        .catch((error) => {
-          status.webdav = {
-            connected: false,
-            enabled: true,
-            configured: true,
-            layer: 'mounted',
-            message: error.message || 'WebDAV check failed',
-          };
-        })
-    );
-  }
-
   if (hasGitHubConfig(env)) {
     status.github.configured = true;
     checks.push(
@@ -308,7 +278,7 @@ function getUploadLimits() {
       maxBytes: DIRECT_UPLOAD_THRESHOLD,
       directThreshold: DIRECT_UPLOAD_THRESHOLD,
       supportsChunkUpload: false,
-      message: 'Cloudflare Pages 上的 Telegram 网页上传限制为 20MB。较大的浏览器上传请使用 R2、S3、WebDAV 或 GitHub，或直接把文件发到 Telegram 后使用 Webhook 回链。',
+      message: 'Cloudflare Pages 上的 Telegram 网页上传限制为 20MB。较大的浏览器上传请使用 R2、S3 或 GitHub，或直接把文件发到 Telegram 后使用 Webhook 回链。',
     },
     r2: {
       maxBytes: CHUNK_UPLOAD_LIMIT,
@@ -328,11 +298,6 @@ function getUploadLimits() {
     },
     huggingface: {
       maxBytes: 35 * MB,
-      directThreshold: DIRECT_UPLOAD_THRESHOLD,
-      supportsChunkUpload: true,
-    },
-    webdav: {
-      maxBytes: CHUNK_UPLOAD_LIMIT,
       directThreshold: DIRECT_UPLOAD_THRESHOLD,
       supportsChunkUpload: true,
     },

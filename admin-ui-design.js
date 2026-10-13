@@ -165,7 +165,7 @@
                 <input id="uiUploadGlobalInput" type="file" accept="image/*" class="hidden-file-input">
                 <button type="button" id="uiClearGlobalBg" class="el-button el-button--small">清除</button>
               </div>
-              <div class="ui-design-tip">将应用到首页、图片浏览、后台、WebDAV 及其他所有可见页面。</div>
+              <div class="ui-design-tip">将应用到首页、图片浏览、视频库、后台及其他所有可见页面。</div>
             </section>
 
             <section class="ui-design-section">

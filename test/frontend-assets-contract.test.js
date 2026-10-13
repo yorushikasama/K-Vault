@@ -137,7 +137,7 @@ describe('frontend third-party asset contract', function () {
     // 而「标签里有没有这个文件名」的粗检查照样通过。这里钉住标签类型。
     const MODULES = ['kv-shared.js', 'admin-shared.js', 'upload-media.js', 'upload-image.js',
       'admin-tokens.js', 'admin-ui-design.js', 'preview-parsers.js', 'gallery-app.js',
-      'webdav-app.js', 'preview-app.js', 'upload-app.js', 'admin-app.js', 'admin-imgtc-app.js'];
+      'preview-app.js', 'upload-app.js', 'admin-app.js', 'admin-imgtc-app.js'];
 
     it('none of them is referenced with a <link> tag', function () {
       const offenders = [];

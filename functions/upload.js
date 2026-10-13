@@ -4,7 +4,6 @@ import { checkGuestUpload, incrementGuestCount } from "./utils/guest.js";
 import { createS3Client } from "./utils/s3client.js";
 import { uploadToDiscord } from "./utils/discord.js";
 import { hasHuggingFaceConfig, uploadToHuggingFace } from "./utils/huggingface.js";
-import { hasWebDAVConfig, normalizeWebDAVPath, uploadToWebDAV } from "./utils/webdav.js";
 import { hasGitHubConfig, normalizeGitHubStoragePath, uploadToGitHub } from "./utils/github.js";
 import {
   buildTelegramDirectLink,
@@ -106,11 +105,6 @@ export async function onRequestPost(context) {
         return errorResponse("HuggingFace 未配置。");
       }
       result = await uploadToHFStorage(uploadFile, fileName, fileExtension, env, folderPath);
-    } else if (storageMode === "webdav") {
-      if (!hasWebDAVConfig(env)) {
-        return errorResponse("WebDAV 未配置。");
-      }
-      result = await uploadToWebDAVStorage(uploadFile, fileName, fileExtension, env, folderPath);
     } else if (storageMode === "github") {
       if (!hasGitHubConfig(env)) {
         return errorResponse("GitHub 未配置。");
@@ -167,7 +161,7 @@ function validateDirectUpload(storageMode, fileSize) {
     telegram: {
       maxBytes: 20 * MB,
       status: 413,
-      message: "Cloudflare Pages 上的 Telegram 网页上传限制为 20MB。较大的浏览器上传请使用 R2、S3、WebDAV 或 GitHub，或直接把文件发到 Telegram 后使用 Webhook 回链。",
+      message: "Cloudflare Pages 上的 Telegram 网页上传限制为 20MB。较大的浏览器上传请使用 R2、S3 或 GitHub，或直接把文件发到 Telegram 后使用 Webhook 回链。",
     },
     discord: {
       maxBytes: 25 * MB,
@@ -181,7 +175,6 @@ function validateDirectUpload(storageMode, fileSize) {
     },
     r2: { maxBytes: 100 * MB, status: 413, message: "R2 上传上限为 100MB。" },
     s3: { maxBytes: 100 * MB, status: 413, message: "S3 上传上限为 100MB。" },
-    webdav: { maxBytes: 100 * MB, status: 413, message: "WebDAV 上传上限为 100MB。" },
     github: { maxBytes: 100 * MB, status: 413, message: "GitHub 上传上限为 100MB。" },
   };
   const limit = limits[storageMode] || limits.telegram;
@@ -551,45 +544,6 @@ async function uploadToHFStorage(file, fileName, fileExtension, env, folderPath 
   } catch (error) {
     console.error("HuggingFace upload error:", error);
     return errorResponse(`HuggingFace upload failed: ${error.message}`);
-  }
-}
-
-async function uploadToWebDAVStorage(file, fileName, fileExtension, env, folderPath = "") {
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    const fileId = randomId("wd");
-    const publicId = `${fileId}.${fileExtension}`;
-    const webdavPath = joinStoragePath(folderPath, publicId);
-
-    const result = await uploadToWebDAV(arrayBuffer, webdavPath, file.type || "application/octet-stream", env);
-
-    const kvKey = `webdav:${publicId}`;
-    if (env.img_url) {
-      await env.img_url.put(kvKey, "", {
-        metadata: appendCommonMetadata(
-          {
-            TimeStamp: Date.now(),
-            ListType: "None",
-            Label: "None",
-            liked: false,
-            fileName,
-            fileSize: file.size,
-            storageType: "webdav",
-            webdavPath: normalizeWebDAVPath(result.path || webdavPath),
-            webdavEtag: result.etag || undefined,
-          },
-          folderPath
-        ),
-      });
-    }
-
-    return new Response(JSON.stringify([{ src: `/file/${kvKey}` }]), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (error) {
-    console.error("WebDAV upload error:", error);
-    return errorResponse(`WebDAV upload failed: ${error.message}`);
   }
 }
 

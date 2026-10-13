@@ -308,13 +308,6 @@ function loadConfig(env = process.env) {
           repo: huggingFaceRepo.source || 'none',
         },
       },
-      webdav: {
-        baseUrl: normalizeEnvString(env.WEBDAV_BASE_URL),
-        username: normalizeEnvString(env.WEBDAV_USERNAME),
-        password: normalizeEnvString(env.WEBDAV_PASSWORD),
-        bearerToken: normalizeEnvString(env.WEBDAV_BEARER_TOKEN) || normalizeEnvString(env.WEBDAV_TOKEN) || '',
-        rootPath: normalizeEnvString(env.WEBDAV_ROOT_PATH),
-      },
       github: {
         repo: githubRepo.value || '',
         token: githubToken.value || '',

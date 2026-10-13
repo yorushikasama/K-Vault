@@ -1007,7 +1007,7 @@ html[data-theme="dark"] .el-image__placeholder {
    --------------------------------------------------------------------------- */
 @media (max-width: 768px) {
   /* 兜底：尚未迁移到 .btn 的裸 <button> 与旧类名链接仍要够大。
-     webdav.html / login.html 已经换用 .btn（由 ui-buttons.css 负责下限），
+     旧 webdav.html / login.html 已经换用 .btn（由 ui-buttons.css 负责下限），
      但后台几页还在用旧类名，枚举仍然会漏，所以保留这条。
      等所有页面迁移完，连同下面那张类名表一起删掉。
 

@@ -1,4 +1,4 @@
-﻿const STORAGE_PREFIXES = ['img:', 'vid:', 'aud:', 'doc:', 'r2:', 's3:', 'discord:', 'hf:', 'webdav:', 'github:', ''];
+﻿const STORAGE_PREFIXES = ['img:', 'vid:', 'aud:', 'doc:', 'r2:', 's3:', 'discord:', 'hf:', 'github:', ''];
 const INVALID_PREFIXES = ['session:', 'chunk:', 'upload:', 'temp:'];
 
 // 目录树徽标要按类型再数一遍。与 functions/api/manage/list.js 的 VIDEO_EXTS
@@ -45,7 +45,6 @@ function inferStorageType(name, metadata = {}) {
   if (keyName.startsWith('s3:')) return 's3';
   if (keyName.startsWith('discord:')) return 'discord';
   if (keyName.startsWith('hf:')) return 'huggingface';
-  if (keyName.startsWith('webdav:')) return 'webdav';
   if (keyName.startsWith('github:')) return 'github';
   return 'telegram';
 }

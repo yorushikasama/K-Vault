@@ -92,7 +92,7 @@
       brokenCheckController: null,
       tokenError: '',
       moveDialogScopeKey: '',
-      storageLabels: { all: '全部存储', telegram: 'Telegram', r2: 'R2', s3: 'S3', discord: 'Discord', huggingface: 'HuggingFace', webdav: 'WebDAV', github: 'GitHub' },
+      storageLabels: { all: '全部存储', telegram: 'Telegram', r2: 'R2', s3: 'S3', discord: 'Discord', huggingface: 'HuggingFace', github: 'GitHub' },
       fileConfig: {
         all: {
           name: '全部',
@@ -213,7 +213,7 @@
         folderPrefix: '',
         maxFileSizeMb: 0,
       },
-      storageOptions: ['telegram', 'r2', 's3', 'discord', 'huggingface', 'webdav', 'github'],
+      storageOptions: ['telegram', 'r2', 's3', 'discord', 'huggingface', 'github'],
       moveDialogVisible: false,
       moveDialogLoading: false,
       moveDialogFoldersLoading: false,
@@ -339,7 +339,6 @@
         this.storageFilter === 's3' ? 'database' :
         this.storageFilter === 'discord' ? 'fab fa-discord' :
         this.storageFilter === 'huggingface' ? 'bot' :
-        this.storageFilter === 'webdav' ? 'hard-drive' :
         this.storageFilter === 'github' ? 'fab fa-github' : 'database';
       },
             folderBreadcrumbs() {
@@ -737,7 +736,7 @@
       },
       connectionLabel(key) {
         return { telegram: 'Telegram', kv: 'KV 存储', r2: 'R2 存储', s3: 'S3 存储', discord: 'Discord',
-          huggingface: 'HuggingFace', github: 'GitHub', webdav: 'WebDAV', auth: '身份验证' }[key] || key;
+          huggingface: 'HuggingFace', github: 'GitHub', auth: '身份验证' }[key] || key;
       },
       getStorageType(name = '') {
         return KVShared.storageTypeOf(name);

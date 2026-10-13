@@ -42,12 +42,12 @@ describe('Cloudflare manage file folder moves', function () {
   it('moves by unique display name and creates a folder marker without changing the file key', async function () {
     const { onRequestPost } = await import('../functions/api/manage/files/move-folder.js');
     const img_url = createMockKv({
-      'webdav:stable-id': {
+      'github:stable-id': {
         metadata: {
           fileName: 'photo.webp',
           TimeStamp: 1700000000000,
-          storageType: 'webdav',
-          webdavPath: 'photo.webp',
+          storageType: 'github',
+          githubStorageKey: 'photo.webp',
         },
       },
     });
@@ -68,9 +68,9 @@ describe('Cloudflare manage file folder moves', function () {
     assert.strictEqual(payload.success, true);
     assert.strictEqual(payload.moved, 1);
 
-    const moved = img_url.snapshot().get('webdav:stable-id');
+    const moved = img_url.snapshot().get('github:stable-id');
     assert.strictEqual(moved.metadata.folderPath, '图片');
-    assert.strictEqual(moved.metadata.webdavPath, 'photo.webp');
+    assert.strictEqual(moved.metadata.githubStorageKey, 'photo.webp');
     assert.ok(img_url.snapshot().has('folder:图片'));
   });
 

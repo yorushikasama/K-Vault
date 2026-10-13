@@ -1,7 +1,7 @@
 /**
  * Lucide 1.49.0 子集 — 由 scripts/build-icon-subset.cjs 生成，请勿手改。
  *
- * 只包含仓库实际用到的 136 个图标（全量 2117 个）。
+ * 只包含仓库实际用到的 133 个图标（全量 2117 个）。
  * 暴露形状与官方 UMD 一致（window.lucide.icons / createIcons / 具名导出），
  * 因此 icons.js、theme-core.js、admin.html 的 kv-icon 都无需改动。
  *
@@ -678,18 +678,6 @@ const defaultAttributes = {
     ["rect", { width: "7", height: "5", x: "10", y: "12", rx: "1" }]
   ];
 
-  const HardDrive = [
-    ["path", { d: "M10 16h.01" }],
-    [
-      "path",
-      {
-        d: "M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"
-      }
-    ],
-    ["path", { d: "M21.946 12.013H2.054" }],
-    ["path", { d: "M6 16h.01" }]
-  ];
-
   const Heading1 = [
     ["path", { d: "M4 12h8" }],
     ["path", { d: "M4 18V6" }],
@@ -799,14 +787,6 @@ const defaultAttributes = {
     ["path", { d: "M8 19h13" }]
   ];
 
-  const ListChecks = [
-    ["path", { d: "M13 5h8" }],
-    ["path", { d: "M13 12h8" }],
-    ["path", { d: "M13 19h8" }],
-    ["path", { d: "m3 17 2 2 4-4" }],
-    ["path", { d: "m3 7 2 2 4-4" }]
-  ];
-
   const ListTodo = [
     ["path", { d: "M13 5h8" }],
     ["path", { d: "M13 12h8" }],
@@ -887,12 +867,6 @@ const defaultAttributes = {
     ["circle", { cx: "17.5", cy: "10.5", r: ".5", fill: "currentColor" }],
     ["circle", { cx: "6.5", cy: "12.5", r: ".5", fill: "currentColor" }],
     ["circle", { cx: "8.5", cy: "7.5", r: ".5", fill: "currentColor" }]
-  ];
-
-  const PanelsTopLeft = [
-    ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2" }],
-    ["path", { d: "M3 9h18" }],
-    ["path", { d: "M9 21V9" }]
   ];
 
   const Pencil = [
@@ -1256,7 +1230,6 @@ const defaultAttributes = {
     Grid: Grid3x3,
     GripHorizontal: GripHorizontal,
     Group: Group,
-    HardDrive: HardDrive,
     Heading1: Heading1,
     Heading2: Heading2,
     Heart: Heart,
@@ -1268,11 +1241,9 @@ const defaultAttributes = {
     Info: Info,
     Key: Key,
     Layers: Layers,
-    Layout: PanelsTopLeft,
     LayoutGrid: LayoutGrid,
     Link: Link,
     List: List,
-    ListChecks: ListChecks,
     ListTodo: ListTodo,
     LoaderCircle: LoaderCircle,
     Lock: Lock,

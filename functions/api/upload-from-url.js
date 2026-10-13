@@ -1,7 +1,6 @@
 ﻿import { createS3Client } from "../utils/s3client.js";
 import { uploadToDiscord } from "../utils/discord.js";
 import { hasHuggingFaceConfig, uploadToHuggingFace } from "../utils/huggingface.js";
-import { hasWebDAVConfig, normalizeWebDAVPath, uploadToWebDAV } from "../utils/webdav.js";
 import { hasGitHubConfig, normalizeGitHubStoragePath, uploadToGitHub } from "../utils/github.js";
 import {
   buildTelegramDirectLink,
@@ -95,13 +94,6 @@ export async function onRequestPost(context) {
       return await uploadToHFStorage(arrayBuffer, fileName, fileExtension, contentType, fileSize, env, folderPath);
     }
 
-    if (storageMode === "webdav") {
-      if (!hasWebDAVConfig(env)) {
-        return jsonResponse({ error: "WebDAV 未配置" }, 400);
-      }
-      return await uploadToWebDAVStorage(arrayBuffer, fileName, fileExtension, contentType, fileSize, env, folderPath);
-    }
-
     if (storageMode === "github") {
       if (!hasGitHubConfig(env)) {
         return jsonResponse({ error: "GitHub 未配置" }, 400);
@@ -176,7 +168,7 @@ function validateStorageSize(storageMode, fileSize) {
     telegram: {
       maxBytes: 20 * MB,
       status: 413,
-      message: "Cloudflare Pages 上的 Telegram URL 上传限制为 20MB。较大的文件请使用 R2、S3、WebDAV 或 GitHub。",
+      message: "Cloudflare Pages 上的 Telegram URL 上传限制为 20MB。较大的文件请使用 R2、S3 或 GitHub。",
     },
     discord: {
       maxBytes: 25 * MB,
@@ -540,41 +532,6 @@ async function uploadToHFStorage(arrayBuffer, fileName, fileExtension, _contentT
   } catch (error) {
     console.error("HuggingFace upload error:", error);
     return jsonResponse({ error: `HuggingFace upload failed: ${error.message}` }, 500);
-  }
-}
-
-async function uploadToWebDAVStorage(arrayBuffer, fileName, fileExtension, contentType, fileSize, env, folderPath = "") {
-  try {
-    const fileId = randomId("wd");
-    const publicId = `${fileId}.${fileExtension}`;
-    const webdavPath = joinStoragePath(folderPath, publicId);
-
-    const result = await uploadToWebDAV(arrayBuffer, webdavPath, contentType || "application/octet-stream", env);
-
-    const kvKey = `webdav:${publicId}`;
-    if (env.img_url) {
-      await env.img_url.put(kvKey, "", {
-        metadata: appendCommonMetadata(
-          {
-            TimeStamp: Date.now(),
-            ListType: "None",
-            Label: "None",
-            liked: false,
-            fileName,
-            fileSize,
-            storageType: "webdav",
-            webdavPath: normalizeWebDAVPath(result.path || webdavPath),
-            webdavEtag: result.etag || undefined,
-          },
-          folderPath
-        ),
-      });
-    }
-
-    return jsonResponse([{ src: `/file/${kvKey}` }]);
-  } catch (error) {
-    console.error("WebDAV upload error:", error);
-    return jsonResponse({ error: `WebDAV upload failed: ${error.message}` }, 500);
   }
 }
 

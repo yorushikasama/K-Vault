@@ -28,7 +28,7 @@
   /**
    * 字节数 → 可读大小。bytes 一律取整（"512 B"），KB 起按 decimals 展示。
    * opts.trim 去掉尾随零（admin 列表用 "1.5 MB"）；
-   * opts.largeInteger 让 ≥100 的值回到整数（webdav 队列用 "150 KB"）。
+   * opts.largeInteger 让 ≥100 的值回到整数（上传队列用 "150 KB"）。
    */
   function formatSize(bytes, opts) {
     var options = opts || {};
@@ -52,7 +52,7 @@
   /**
    * 复制文本。优先 Clipboard API，失败回退隐藏 textarea。
    * 永不 reject：resolve(true/false) 表示 execCommand 是否成功，
-   * 调用方需要区分成败时（如 webdav 的状态提示）读返回值。
+   * 调用方需要区分成败时（如上传页的状态提示）读返回值。
    */
   function copyToClipboard(text) {
     var value = String(text == null ? "" : text);
@@ -388,8 +388,7 @@
     s3: "S3",
     discord: "Discord",
     huggingface: "HuggingFace",
-    webdav: "WebDAV",
-    github: "GitHub",
+      github: "GitHub",
   };
 
   /** 面向用户的完整目标名（index 的目标切换与提示文案）。 */
@@ -399,7 +398,6 @@
     s3: "S3 存储",
     discord: "Discord 频道",
     huggingface: "HuggingFace 仓库",
-    webdav: "WebDAV 存储",
     github: "GitHub 仓库",
   };
 
@@ -410,8 +408,7 @@
     if (key.startsWith("s3:")) return "s3";
     if (key.startsWith("discord:")) return "discord";
     if (key.startsWith("hf:")) return "huggingface";
-    if (key.startsWith("webdav:")) return "webdav";
-    if (key.startsWith("github:")) return "github";
+      if (key.startsWith("github:")) return "github";
     return "telegram";
   }
 

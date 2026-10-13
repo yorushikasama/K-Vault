@@ -28,9 +28,6 @@ export function detectConfiguredStorages(env) {
   if ((env.HF_TOKEN || '').trim() && (env.HF_REPO || '').trim()) {
     storages.push('huggingface');
   }
-  if ((env.WEBDAV_BASE_URL || '').trim() && ((env.WEBDAV_BEARER_TOKEN || '').trim() || (env.WEBDAV_USERNAME || '').trim())) {
-    storages.push('webdav');
-  }
   if ((env.GITHUB_REPO || '').trim() && (env.GITHUB_TOKEN || '').trim()) {
     storages.push('github');
   }

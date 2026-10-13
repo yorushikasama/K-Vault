@@ -1,7 +1,6 @@
 import { createS3Client } from '../../utils/s3client.js';
 import { uploadToDiscord } from '../../utils/discord.js';
 import { hasHuggingFaceConfig, uploadToHuggingFace } from '../../utils/huggingface.js';
-import { hasWebDAVConfig, normalizeWebDAVPath, uploadToWebDAV } from '../../utils/webdav.js';
 import { hasGitHubConfig, normalizeGitHubStoragePath, uploadToGitHub } from '../../utils/github.js';
 import {
   buildTelegramBotApiUrl,
@@ -344,26 +343,6 @@ async function uploadToHuggingFaceStorage(env, { bytes, mime, fileName, extensio
   return { fileId: `${fileId}.${extension}`, directId: kvKey };
 }
 
-async function uploadToWebDAVStorage(env, { bytes, mime, fileName, extension, fileSize, folderPath }) {
-  if (!hasWebDAVConfig(env)) throw new ImportError('STORAGE_NOT_CONFIGURED', 'WebDAV is not configured.', 400);
-  const fileId = randomId('wd');
-  const publicId = `${fileId}.${extension}`;
-  const webdavPath = joinStoragePath(folderPath, publicId);
-  const result = await uploadToWebDAV(bytes, webdavPath, mime || 'application/octet-stream', env);
-  const kvKey = `webdav:${publicId}`;
-  if (env.img_url) {
-    await env.img_url.put(kvKey, '', {
-      metadata: appendCommonMetadata({
-        TimeStamp: Date.now(), ListType: 'None', Label: 'None', liked: false,
-        fileName, fileSize, storageType: 'webdav',
-        webdavPath: normalizeWebDAVPath(result.path || webdavPath),
-        webdavEtag: result.etag || undefined,
-      }, folderPath),
-    });
-  }
-  return { fileId: publicId, directId: kvKey };
-}
-
 async function uploadToGitHubStorage(env, { bytes, mime, fileName, extension, fileSize, folderPath }) {
   if (!hasGitHubConfig(env)) throw new ImportError('STORAGE_NOT_CONFIGURED', 'GitHub is not configured.', 400);
   const fileId = randomId('github');
@@ -390,7 +369,6 @@ const STORAGE_DISPATCHERS = {
   s3: uploadToS3Storage,
   discord: uploadToDiscordStorage,
   huggingface: uploadToHuggingFaceStorage,
-  webdav: uploadToWebDAVStorage,
   github: uploadToGitHubStorage,
 };
 

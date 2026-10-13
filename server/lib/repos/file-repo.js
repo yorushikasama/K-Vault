@@ -666,7 +666,6 @@ class FileRepository {
       s3: 0,
       discord: 0,
       huggingface: 0,
-      webdav: 0,
       github: 0,
     };
 

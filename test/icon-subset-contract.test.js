@@ -172,7 +172,7 @@ describe('Lucide icon subset contract', function () {
   it('is referenced by every page that previously loaded the full bundle', function () {
     const expected = [
       'index.html', 'admin.html', 'admin-imgtc.html', 'admin-waterfall.html',
-      'gallery.html', 'login.html', 'webdav.html', 'block-img.html', 'whitelist-on.html',
+      'gallery.html', 'login.html', 'block-img.html', 'whitelist-on.html',
     ];
     for (const page of expected) {
       const src = fs.readFileSync(path.join(root, page), 'utf8');

@@ -58,7 +58,6 @@ function normalizeStorageType(type) {
     's3',
     'discord',
     'huggingface',
-    'webdav',
     'github',
   ];
   if (supported.includes(normalized)) return normalized;

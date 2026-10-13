@@ -8,14 +8,19 @@ const path = require('node:path');
  * 这些规则都是从实测缺陷反推出来的，不是风格偏好。每个断言都对应一个
  * 在真实设备宽度下量到过的问题：
  *
- *   1. webdav 单列 grid 用裸 1fr —— 子项 min-width:auto 不会小于内容宽度，
- *      卡片里的 nowrap 文本把轨道顶到 503px，390px 屏横向溢出 123px。
+ *   1. 存储目标网格用裸 1fr —— 子项 min-width:auto 不会小于内容宽度，
+ *      长站点名把轨道顶开。
  *   2. 首页页头缺移动端规则 —— 品牌+导航+工具约 450px 加内外边距，
  *      390px 屏溢出 68px，导航被推出屏幕。
  *   3. 触摸目标不足 44px —— WCAG 2.5.5 与 Apple HIG 的下限；实测有
  *      20px 高的页脚链接、28px 的分页按钮、30px 的品牌 logo。
  *   4. el-message 硬编码 min-width:380px —— 320px 屏上左边被裁掉；
  *      它还用 left:50% + translateX(-50%) 定位，只改 left 会把它推更远。
+ *
+ * 另有一批同类断言曾挂在 webdav.css 上（单列 grid 裸 1fr、.file-picker
+ * 缺 min-width:0、.upload-file-row 没有 flex-wrap）。那个页面与后端功能
+ * 已整体下线，连同这些只针对它的断言一起移除 —— 它们量的是一个不存在的
+ * 页面，留着只会让人以为那里还有东西要维护。
  */
 describe('mobile layout contract', function () {
   const root = path.resolve(__dirname, '..');
@@ -23,17 +28,6 @@ describe('mobile layout contract', function () {
   const allCss = fs.readdirSync(root).filter((f) => f.endsWith('.css'));
 
   describe('grid tracks must not be sized by their content', function () {
-    it('webdav single-column layout uses minmax(0, 1fr)', function () {
-      const css = read('webdav.css');
-      const m = /@media \(max-width: 980px\)[\s\S]*?\.layout\s*\{[^}]*grid-template-columns:\s*([^;]+);/.exec(css);
-      assert.ok(m, '找不到 webdav 的窄屏 .layout 规则');
-      assert.match(
-        m[1],
-        /minmax\(0,\s*1fr\)/,
-        'webdav 的窄屏 .layout 用了裸 1fr；子项的 min-width:auto 会被 nowrap 内容顶开，窄屏横向溢出'
-      );
-    });
-
     it('workbench storage grid uses minmax(0, 1fr)', function () {
       const css = read('workbench.css');
       const m = /\.upload-storage-options\s*\{[^}]*grid-template-columns:\s*([^;]+);/.exec(css);
@@ -42,41 +36,9 @@ describe('mobile layout contract', function () {
     });
   });
 
-  describe('flex items must not be sized by their content either', function () {
-    // grid 版的坑（上面那组）在 flex 里同样存在，只是写法不同：flex 子项的
-    // min-width 默认也是 auto，不允许缩到内容最小宽度以下。
-    //
-    // 实测踩到的是 WebDAV 的「开始上传」：.file-picker 是 flex:1 但没写
-    // min-width:0，而它里面的标题与说明都是 nowrap，于是它的最小宽度约等于
-    // 整行文字宽（1280px 下 478px）。加上 10px 间隙与 124px 按钮共 612px，
-    // 而卡片内容区只有 576px —— 按钮被顶出卡片右边缘 19px，看起来像从卡片
-    // 里溢出来。补上 min-width:0 之后由按钮换行兜住（见下面的 flex-wrap）。
-    it('webdav file picker carries min-width: 0', function () {
-      const css = read('webdav.css');
-      const m = /\.file-picker\s*\{[^}]*\}/.exec(css);
-      assert.ok(m, '找不到 .file-picker 规则');
-      assert.match(
-        m[0],
-        /min-width:\s*0\s*;/,
-        'webdav 的 .file-picker 缺 min-width:0；nowrap 的文字会把这块顶到内容宽度，把「开始上传」挤出卡片'
-      );
-    });
-
-    it('the upload row wraps instead of overflowing when space runs out', function () {
-      const css = read('webdav.css');
-      const m = /\.upload-file-row\s*\{[^}]*\}/.exec(css);
-      assert.ok(m, '找不到 .upload-file-row 规则');
-      assert.match(
-        m[0],
-        /flex-wrap:\s*wrap/,
-        '.upload-file-row 没有 flex-wrap:wrap；中等宽度（如 1024px 两列布局）下按钮会溢出或把标题压到截断'
-      );
-    });
-  });
-
   describe('the app shell header has mobile rules', function () {
     // 顶栏从 workbench.css 抽到 app-shell.css 之后（它现在是各分区共用的
-    // 应用外壳：上传 / 文件 / 图库 / WebDAV），这套规则随之搬家。
+    // 应用外壳：上传 / 文件 / 图库 / 视频），这套规则随之搬家。
     // 断言跟着移到新文件，但要求不变：窄屏必须换行 + 导航可横向滚动，
     // 否则 390px 视口会把导航推出屏幕。
     const css = read('app-shell.css');
@@ -157,7 +119,7 @@ describe('mobile layout contract', function () {
 
   describe('no stylesheet reintroduces a bare 1fr fallback in a mobile block', function () {
     // 只检查已知会出问题的那几处；全站扫 1fr 会误报（很多网格的子项没有 nowrap 内容）
-    const GUARDED = ['webdav.css', 'workbench.css'];
+    const GUARDED = ['workbench.css'];
     for (const file of GUARDED) {
       it(`${file} mobile grid tracks are all minmax(0, ...)`, function () {
         const css = read(file);

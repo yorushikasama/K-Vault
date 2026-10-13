@@ -887,7 +887,6 @@ function createApp() {
       s3: Boolean(bootstrap.s3?.endpoint && bootstrap.s3?.bucket && bootstrap.s3?.accessKeyId && bootstrap.s3?.secretAccessKey),
       discord: Boolean(bootstrap.discord?.webhookUrl || (bootstrap.discord?.botToken && bootstrap.discord?.channelId)),
       huggingface: Boolean(bootstrap.huggingface?.token && bootstrap.huggingface?.repo),
-      webdav: Boolean(bootstrap.webdav?.baseUrl && (bootstrap.webdav?.bearerToken || (bootstrap.webdav?.username && bootstrap.webdav?.password))),
       github: Boolean(bootstrap.github?.repo && bootstrap.github?.token),
     };
 
@@ -1215,11 +1214,6 @@ function createApp() {
       },
       huggingface: {
         maxBytes: bufferedLimit(Math.min(maxUploadSize, 35 * mb)),
-        directThreshold,
-        supportsChunkUpload: true,
-      },
-      webdav: {
-        maxBytes: bufferedLimit(maxUploadSize),
         directThreshold,
         supportsChunkUpload: true,
       },
@@ -2435,7 +2429,6 @@ function createApp() {
       s3: { connected: false, enabled: false, configured: false, layer: 'direct', message: 'Not configured' },
       discord: { connected: false, enabled: false, configured: false, layer: 'direct', message: 'Not configured' },
       huggingface: { connected: false, enabled: false, configured: false, layer: 'direct', message: 'Not configured' },
-      webdav: { connected: false, enabled: false, configured: false, layer: 'mounted', message: 'Not configured' },
       github: { connected: false, enabled: false, configured: false, layer: 'direct', message: 'Not configured' },
       auth: {
         enabled: authService.isAuthRequired(),
@@ -2459,7 +2452,6 @@ function createApp() {
       s3: configs.find((item) => item.type === 's3') || null,
       discord: configs.find((item) => item.type === 'discord') || null,
       huggingface: configs.find((item) => item.type === 'huggingface') || null,
-      webdav: configs.find((item) => item.type === 'webdav') || null,
       github: configs.find((item) => item.type === 'github') || null,
     };
 
@@ -2552,12 +2544,6 @@ function createApp() {
       { type: 'discord', label: 'Discord', layer: 'direct', enableHint: 'Create a Discord webhook or bot profile.' },
       { type: 'huggingface', label: 'HuggingFace', layer: 'direct', enableHint: 'Create a HuggingFace profile with token + dataset repo.' },
       { type: 'github', label: 'GitHub', layer: 'direct', enableHint: 'Create a GitHub profile in Releases or Contents mode.' },
-      {
-        type: 'webdav',
-        label: 'WebDAV (Mounted)',
-        layer: 'mounted',
-        enableHint: 'Recommended for mounted/aggregated storage (e.g. alist/openlist WebDAV endpoint).',
-      },
     ];
 
     return c.json(status);

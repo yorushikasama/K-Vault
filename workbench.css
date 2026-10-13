@@ -43,7 +43,7 @@
 .kv-workbench .kv-icon { display: inline-block; width: 18px; height: 18px; flex-shrink: 0; vertical-align: -.2em; }
 /* 页头（.workspace-header / .workspace-nav / .workspace-tool / .workspace-brand）
    已移到 app-shell.css —— 它是各分区共用的应用外壳，不该只在带 .kv-workbench
-   的页面生效。图库页与 WebDAV 页此前因为 body 上没有这个类，各自长了一套
+   的页面生效。图库页与旧 WebDAV 页此前因为 body 上没有这个类，各自长了一套
    顶栏，导航项文字都不一样。现在顶栏只有 app-shell.css 那一份定义。 */
 .kv-workbench .upload-sr-only, .kv-workbench .files-search-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .kv-workbench .upload-skip-link { position: fixed; top: 8px; left: 12px; z-index: 12000; transform: translateY(-160%); background: var(--wb-surface); color: var(--wb-ink); border: 1px solid var(--wb-border); padding: 10px 16px; }
@@ -192,7 +192,7 @@
      窄屏下每张卡宽度不一、右侧留大片空白（Telegram 独占一行、
      R2/S3 一行、其余各占半行）。固定两列后卡片对齐，扫描起来整齐得多。
      minmax(0, 1fr) 而不是 1fr：卡片里有 nowrap 的标签文字，
-     裸 1fr 会被内容顶开（webdav.css 的 .layout 踩过同一个坑）。 */
+     裸 1fr 会被内容顶开（旧 webdav.css 的 .layout 踩过同一个坑）。 */
   .kv-workbench .upload-storage-options {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

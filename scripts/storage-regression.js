@@ -6,8 +6,8 @@
  * Usage example:
  *   BASE_URL=http://localhost:8080 \
  *   BASIC_USER=admin BASIC_PASS=yourpass \
- *   SMOKE_STORAGE_TYPE=webdav \
- *   SMOKE_STORAGE_CONFIG_JSON='{"baseUrl":"https://dav.example.com","username":"u","password":"p"}' \
+ *   SMOKE_STORAGE_TYPE=github \
+ *   SMOKE_STORAGE_CONFIG_JSON='{"repo":"user/repo","token":"ghp_xxx","mode":"releases"}' \
  *   node scripts/storage-regression.js
  */
 
@@ -126,7 +126,7 @@ async function checkHealthAndStatus() {
   logOk('/api/health ok');
 
   const status = await request('/api/status');
-  const storageKeys = ['telegram', 'r2', 's3', 'discord', 'huggingface', 'webdav', 'github'];
+  const storageKeys = ['telegram', 'r2', 's3', 'discord', 'huggingface', 'github'];
   for (const key of storageKeys) {
     if (!Object.prototype.hasOwnProperty.call(status.payload || {}, key)) {
       throw new Error(`/api/status missing key: ${key}`);
