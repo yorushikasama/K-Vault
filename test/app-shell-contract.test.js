@@ -5,21 +5,21 @@ const path = require('node:path');
 /**
  * 应用外壳契约。
  *
- * 这四个页面（上传 / 文件 / 图库 / WebDAV）是同一个应用的四个分区。此前顶栏
+ * 这几个页面（上传 / 文件 / 图库 / 视频 / WebDAV）是同一个应用的分区页。此前顶栏
  * 定义在 workbench.css 里、并且作用域限定在 .kv-workbench 下，只有上传页与
  * 文件页带这个类；图库页和 WebDAV 页各自长了一套顶栏，导航项的文字都不一样
  * （图库页写「上传 / 管理 / 首页」，WebDAV 页写「首页 / 图片浏览 / 管理后台」），
  * 既没有「文件」入口（图库页还漏了 WebDAV 入口），点进去就像跳到了别的网站。
  *
- * 现在顶栏只有 app-shell.css 一份定义、四个页面共用同一段标记。这组测试钉住
+ * 现在顶栏只有 app-shell.css 一份定义、各页面共用同一段标记。这组测试钉住
  * 这件事——尤其是「别再让页面自己造一套页头」，那正是当初割裂的来源。
  */
 describe('app shell contract', function () {
   const root = path.resolve(__dirname, '..');
   const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
 
-  /** 顶栏的四个分区页。 */
-  const SHELL_PAGES = ['index.html', 'admin.html', 'gallery.html', 'webdav.html'];
+  /** 顶栏的分区页。视频库页是后加的，但它也用同一段顶栏标记。 */
+  const SHELL_PAGES = ['index.html', 'admin.html', 'gallery.html', 'video.html', 'webdav.html'];
 
   /** 从页面里取出 <header class="workspace-header">…</header>。 */
   function extractHeader(src, page) {
@@ -47,17 +47,17 @@ describe('app shell contract', function () {
     for (const page of SHELL_PAGES) {
       const src = read(page);
       const shellAt = src.search(/href="\/app-shell\.css/);
-      const own = ['index.css', 'admin.css', 'gallery.css', 'webdav.css'].find((f) => src.includes(`href="/${f}`));
+      const own = ['index.css', 'admin.css', 'gallery.css', 'video.css', 'webdav.css'].find((f) => src.includes(`href="/${f}`));
       if (!own) continue;
       const ownAt = src.search(new RegExp(`href="/${own.replace('.', '\\.')}`));
       assert.ok(shellAt < ownAt, `${page} 把 app-shell.css 排在了 ${own} 之后，外壳会被页面样式覆盖`);
     }
   });
 
-  it('all four pages carry the same navigation items and targets', function () {
+  it('every shell page carries the same navigation items and targets', function () {
     // 导航项与链接必须逐字一致：这正是「点图库/WebDAV 像换了个站」的直接成因。
-    const expected = ['./', './admin.html', './gallery.html', './webdav.html'];
-    const expectedLabels = ['上传', '文件', '图库', 'WebDAV'];
+    const expected = ['./', './admin.html', './gallery.html', './video.html', './webdav.html'];
+    const expectedLabels = ['上传', '文件', '图库', '视频', 'WebDAV'];
 
     for (const page of SHELL_PAGES) {
       const header = extractHeader(read(page), page);
@@ -75,7 +75,7 @@ describe('app shell contract', function () {
   });
 
   it('each page marks exactly one current section, and it is its own', function () {
-    const own = { 'index.html': './', 'admin.html': './admin.html', 'gallery.html': './gallery.html', 'webdav.html': './webdav.html' };
+    const own = { 'index.html': './', 'admin.html': './admin.html', 'gallery.html': './gallery.html', 'video.html': './video.html', 'webdav.html': './webdav.html' };
     for (const page of SHELL_PAGES) {
       const header = extractHeader(read(page), page);
       const navBlock = /<nav class="workspace-nav"[^>]*>([\s\S]*?)<\/nav>/.exec(header)[1];

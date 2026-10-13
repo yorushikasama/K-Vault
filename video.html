@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>视频库 | YoruVault</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/logo.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <!-- Vue 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="/theme.css?v=0b56c71b52">
+  <script src="/theme-core.js?v=4b609a8b7e"></script>
+  <script src="/accent-color.js?v=35dbe085ce"></script>
+  <script defer src="/theme-effects.js?v=f32f70568d"></script>
+  <link rel="stylesheet" href="/ui-buttons.css?v=55f77f600e">
+  <!-- 应用外壳（顶栏）各分区页共用，因此排在页面私有样式之前。 -->
+  <link rel="stylesheet" href="/app-shell.css?v=3dda6774c7">
+  <link rel="stylesheet" href="/video.css?v=3eaef45bac">
+<script src="/kv-shared.js?v=1ea5bed490"></script>
+  <link rel="stylesheet" href="/mobile-refactor.css?v=2f0292c228">
+</head>
+<body>
+  <!-- 应用外壳顶栏：与上传 / 文件 / 图库 / WebDAV 各页逐字相同。
+       放在 #app 外面：顶栏是全宽的应用外框，而 #app 是带宽度的内容容器，
+       嵌进去会被压成和内容同宽。主题按钮用 data-theme-toggle，由
+       theme-core.js 绑定并维护图标/文案。 -->
+  <header class="workspace-header">
+    <a class="workspace-brand" href="./" aria-label="YoruVault 上传首页">
+      <img src="/logo.png" alt="" width="32" height="32">
+      <span>YoruVault</span>
+    </a>
+    <nav class="workspace-nav" aria-label="全局导航">
+      <a href="./">上传</a>
+      <a href="./admin.html">文件</a>
+      <a href="./gallery.html">图库</a>
+      <a href="./video.html" aria-current="page">视频</a>
+      <a href="./webdav.html">WebDAV</a>
+    </nav>
+    <div class="workspace-tools">
+      <button type="button" class="workspace-tool" data-theme-toggle aria-label="切换主题">
+        <i data-lucide="moon" data-theme-icon></i>
+        <span data-theme-label>夜间</span>
+      </button>
+      <button type="button" class="workspace-tool" id="logoutBtn">
+        <i data-lucide="log-out"></i><span>退出</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="app" v-cloak>
+    <!-- 工具栏 -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <label class="files-search-label" for="video-search">搜索文件</label>
+        <div class="header-search">
+          <input id="video-search" type="text" v-model="searchQuery" placeholder="搜索文件名..." @input="handleSearch">
+        </div>
+        <!-- totalCount 取的是 searchedVideos.length，也就是**搜索过滤之后**的
+             视频数，与网格里看到的严格一致。标签跟着语义走：搜索时叫
+             "匹配"，平时叫"视频"。与图库同一套派生链。 -->
+        <span class="stat-badge">
+          <i data-lucide="film"></i>
+          <template v-if="searchQuery.trim()">匹配<strong>{{ totalCount }}</strong></template>
+          <template v-else>视频<strong>{{ totalCount }}</strong></template>
+        </span>
+        <span class="stat-badge"><i data-lucide="square-check"></i> 已选<strong>{{ selectedCount }}</strong></span>
+        <button class="btn btn-sm btn-ghost" @click="selectAll">
+          <kv-icon :name="isAllSelected ? 'square-check' : 'square'"></kv-icon>
+          <span>{{ isAllSelected ? '取消全选' : '全选' }}</span>
+        </button>
+        <button class="btn btn-sm btn-ghost" @click="loadMore" v-if="hasMore" :disabled="loading">
+          <i data-lucide="refresh-cw" :class="{ 'spin': loading }"></i>
+          <span>加载更多</span>
+        </button>
+      </div>
+      <div class="toolbar-right">
+        <span class="format-label">链接格式</span>
+        <div class="segmented" role="group" aria-label="链接格式">
+          <button class="btn" :aria-pressed="linkFormat === 'url' ? 'true' : 'false'" @click="linkFormat = 'url'">URL</button>
+          <button class="btn" :aria-pressed="linkFormat === 'markdown' ? 'true' : 'false'" @click="linkFormat = 'markdown'">MD</button>
+          <button class="btn" :aria-pressed="linkFormat === 'html' ? 'true' : 'false'" @click="linkFormat = 'html'">HTML</button>
+          <button class="btn" :aria-pressed="linkFormat === 'bbcode' ? 'true' : 'false'" @click="linkFormat = 'bbcode'">BB</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 视频网格 -->
+    <div class="video-grid" v-if="!loading || videos.length > 0">
+      <article class="video-card"
+               v-for="(vid, index) in filteredVideos"
+               :key="vid.name"
+               :class="{ selected: vid.selected }">
+        <div class="video-card-stage">
+          <video class="video-card-media"
+                 :src="'/file/' + vid.name"
+                 preload="none"
+                 playsinline
+                 controls
+                 :aria-label="vid.metadata?.fileName || vid.name"></video>
+          <!-- 选择框常驻可见，不靠 hover 露出：网格里真正的操作对象是播放器，
+               玩家上再盖一层悬停遮罩等于把控件全挡住。窄屏没有 hover，
+               靠 hover 显示的选择框等于永远看不见。点击播放器只播放，
+               不选中 —— @click.stop 就是这个意思。 -->
+          <button class="video-card-checkbox"
+                  type="button"
+                  :class="{ checked: vid.selected }"
+                  :aria-pressed="String(Boolean(vid.selected))"
+                  :aria-label="'选择 ' + (vid.metadata?.fileName || vid.name)"
+                  @click.stop="toggleSelect(vid)">
+            <kv-icon :name="vid.selected ? 'check' : 'square'"></kv-icon>
+          </button>
+        </div>
+        <div class="video-card-body">
+          <div class="video-card-name" :title="vid.metadata?.fileName || vid.name">
+            {{ vid.metadata?.fileName || vid.name }}
+          </div>
+          <div class="video-card-meta">
+            <span class="video-card-format">{{ extOf(vid.name).toUpperCase() }}</span>
+            <span>{{ KVShared.formatSize(vid.metadata?.fileSize || 0, { trim: true }) }}</span>
+          </div>
+          <div class="video-card-actions">
+            <button class="btn btn-sm btn-icon" @click="copyLink(vid)" title="复制链接" aria-label="复制链接">
+              <i data-lucide="copy"></i>
+            </button>
+            <button class="btn btn-sm btn-icon" @click="openPreview(vid)" title="独立预览" aria-label="独立预览">
+              <i data-lucide="expand"></i>
+            </button>
+            <button class="btn btn-sm btn-icon" @click="downloadVideo(vid)" title="下载" aria-label="下载">
+              <i data-lucide="download"></i>
+            </button>
+            <button class="btn btn-sm btn-icon" @click="deleteVideo(vid, index)" title="删除" aria-label="删除">
+              <i data-lucide="trash"></i>
+            </button>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- 加载状态 -->
+    <div class="loading-state" v-if="loading && videos.length === 0">
+      <div class="loading-spinner"></div>
+      <div>加载中...</div>
+    </div>
+
+    <!-- 空状态。分两种，因为要用户做的事完全不同：
+           一个视频都没有 -> 去上传（说清楚只收视频格式）
+           有视频但搜索没匹配上 -> 换个搜索词，"去上传"在这里是误导。 -->
+    <div class="empty-state" v-if="!loading && filteredVideos.length === 0">
+      <i data-lucide="inbox"></i>
+      <template v-if="searchQuery.trim()">
+        <div style="font-size: 1.2em; margin-bottom: 8px;">没有匹配的视频</div>
+        <div>试试其他搜索词，或清空搜索查看全部 {{ videoItems.length }} 个</div>
+        <button class="btn" type="button" style="margin-top: 20px;" @click="searchQuery = ''">
+          <i data-lucide="x"></i><span>清空搜索</span>
+        </button>
+      </template>
+      <template v-else>
+        <div style="font-size: 1.2em; margin-bottom: 8px;">这里还没有视频</div>
+        <div>上传视频后会出现在这里</div>
+        <a href="./" class="btn btn-primary" style="margin-top: 20px;">
+          <i data-lucide="cloud-upload"></i><span>去上传</span>
+        </a>
+      </template>
+    </div>
+
+    <!-- 分页 -->
+    <div class="pagination" v-if="totalPages > 1">
+      <button class="btn btn-sm btn-icon" @click="currentPage = 1" :disabled="currentPage === 1" aria-label="第一页">
+        <i data-lucide="chevrons-left"></i>
+      </button>
+      <button class="btn btn-sm btn-icon" @click="currentPage--" :disabled="currentPage === 1" aria-label="上一页">
+        <i data-lucide="chevron-left"></i>
+      </button>
+      <template v-for="page in displayPages">
+        <button class="btn btn-sm" :class="{ 'is-active': page === currentPage }" @click="currentPage = page" :key="page">
+          {{ page }}
+        </button>
+      </template>
+      <button class="btn btn-sm btn-icon" @click="currentPage++" :disabled="currentPage === totalPages" aria-label="下一页">
+        <i data-lucide="chevron-right"></i>
+      </button>
+      <button class="btn btn-sm btn-icon" @click="currentPage = totalPages" :disabled="currentPage === totalPages" aria-label="末页">
+        <i data-lucide="chevrons-right"></i>
+      </button>
+    </div>
+
+    <!-- 批量操作栏 -->
+    <div class="batch-bar" v-if="selectedCount > 0">
+      <div class="batch-bar-count">已选择 <strong>{{ selectedCount }}</strong> 个文件</div>
+      <button class="btn btn-sm btn-primary" @click="batchCopy">
+        <i data-lucide="copy"></i><span>复制链接</span>
+      </button>
+      <button class="btn btn-sm btn-ghost" @click="batchDownload">
+        <i data-lucide="download"></i><span>下载</span>
+      </button>
+      <button class="btn btn-sm btn-danger" @click="batchDelete">
+        <i data-lucide="trash"></i><span>删除</span>
+      </button>
+      <button class="btn btn-sm btn-quiet" @click="clearSelection">
+        <i data-lucide="x"></i><span>取消</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js" integrity="sha384-ULpZhk1pvhc/UK5ktA9kwb2guy9ovNSTyxPNHANnA35YjBQgdwI+AhLkixDvdlw4" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <!-- 必须在下面 new Vue 之前：icons.js 用 Vue.mixin 注册渲染钩子，而 Vue.mixin
+       只作用于之后创建的实例。放在后面的话 v-if 里的图标永远不会被替换。 -->
+  <script src="/icons-subset.js?v=a139a660aa"></script>
+  <script src="/icons.js?v=fc3fc216e0"></script>
+  <script src="/video-app.js?v=a8a84bc3d3"></script>
+</body>
+</html>

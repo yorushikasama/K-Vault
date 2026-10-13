@@ -1,0 +1,391 @@
+/**
+ * 视频库页样式。
+ *
+ * 与 gallery.css 刻意保持同构：#app 的版面宽度、工具栏、批量条、分页、
+ * 空状态那一套全部一致，两个页面来回切时内容区不会横向错位。
+ * 差异只集中在 .video-* 开头的卡片部分。
+ */
+    :root {
+      --primary: var(--ui-brand);
+      --primary-light: var(--ui-brand-hover);
+      --primary-dark: var(--ui-brand-active);
+      --accent: var(--ui-brand);
+      --card-bg: var(--ui-surface);
+      --shadow: var(--ui-elev-1);
+      --shadow-hover: var(--ui-elev-2);
+      --transition: all 0.2s ease-out;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      background-attachment: fixed;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+    }
+
+    #app {
+      max-width: var(--ui-width-wide);
+      margin: 0 auto;
+      padding: var(--ui-page-pad);
+    }
+
+    .header-search {
+      flex: 1 1 200px;
+      max-width: 360px;
+      min-width: 160px;
+    }
+
+    .header-search input {
+      width: 100%;
+      min-height: 40px;
+      padding: 8px 14px;
+      border: 1px solid var(--ui-line-strong);
+      border-radius: var(--ui-radius-sm);
+      background: var(--ui-surface);
+      color: var(--ui-ink);
+      font: inherit;
+      font-size: 0.9rem;
+    }
+
+    .header-search input:focus {
+      border-color: var(--ui-brand);
+      outline: 2px solid var(--ui-focus-ring);
+      outline-offset: 1px;
+    }
+
+    /* ---------- 工具栏 ---------- */
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 24px;
+      background: var(--card-bg);
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: var(--shadow);
+    }
+
+    .toolbar-left, .toolbar-right { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+    .stat-badge {
+      padding: 8px 16px;
+      background: color-mix(in srgb, var(--ui-brand) 8%, transparent);
+      border-radius: var(--radius-sm);
+      font-size: 0.88em;
+      color: #555;
+      font-weight: 500;
+    }
+
+    .stat-badge strong { color: var(--primary); margin-left: 4px; }
+
+    .format-label {
+      font-size: 0.85em;
+      color: var(--ui-ink-muted);
+    }
+
+    /* ---------- 视频网格 ----------
+       列宽比图库宽不少：视频是 16:9，卡片里要放下原生播放器的控件条，
+       220px 那档会让进度条和音量按钮挤成一团。 */
+
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    .video-card {
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--card-bg);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      contain: layout style;
+    }
+
+    .video-card:hover {
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-2px);
+    }
+
+    .video-card.selected {
+      box-shadow: 0 0 0 3px var(--primary), var(--shadow-1);
+    }
+
+    /* stage 只做定位上下文：选择框绝对定位在里面，
+       尺寸撑满就够，不需要额外的背景或尺寸声明。 */
+    .video-card-stage {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      background: var(--ui-surface-sunken);
+    }
+
+    /* 播放器铺满 stage，外框裁掉。object-fit: contain 而不是 cover：
+       竖屏视频（手机拍的）用 cover 会被裁掉上下两头，只剩中间一条。 */
+    .video-card-media {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+    }
+
+    .video-card-checkbox {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 24px;
+      height: 24px;
+      background: #ffffff;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      cursor: pointer;
+      /* 常驻可见，不靠 hover —— 见 video.html 里的说明。 */
+      opacity: 0.95;
+    }
+
+    .video-card-checkbox.checked {
+      background: var(--primary);
+      color: var(--ui-brand-ink);
+    }
+
+    .video-card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .video-card-name {
+      color: var(--ui-ink);
+      font-size: 0.85em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .video-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ui-ink-muted);
+      font-size: 0.75em;
+    }
+
+    .video-card-format {
+      padding: 2px 6px;
+      border-radius: var(--ui-radius-sm);
+      background: color-mix(in srgb, var(--ui-brand) 10%, transparent);
+      color: var(--ui-brand);
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .video-card-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-start;
+    }
+
+    /* ---------- 批量操作栏 ---------- */
+
+    .batch-bar {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #333333;
+      padding: 12px 24px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--shadow-2);
+      z-index: 100;
+    }
+
+    .batch-bar-count {
+      color: white;
+      font-size: 0.9em;
+    }
+
+    .batch-bar-count strong { color: var(--accent); }
+
+    /* ---------- 分页 ---------- */
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 24px;
+      gap: 8px;
+    }
+
+    /* ---------- 空状态 / 加载 ---------- */
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--ui-ink-muted);
+    }
+
+    .empty-state i { font-size: 4em; margin-bottom: 20px; color: var(--ui-line-strong); }
+
+    .loading-state {
+      text-align: center;
+      padding: 60px;
+      color: #666;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #eee;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---------- 响应式 ---------- */
+
+    @media (max-width: 768px) {
+      /* 留白落在内容容器上而不是 body：顶栏在 #app 外面，
+         body 上留白会把全宽外框缩成内缩的一条。 */
+      #app { padding: 12px; }
+
+      .header-search {
+        max-width: none;
+        flex: 1 1 100%;
+      }
+
+      .toolbar {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+        padding: 14px;
+      }
+
+      .toolbar-left {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .toolbar-right {
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .stat-badge {
+        padding: 6px 12px;
+        font-size: 0.82em;
+      }
+
+      .segmented { justify-content: center; }
+
+      .video-grid {
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 12px;
+      }
+
+      .video-card-actions { gap: 8px; }
+
+      .batch-bar {
+        flex-wrap: wrap;
+        width: calc(100% - 24px);
+        justify-content: center;
+        gap: 8px;
+        padding: 12px;
+        left: 12px;
+        bottom: 12px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #app { padding: 8px; }
+
+      .header-search input {
+        font-size: 0.9rem;
+        padding: 8px 12px;
+      }
+
+      .toolbar {
+        padding: 12px;
+        gap: 10px;
+      }
+
+      .toolbar-left { gap: 6px; }
+
+      .stat-badge {
+        padding: 5px 10px;
+        font-size: 0.75em;
+      }
+
+      /* 竖屏手机上一行只放得下一张 320px 卡，横向滚动比压到 200px
+         以下更合理 —— 再窄播放器控件就挤不下了。 */
+      .video-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .video-card-name { font-size: 0.78em; }
+
+      /* 竖排会让批量条长到盖住整张卡片：4 个按钮各占满一行，390px 宽下
+         实测接近 300px 高，比一张视频卡还高。改成横向换行 —— 触摸目标
+         仍由 ui-buttons.css 的 44px 下限负责，按钮不因换行而变小。
+
+         注意 mobile-refactor.css 用 `left/right: 10px !important` 把批量条
+         钉在视口两端，覆盖了这里设置的 left/bottom。所以靠 padding 留出
+         安全区，而不是靠定位偏移 —— 定位在这里说了不算。 */
+      .batch-bar {
+        width: auto;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .batch-bar-count {
+        width: 100%;
+        text-align: center;
+      }
+
+      .batch-bar .btn {
+        flex: 0 1 auto;
+        min-width: 84px;
+      }
+
+      .toast {
+        max-width: 90%;
+        right: 5%;
+        padding: 12px 16px;
+        font-size: 0.85em;
+      }
+
+      .video-card:hover { transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }

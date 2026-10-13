@@ -46,7 +46,7 @@
       }
 
       /* 页头（.header / .header-title / .header-actions / .header-logo）已删除：
-         顶栏由 app-shell.css 提供，四个分区共用同一段标记。
+         顶栏由 app-shell.css 提供，各分区共用同一段标记。
          这一页原本自带一套（标题「WebDAV 上传中心」+ 首页/图片浏览/管理后台/WebDAV），
          导航项文字与其它页不同，切换时像跳到了别处。 */
 
@@ -587,7 +587,7 @@
           padding: 10px;
         }
 
-        /* 顶栏的窄屏处理在 app-shell.css（四个分区共用），这里不用再管。 */
+        /* 顶栏的窄屏处理在 app-shell.css（各分区共用），这里不用再管。 */
 
         .toolbar-row {
           flex-direction: column;

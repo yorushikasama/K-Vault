@@ -10,12 +10,13 @@
         parseEmailMessage, firstMboxMessage, decodeMimeWords,
       } = window.KVPreviewParsers;
 
-      // 图片清单改用 KVShared 的统一版本（kv-shared.js 在本文件之前加载）。
-      // 这里的私有副本曾是全站最全的一份（18 项），但既然唯一清单已经放到
-      // 共享层，就不该再留第二份 —— 抄一份就多一次漂移的机会。
+      // 分类用 KVShared 的宽清单（IMAGE_EXTS，含 RAW/PSD/tiff/heic），
+      // 真正交给 <img> 显示的用可渲染子集 —— RAW 当图片分类没问题，
+      // 但浏览器画不出来，那属于「不可预览」，不是「分类错误」。
       const IMAGE_EXTS = new Set(window.KVShared.IMAGE_EXTS);
-      const VIDEO_EXTS = new Set(["mp4", "webm", "ogg", "ogv", "mov", "m4v", "m3u8", "avi", "mkv", "wmv", "flv", "3gp", "ts", "mts", "m2ts"]);
-      const AUDIO_EXTS = new Set(["mp3", "mpeg", "wav", "ogg", "oga", "flac", "aac", "m4a", "opus", "weba", "midi", "mid", "wma", "ape", "aif", "aiff"]);
+      const VIEWABLE_IMAGE_EXTS = new Set(window.KVShared.VIEWABLE_IMAGE_EXTS);
+      const VIDEO_EXTS = new Set(["mp4", "webm", "ogg", "ogv", "mov", "m4v", "m3u8", "avi", "mkv", "wmv", "flv", "3gp", "ts", "mts", "m2ts", "f4v", "rm", "rmvb", "vob", "asf", "divx", "mxf"]);
+      const AUDIO_EXTS = new Set(["mp3", "mpeg", "wav", "ogg", "oga", "flac", "aac", "m4a", "opus", "weba", "midi", "mid", "wma", "ape", "aif", "aiff", "alac", "dsf", "dff", "amr", "ac3", "caf", "mka"]);
       const MARKDOWN_EXTS = new Set(["md", "markdown", "mdown"]);
       const JSON_EXTS = new Set(["json", "jsonc", "json5", "ipynb"]);
       const TABLE_EXTS = new Set(["csv", "tsv"]);
@@ -282,7 +283,13 @@
 
       function getPreviewKind(ext, contentType) {
         const type = String(contentType || "").split(";")[0].trim().toLowerCase();
-        if (type.startsWith("image/") || IMAGE_EXTS.has(ext)) return "image";
+        if (type.startsWith("image/") || IMAGE_EXTS.has(ext)) {
+          // 分到「图片」类别之后再按能否解码分一次：RAW / PSD / tiff / heic
+          // 是图片没错，但 <img> 画不出来，交给摘要视图说清楚比给一张
+          // 碎图好。归类与渲染是两道题，这里是第二道。
+          if (IMAGE_EXTS.has(ext) && !VIEWABLE_IMAGE_EXTS.has(ext)) return "summary";
+          return "image";
+        }
         if (type.startsWith("video/") || VIDEO_EXTS.has(ext)) return "video";
         if (type.startsWith("audio/") || AUDIO_EXTS.has(ext)) return "audio";
         if (type === "application/pdf" || ext === "pdf") return "pdf";
@@ -931,6 +938,26 @@
         return IMAGE_EXTS.has(ext) || TEXT_EXTS.has(ext) || MARKDOWN_EXTS.has(ext) || JSON_EXTS.has(ext) || TABLE_EXTS.has(ext);
       }
 
+      /* 压缩包里的不可渲染图片（RAW / PSD / tiff / heic / jxl）占位。
+         与顶层渲染走的是同一个 paged-view 骨架，只是没有真实文件 URL
+         可点，所以不给下载按钮，只把话说清楚。 */
+      function buildUnsupportedPreview(entryName) {
+        const ext = getExtension(entryName);
+        const wrapper = createPagedView("summary-view", "summary-page");
+        const page = wrapper.firstElementChild;
+
+        const icon = document.createElement("div");
+        icon.className = "summary-icon";
+        icon.textContent = (ext || "文件").slice(0, 3).toUpperCase();
+        page.appendChild(icon);
+        appendPageHeading(
+          page,
+          "浏览器打不开这个格式",
+          `${ext ? ext.toUpperCase() + " 是" : "该文件是"}图片文件，但浏览器无法直接解码。请下载后用本地应用打开。`
+        );
+        return wrapper;
+      }
+
       async function previewArchiveEntry(source, entry, previewBox) {
         previewBox.hidden = false;
         previewBox.replaceChildren();
@@ -943,6 +970,13 @@
           if (!data) throw new Error("没有读取到内部文件内容。");
           const ext = getExtension(entry.name);
           if (IMAGE_EXTS.has(ext)) {
+            // 不可渲染格式（RAW / PSD / tiff / heic / jxl）不塞进 <img>：
+            // 那只会得到一张浏览器画不出来的碎图。走摘要分支，
+            // 至少把文件名、大小、扩展名说清楚，并给一个下载入口。
+            if (!VIEWABLE_IMAGE_EXTS.has(ext)) {
+              previewBox.appendChild(buildUnsupportedPreview(entry.name));
+              return;
+            }
             const image = document.createElement("img");
             image.alt = entry.name;
             image.src = URL.createObjectURL(new Blob([data], { type: mimeForExtension(ext) }));
@@ -1230,6 +1264,19 @@
             category: "排版文档",
             detail: "当前提供安全摘要。此类格式可后续按业务优先级接入独立渲染器，避免拖慢普通文件首屏。",
             notes: [["策略", "命中格式后再加载重型依赖。"], ["建议", "常用附件优先沉淀为 PDF、Markdown、图片或稳定交换格式。"]]
+          },
+          {
+            // 排在最后：命中即说明它是真图片，只是浏览器解不了码。
+            // 和"未知格式"区分开 —— 用户看到"文件类型已识别"会以为是随机
+            // 二进制，看到"RAW 图片已识别"才知道这是相机直出的照片。
+            match: ["tif", "tiff", "heic", "heif", "heifs", "heifs2", "avci", "jxl",
+                    "raw", "cr2", "cr3", "nef", "arw", "dng", "orf", "raf", "rw2",
+                    "pef", "srw", "sr2", "erf", "mrw", "x3f", "kdc", "3fr", "psd", "psb", "ai"],
+            title: "图片已识别，但浏览器无法解码",
+            category: "图片（浏览器不可渲染）",
+            detail: "这是货真价实的图片文件，只是格式超出浏览器内置解码器的范围。下载后用本地应用（Photoshop / Lightroom / 系统看图）打开即可。",
+            notes: [["为什么", "<img> 只能解 JPEG、PNG、GIF、WebP、AVIF、BMP 等少数几种编码。"],
+                    ["建议", "如需网页直接显示，转存成 WebP 或 JPEG 再分享。"]]
           }
         ];
 

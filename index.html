@@ -10,16 +10,16 @@
   <!-- Vue 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="/theme.css?v=0b56c71b52">
-  <script src="/theme-core.js?v=6a9f70f021"></script>
+  <script src="/theme-core.js?v=4b609a8b7e"></script>
   <script src="/accent-color.js?v=35dbe085ce"></script>
   <script defer src="/theme-effects.js?v=f32f70568d"></script>
     <link rel="stylesheet" href="/ui-buttons.css?v=55f77f600e">
-    <!-- 应用外壳（顶栏）四个分区共用，因此排在页面私有样式之前：
+    <!-- 应用外壳（顶栏）各分区页共用，因此排在页面私有样式之前：
          上传/文件/图库/WebDAV 的顶栏必须逐字一样，页面样式只负责内容区。 -->
-    <link rel="stylesheet" href="/app-shell.css?v=140b992d46">
+    <link rel="stylesheet" href="/app-shell.css?v=3dda6774c7">
     <link rel="stylesheet" href="/index.css?v=54a5f1cdb9">
-<script src="/kv-shared.js?v=2c55b4fa2e"></script>
-    <link rel="stylesheet" href="/workbench.css?v=6d42327c18">
+<script src="/kv-shared.js?v=1ea5bed490"></script>
+    <link rel="stylesheet" href="/workbench.css?v=8dc5abbe60">
   </head>
   <body class="kv-workbench kv-upload">
     <div id="app" v-cloak>
@@ -34,12 +34,13 @@
           <a href="./" aria-current="page">上传</a>
           <a href="./admin.html" v-if="!isGuest">文件</a>
           <a href="./gallery.html" v-if="!isGuest">图库</a>
+          <a href="./video.html" v-if="!isGuest">视频</a>
           <a href="./webdav.html" v-if="!isGuest">WebDAV</a>
         </nav>
         <div class="workspace-tools">
           <!-- 主题按钮用 data-theme-toggle，由 theme-core.js 绑定并维护图标与文案，
                与文件 / 图库 / WebDAV 三页共用同一段标记。此前它是 Vue 自己的按钮
-               （@click + 内联图标/文字），外观一样但机制不同，四页无法逐字对照。 -->
+               （@click + 内联图标/文字），外观一样但机制不同，各页无法逐字对照。 -->
           <button type="button" class="workspace-tool" data-theme-toggle aria-label="切换主题">
             <i data-lucide="moon" data-theme-icon></i>
             <span data-theme-label>夜间</span>

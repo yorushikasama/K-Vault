@@ -1,23 +1,39 @@
 ﻿const INVALID_PREFIXES = ['session:', 'chunk:', 'upload:', 'temp:'];
 
-// 图片扩展名。与前端 kv-shared.js 的 IMAGE_EXTS 保持同一份内容：
-// 函数跑在 Cloudflare Workers 上，import 不了浏览器脚本，所以这里只能
-// 抄一份 —— 但两者的一致性由 test/gallery-list-contract.test.js 钉住，
-// 任何一边漏项测试就会失败。
+// 图片扩展名（**归类**口径，宽）。与前端 kv-shared.js 的 IMAGE_EXTS
+// 保持同一份内容：函数跑在 Cloudflare Workers 上，import 不了浏览器脚本，
+// 所以这里只能抄一份 —— 但两者的一致性由 test/gallery-list-contract.test.js
+// 钉住，任何一边漏项测试就会失败。
 // 两边必须一致的理由：这里推断出的 fileType 决定 API 侧怎么描述这个文件，
-// 图库前端还会按扩展名再过滤一次。口径不同就会出现「fileType 说是 image、
+// 前端还会按扩展名再过滤一次。口径不同就会出现「fileType 说是 image、
 // 但图库里列不出来」。
+// RAW / PSD / tiff / heic 都在这里：它们是货真价实的图片文件，只是浏览器
+// 画不出来，所以图库给它们显示占位卡而不是碎图。「能不能渲染」是前端
+// VIEWABLE_IMAGE_EXTS 的职责，服务端不需要知道。
 const IMAGE_EXTS = new Set([
   'jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp',
   'png', 'apng',
-  'gif', 'webp', 'avif', 'bmp',
-  'tif', 'tiff',
+  'gif', 'webp', 'avif',
+  'bmp',
   'svg', 'ico',
-  'heic', 'heif',
+  'tif', 'tiff',
+  'heic', 'heif', 'heifs', 'heifs2', 'avci',
   'jxl',
+  'raw', 'cr2', 'cr3', 'nef', 'arw', 'dng', 'orf', 'raf', 'rw2',
+  'pef', 'srw', 'sr2', 'erf', 'mrw', 'x3f', 'kdc', '3fr',
+  'psd', 'psb',
+  'ai',
 ]);
-const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogg', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'm4v', '3gp', 'ts']);
-const AUDIO_EXTS = new Set(['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a', 'wma', 'ape', 'opus']);
+const VIDEO_EXTS = new Set([
+  'mp4', 'webm', 'ogg', 'ogv', 'avi', 'mov', 'wmv', 'flv', 'mkv',
+  'm4v', 'm3u8', '3gp', 'ts', 'mts', 'm2ts', 'f4v', 'rm', 'rmvb',
+  'vob', 'asf', 'divx', 'mxf',
+]);
+const AUDIO_EXTS = new Set([
+  'mp3', 'mpeg', 'wav', 'ogg', 'oga', 'flac', 'aac', 'm4a', 'wma',
+  'ape', 'opus', 'weba', 'midi', 'mid', 'aif', 'aiff', 'alac', 'dsf',
+  'dff', 'amr', 'ac3', 'caf', 'mka',
+]);
 
 function normalizeFolderPath(value = '') {
   const raw = String(value || '').replace(/\\/g, '/').trim();

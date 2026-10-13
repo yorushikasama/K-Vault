@@ -97,6 +97,16 @@
         }
       },
       methods: {
+        extOf(name) {
+          return String(name || '').split('.').pop().toLowerCase();
+        },
+
+        /* 能不能用 <img> 直接显示。RAW / PSD / tiff / heic / jxl 是图片，
+           浏览器解不了码 —— 图库里给占位卡而不是碎图。 */
+        canView(img) {
+          return KVShared.isViewableImage(img.name);
+        },
+
         async loadImages() {
           this.loading = true;
           try {

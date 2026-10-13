@@ -125,10 +125,10 @@
     "html,htm,css,js,ts,jsx,tsx,vue,php,py,java,c,cpp,h,hpp,cs,go,rs,rb,pl,sh,sql,bash,cc": "file-code",
     "json,jsonc,json5,xml,yaml,yml,toml,proto,hcl,graphql,gv": "file-code",
     "eml,msg,mbox": "mail",
-    "mp4,avi,mov,wmv,flv,mkv,webm,m4v,m3u8,3gp,ts,mts,m2ts": "file-video-camera",
-    "mp3,mpeg,wav,ogg,oga,flac,aac,m4a,wma,ape,opus,weba,midi,mid,aif,aiff": "audio-lines",
-    "jpg,jpeg,jfif,png,apng,gif,bmp,webp,svg,ico,tif,tiff,heic,heif,avif,jxl": "file-image",
-    "psd,ai,eps,cdr": "file-image",
+    "mp4,avi,mov,wmv,flv,mkv,webm,m4v,m3u8,3gp,ts,mts,m2ts,ogv,f4v,rm,rmvb,vob,asf,divx,mxf": "file-video-camera",
+    "mp3,mpeg,wav,ogg,oga,flac,aac,m4a,wma,ape,opus,weba,midi,mid,aif,aiff,alac,dsf,dff,amr,ac3,caf,mka": "audio-lines",
+    "jpg,jpeg,jfif,pjpeg,pjp,png,apng,gif,bmp,webp,svg,ico": "file-image",
+    "tif,tiff,heic,heif,heifs,avci,jxl,raw,cr2,cr3,nef,arw,dng,orf,raf,rw2,pef,srw,sr2,erf,mrw,x3f,kdc,3fr,psd,psb,ai": "file-image",
     "ttf,otf,woff,woff2": "type",
     "sqlite,sqlite3,db,parquet,avro,wasm,webarchive": "database",
     "dwg,dxf,dwf,dwfx,xps": "compass",
@@ -190,7 +190,7 @@
 
   var PREVIEW_PAGE = "/preview.html";
 
-  /* 图片扩展名的**唯一**清单。
+/* 图片扩展名的**唯一**清单（归类口径，宽）。
    *
    * 此前全站有五份互不相同的清单（preview-app / upload-app / 本文件 /
    * functions/api/manage/list / server 的 ytdlp-options），并集 18 个扩展名，
@@ -198,35 +198,92 @@
    * 在图库那份里就不存在 —— 于是这些图片存了却永远不会出现在图库里。
    * 同一件事被抄五遍、抄出五个答案，这类 bug 就会反复长出来。
    *
-   * 口径取各清单的并集：有争议的 jfif / pjpeg / pjp 都是 jpeg 的别名
-   * （同一批文件的 MIME/扩展名在不同上传路径下写法不同），归进来省事；
-   * jxl 目前浏览器还基本不支持预览，但列出它总比漏掉强 —— 图库的职责是
-   * 「把图片都列出来」，预览打不开是另一回事。
-   *
    * 服务端（functions/api/manage/list.js）无法 import 本文件，那份靠
-   * webdav-page-contract / upload-file-type 这类测试对齐；前端这几处
-   * 一律用下面的 isImageName()。 */
+   * gallery-list-contract 测试对齐；前端这几处一律用下面的 isImageName()。
+   *
+   * ── 归类宽 ≠ 能渲染 ──────────────────────────────────────────────
+   * 这份清单回答的是「这**是不是一张图片**」，所以必须收 RAW / PSD / AI：
+   * 它们是货真价实的图片文件，只是浏览器画不出来。
+   * 「能不能用 <img src> 直接显示」是另一件事，由下面的
+   * VIEWABLE_IMAGE_EXTS 回答。把两个问题合成一个，是图库碎图的根源 ——
+   * 曾经把 heic/jxl 混进来当"可显示图片"，结果图库里出现一批打不开的图。 */
   var IMAGE_EXTS = [
+    // 浏览器可渲染
     "jpg", "jpeg", "jfif", "pjpeg", "pjp",
     "png", "apng",
-    "gif", "webp", "avif", "bmp",
-    "tif", "tiff",
+    "gif", "webp", "avif",
+    "bmp",
     "svg", "ico",
-    "heic", "heif",
+    // 浏览器不能（或基本不能）渲染，但确实是图片文件
+    "tif", "tiff",
+    "heic", "heif", "heifs", "heifs2", "avci",
     "jxl",
+    "raw", "cr2", "cr3", "nef", "arw", "dng", "orf", "raf", "rw2",
+    "pef", "srw", "sr2", "erf", "mrw", "x3f", "kdc", "3fr",
+    "psd", "psb",
+    "ai",
   ];
 
-  /** 按扩展名判定是否图片。取最后一段，所以 a.tar.gz 会看 gz。 */
-  function isImageName(name) {
-    var ext = String(name || "").split(".").pop().toLowerCase();
-    return IMAGE_EXTS.indexOf(ext) !== -1;
+  /* 可渲染子集：浏览器能用 <img src="/file/xxx"> 直接显示的。
+   * 图库网格、admin 的缩略图单元格、上传页的即时预览都只认这份。
+   * 其余 IMAGE_EXTS 成员（RAW / PSD / tiff / heic / jxl）在图库里
+   * 仍会出现，但显示为占位卡而不是碎图。 */
+  var VIEWABLE_IMAGE_EXTS = [
+    "jpg", "jpeg", "jfif", "pjpeg", "pjp",
+    "png", "apng",
+    "gif", "webp", "avif",
+    "bmp",
+    "svg", "ico",
+  ];
+
+  function extOf(name) {
+    return String(name == null ? "" : name).split(".").pop().toLowerCase();
   }
 
-  /* 预览分支沿用同一份清单，避免"图库认为是图片、预览却当普通文件"。 */
-  var PREVIEW_IMAGE_EXTS = IMAGE_EXTS;
+  /** 按扩展名判定「这是不是一张图片」。取最后一段，所以 a.tar.gz 会看 gz。 */
+  function isImageName(name) {
+    return IMAGE_EXTS.indexOf(extOf(name)) !== -1;
+  }
+
+  /** 按扩展名判定「能不能用 <img> 直接显示」。是 isImageName 的真子集。 */
+  function isViewableImage(name) {
+    return VIEWABLE_IMAGE_EXTS.indexOf(extOf(name)) !== -1;
+  }
+
+  /* 预览分支沿用可渲染子集：不可渲染的格式走 preview.html 的 iframe
+   * 由服务端转码，或直接落回下载，都比给用户一张碎图好。 */
+  var PREVIEW_IMAGE_EXTS = VIEWABLE_IMAGE_EXTS;
   var PREVIEW_VIDEO_EXTS = ["mp4", "webm", "ogg", "ogv", "mov", "m4v"];
   var PREVIEW_AUDIO_EXTS = ["mp3", "wav", "ogg", "oga", "flac", "aac", "m4a", "opus"];
   var PREVIEW_DOC_EXTS = ["pdf", "txt", "md", "json", "xml", "csv", "docx", "xlsx", "pptx"];
+
+  /* 视频扩展名，与 functions/api/manage/list.js 的 VIDEO_EXTS 同一份内容
+   * （那边跑在 Workers 上 import 不了本文件，一致性由测试钉住）。
+   *
+   * 与图片清单的差别：视频**没有**"归类宽 / 渲染窄"这个分层。
+   * mkv / rmvb / vob 是货真价实的视频，但浏览器一个都放不了；
+   * 而 <video> 打不开时页面会自己显示浏览器的解码失败占位，
+   * 不会像 <img> 那样留一张碎图 —— 所以视频页不需要区分这两层。
+   * 真要区分，也应该由播放失败回调单独处理，不该改归类口径。 */
+  var VIDEO_EXTS = [
+    "mp4", "webm", "ogg", "ogv", "avi", "mov", "wmv", "flv", "mkv",
+    "m4v", "m3u8", "3gp", "ts", "mts", "m2ts", "f4v", "rm", "rmvb",
+    "vob", "asf", "divx", "mxf",
+  ];
+
+  var AUDIO_EXTS = [
+    "mp3", "mpeg", "wav", "ogg", "oga", "flac", "aac", "m4a", "wma",
+    "ape", "opus", "weba", "midi", "mid", "aif", "aiff", "alac", "dsf",
+    "dff", "amr", "ac3", "caf", "mka",
+  ];
+
+  function isVideoName(name) {
+    return VIDEO_EXTS.indexOf(extOf(name)) !== -1;
+  }
+
+  function isAudioName(name) {
+    return AUDIO_EXTS.indexOf(extOf(name)) !== -1;
+  }
 
   /**
    * 上传首页与图库的预览分支完全一致：图片走原生 Lightbox，
@@ -332,7 +389,13 @@
     ensureAuth: ensureAuth,
     buildPreviewTarget: buildPreviewTarget,
     isImageName: isImageName,
+    isViewableImage: isViewableImage,
+    isVideoName: isVideoName,
+    isAudioName: isAudioName,
     IMAGE_EXTS: IMAGE_EXTS,
+    VIEWABLE_IMAGE_EXTS: VIEWABLE_IMAGE_EXTS,
+    VIDEO_EXTS: VIDEO_EXTS,
+    AUDIO_EXTS: AUDIO_EXTS,
     PREVIEW_PAGE: PREVIEW_PAGE,
     formatLink: formatLink,
     fileIconOf: fileIconOf,

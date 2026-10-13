@@ -11,12 +11,12 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://js.sentry-cdn.com" crossorigin>
   <link rel="stylesheet" href="/theme.css?v=0b56c71b52">
-  <script src="/theme-core.js?v=6a9f70f021"></script>
+  <script src="/theme-core.js?v=4b609a8b7e"></script>
   <script src="/accent-color.js?v=35dbe085ce"></script>
   <script defer src="/theme-effects.js?v=f32f70568d"></script>
-  <!-- 应用外壳（顶栏）四个分区共用，因此排在页面私有样式之前：
+  <!-- 应用外壳（顶栏）各分区页共用，因此排在页面私有样式之前：
        上传/文件/图库/WebDAV 的顶栏必须逐字一样，页面样式只负责内容区。 -->
-  <link rel="stylesheet" href="/app-shell.css?v=140b992d46">
+  <link rel="stylesheet" href="/app-shell.css?v=3dda6774c7">
   <!-- Import CSS -->
   <link rel="stylesheet" href="./admin-imgtc.css?v=0f0b8de374">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css" integrity="sha384-ZUOUQ+hNJ+DV4HfNwHNFq4PcclqayiUDpCMsWD1lOpUQZ/go0ofwD/GLaYdzOcdx" crossorigin="anonymous" referrerpolicy="no-referrer">
@@ -28,8 +28,8 @@
   <script src="https://js.sentry-cdn.com/219f636ac7bde5edab2c3e16885cb535.min.js" data-lazy crossorigin="anonymous"></script>
   <link rel="stylesheet" href="/mobile-refactor.css?v=2f0292c228">
   <link rel="stylesheet" href="/admin.css?v=9d5867910d">
-<script src="/kv-shared.js?v=2c55b4fa2e"></script>
-  <link rel="stylesheet" href="/workbench.css?v=6d42327c18">
+<script src="/kv-shared.js?v=1ea5bed490"></script>
+  <link rel="stylesheet" href="/workbench.css?v=8dc5abbe60">
 </head>
 <body class="kv-workbench kv-files">
   <div id="app" v-cloak>
@@ -43,6 +43,7 @@
           <a href="./">上传</a>
           <a href="./admin.html" aria-current="page">文件</a>
           <a href="./gallery.html">图库</a>
+          <a href="./video.html">视频</a>
           <a href="./webdav.html">WebDAV</a>
         </nav>
         <div class="workspace-tools">
@@ -185,14 +186,19 @@
                 </el-dropdown>
               </div>
               <div class="files-query-filters">
+                <!-- 类型筛选不再列图片/视频：两者已各自独立成页
+                     （图库 gallery.html / 视频库 video.html），在这里
+                     再给一份筛选等于让同一个东西有两个入口，而两边的
+                     扩展名清单各自会漂移。这里只留音频和文档 ——
+                     它们没有独立页面，仍由本工作台负责。 -->
                 <el-dropdown @command="switchFileType" trigger="click">
                   <button type="button" class="files-filter-button"><kv-icon :name="fileTypeIcon"></kv-icon><span>类型：{{ fileConfig[fileType].name }}</span><kv-icon name="chevron-down"></kv-icon></button>
                   <el-dropdown-menu slot="dropdown" class="files-menu">
                     <el-dropdown-item command="all">全部类型</el-dropdown-item>
-                    <el-dropdown-item command="image">图片</el-dropdown-item>
-                    <el-dropdown-item command="video">视频</el-dropdown-item>
                     <el-dropdown-item command="audio">音频</el-dropdown-item>
                     <el-dropdown-item command="document">文档及其他文件</el-dropdown-item>
+                    <el-dropdown-item command="image" divided>图片（去图库查看）</el-dropdown-item>
+                    <el-dropdown-item command="video">视频（去视频库查看）</el-dropdown-item>
                   </el-dropdown-menu>
                 </el-dropdown>
                 <el-dropdown @command="filter" trigger="click">
@@ -735,6 +741,6 @@ curl -X POST "{SITE_URL}/api/v1/import" \
 <script src="/admin-shared.js?v=44f1a15913"></script>
 <script src="/admin-tokens.js?v=5085cfdc1c"></script>
 <script src="/admin-ui-design.js?v=3796d034be"></script>
-<script src="/admin-app.js?v=faa7073897"></script>
+<script src="/admin-app.js?v=a79a400fdd"></script>
 </body>
 </html>

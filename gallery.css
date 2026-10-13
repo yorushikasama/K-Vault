@@ -37,7 +37,7 @@
     }
 
     /* 页头（.header / .header-title / .header-actions）已删除：顶栏由
-       app-shell.css 提供，四个分区共用同一段标记。这一页原本自带一套
+       app-shell.css 提供，各分区页共用同一段标记。这一页原本自带一套
        （标题「图片浏览器」+ 上传/管理/首页 + 页面级主题按钮），
        导航项文字与其它页不同，切换时像跳到了别处。 */
 
@@ -138,6 +138,48 @@
     }
 
     .image-card:hover img { transform: scale(1.05); }
+
+    /* 不可渲染格式（RAW / PSD / tiff / heic / jxl）的占位卡。
+       刻意不铺任何颜色块 —— 只用一条虚线边界说明"这里本该有张图"，
+       让它一眼就和真的图片区分开，而不是伪装成一张深色缩略图。 */
+    .image-card-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px;
+      text-align: center;
+      background:
+        repeating-linear-gradient(
+          135deg,
+          transparent 0 8px,
+          var(--ui-surface-sunken) 8px 16px
+        );
+      color: var(--text-secondary);
+    }
+
+    .image-card-placeholder svg,
+    .image-card-placeholder i {
+      width: 28px;
+      height: 28px;
+      opacity: 0.55;
+    }
+
+    .image-card-format {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--text-primary);
+    }
+
+    .image-card-format-hint {
+      font-size: 0.72rem;
+      line-height: 1.4;
+      opacity: 0.8;
+    }
 
     .image-card-overlay {
       position: absolute;
@@ -346,7 +388,7 @@
          顶栏只有 374px 宽），与其它三页不一致。 */
       #app { padding: 12px; }
 
-      /* 顶栏的窄屏处理在 app-shell.css（四个分区共用），这里不用再管。 */
+      /* 顶栏的窄屏处理在 app-shell.css（各分区页共用），这里不用再管。 */
 
       .header-search {
         max-width: none;
@@ -467,19 +509,32 @@
         padding: 6px 8px;
       }
       
+      /* 原来竖排 + 每个按钮 width:100%，实测在 390px 宽下批量条高 249px ——
+         比一张图片卡还高，几乎盖住整个视口底部，用户看不见自己选了什么。
+         改成横向换行，高度降到 ~100px。触摸目标由 ui-buttons.css 的 44px
+         下限保证，按钮不因换行而变小。定位偏移在这里说了不算
+         （mobile-refactor.css 用 !important 把批量条钉在视口两端），
+         所以左右用 left/right 配合。 */
       .batch-bar {
-        flex-direction: column;
-        width: calc(100% - 16px);
-        left: 8px;
-        bottom: 8px;
-        padding: 10px;
+        width: auto;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
         gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
         border-radius: var(--radius-md);
       }
-      
-      /* 批量操作在窄屏占满整行。 */
-      .batch-bar .btn {
+
+      .batch-bar-count {
         width: 100%;
+        text-align: center;
+      }
+
+      .batch-bar .btn {
+        flex: 0 1 auto;
+        min-width: 84px;
       }
       
       .toast {

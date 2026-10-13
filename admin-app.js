@@ -102,19 +102,22 @@
         },
         image: {
           name: '图片',
-          exts: ['jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp', 'png', 'apng', 'gif', 'webp', 'bmp', 'tif', 'tiff', 'ico', 'svg', 'heic', 'heif', 'avif', 'jxl'],
+          // 图片已独立成图库页。清单与 kv-shared.js 的 IMAGE_EXTS 保持一致
+          // （一致性与「本页不再提供图片筛选」由 admin-media-pages.test.js 钉住）。
+          exts: ['jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp', 'png', 'apng', 'gif', 'webp', 'avif', 'bmp', 'svg', 'ico', 'tif', 'tiff', 'heic', 'heif', 'heifs', 'heifs2', 'avci', 'jxl', 'raw', 'cr2', 'cr3', 'nef', 'arw', 'dng', 'orf', 'raf', 'rw2', 'pef', 'srw', 'sr2', 'erf', 'mrw', 'x3f', 'kdc', '3fr', 'psd', 'psb', 'ai'],
           icon: 'image',
           count: 0
         },
         video: {
           name: '视频',
-          exts: ['mp4', 'webm', 'ogg', 'ogv', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'm4v', 'm3u8', '3gp', 'ts', 'mts', 'm2ts'],
+          // 同样已独立成视频库页，清单与 kv-shared.js 的 VIDEO_EXTS 一致。
+          exts: ['mp4', 'webm', 'ogg', 'ogv', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'm4v', 'm3u8', '3gp', 'ts', 'mts', 'm2ts', 'f4v', 'rm', 'rmvb', 'vob', 'asf', 'divx', 'mxf'],
           icon: 'video',
           count: 0
         },
         audio: {
           name: '音频',
-          exts: ['mp3', 'mpeg', 'wav', 'ogg', 'oga', 'flac', 'aac', 'm4a', 'wma', 'ape', 'opus', 'weba', 'midi', 'mid', 'aif', 'aiff'],
+          exts: ['mp3', 'mpeg', 'wav', 'ogg', 'oga', 'flac', 'aac', 'm4a', 'wma', 'ape', 'opus', 'weba', 'midi', 'mid', 'aif', 'aiff', 'alac', 'dsf', 'dff', 'amr', 'ac3', 'caf', 'mka'],
           icon: 'music',
           count: 0
         },
@@ -2211,6 +2214,26 @@
         }
       },
                   switchFileType(type, showMessage = true) {  // 切换文件类型
+        // 图片与视频已经有独立页面（gallery.html / video.html）。
+        // 用户从这里点它们时给一条明确的路，而不是在本页切筛选 ——
+        // 本页的 fileConfig.image 是本文件的私有清单，与那两页的
+        // KVShared 清单各自独立；让用户在两个入口里得到两份口径不同的
+        // "图片"，比不给入口更糟。
+        //
+        // showMessage === false 是 mount 时的"应用已存设置"调用：那时
+        // type 来自 localStorage，可能还是老版本留下的 'image'/'video'。
+        // 那时也跳转，用户打开文件工作台就被弹去图库，永远回不来 —— 而且
+        // 跳转前还没清掉 localStorage，于是每次打开都弹一次。所以只有
+        // 用户主动点击才跳转，顺手把存量键清掉。
+        if (type === 'image' || type === 'video') {
+          localStorage.removeItem('fileType');
+          if (showMessage) {
+            window.location.href = type === 'image' ? './gallery.html' : './video.html';
+          }
+          this.fileType = 'all';
+          this.currentPage = 1;
+          return;
+        }
         this.fileType = type;
         this.currentPage = 1;
         localStorage.setItem('fileType', type);

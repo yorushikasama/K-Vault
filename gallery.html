@@ -10,18 +10,18 @@
   <!-- Vue 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="/theme.css?v=0b56c71b52">
-  <script src="/theme-core.js?v=6a9f70f021"></script>
+  <script src="/theme-core.js?v=4b609a8b7e"></script>
   <script src="/accent-color.js?v=35dbe085ce"></script>
   <script defer src="/theme-effects.js?v=f32f70568d"></script>
   <link rel="stylesheet" href="/ui-buttons.css?v=55f77f600e">
-  <!-- 应用外壳（顶栏）四个分区共用，因此排在页面私有样式之前。 -->
-  <link rel="stylesheet" href="/app-shell.css?v=140b992d46">
-  <link rel="stylesheet" href="/gallery.css?v=e316ed714e">
-<script src="/kv-shared.js?v=2c55b4fa2e"></script>
+  <!-- 应用外壳（顶栏）各分区页共用，因此排在页面私有样式之前。 -->
+  <link rel="stylesheet" href="/app-shell.css?v=3dda6774c7">
+  <link rel="stylesheet" href="/gallery.css?v=c71c0d76eb">
+<script src="/kv-shared.js?v=1ea5bed490"></script>
   <link rel="stylesheet" href="/mobile-refactor.css?v=2f0292c228">
 </head>
 <body>
-  <!-- 应用外壳顶栏：与上传 / 文件 / WebDAV 三页逐字相同。
+  <!-- 应用外壳顶栏：与其它分区页逐字相同。
        此前这里是另一套 .header（标题「图片浏览器」+ 上传/管理/首页 + 页面级
        主题按钮），点进来像换了个站。现在只有分区内容不同，外壳一致。
 
@@ -37,6 +37,7 @@
       <a href="./">上传</a>
       <a href="./admin.html">文件</a>
       <a href="./gallery.html" aria-current="page">图库</a>
+      <a href="./video.html">视频</a>
       <a href="./webdav.html">WebDAV</a>
     </nav>
     <div class="workspace-tools">
@@ -90,16 +91,27 @@
 
     <!-- 图片网格 -->
     <div class="image-grid" v-if="!loading || images.length > 0">
-      <div class="image-card" 
-           v-for="(img, index) in filteredImages" 
+      <div class="image-card"
+           v-for="(img, index) in filteredImages"
            :key="img.name"
-           :class="{ selected: img.selected }"
+           :class="{ selected: img.selected, 'is-unviewable': !canView(img) }"
            @click="toggleSelect(img)">
-        <img :src="'/file/' + img.name" 
+        <!-- 能解码的走 <img>；RAW / PSD / tiff / heic / jxl 是图片但浏览器
+             画不出来，给一张碎图毫无意义，改用占位卡 + 格式名。
+             这是 isImageName（归类，宽）与 isViewableImage（渲染，窄）的
+             分界在界面上的落点。 -->
+        <img v-if="canView(img)"
+             :src="'/file/' + img.name"
              :alt="img.metadata?.fileName || img.name"
              loading="lazy"
              @error="handleImageError($event, img)">
-        <div class="image-card-checkbox" 
+        <div v-else class="image-card-placeholder" role="img"
+             :aria-label="'浏览器无法预览的 ' + extOf(img.name) + ' 图片'">
+          <i data-lucide="image-off"></i>
+          <span class="image-card-format">{{ extOf(img.name).toUpperCase() }}</span>
+          <span class="image-card-format-hint">浏览器无法预览</span>
+        </div>
+        <div class="image-card-checkbox"
              :class="{ checked: img.selected }"
              @click.stop="toggleSelect(img)">
           <kv-icon :name="img.selected ? 'check' : 'square'"></kv-icon>
@@ -110,7 +122,7 @@
             <button class="btn btn-sm btn-icon" @click.stop="copyLink(img)" title="复制链接" aria-label="复制链接">
               <i data-lucide="copy"></i>
             </button>
-            <button class="btn btn-sm btn-icon" @click.stop="previewImage(img)" title="预览" aria-label="预览">
+            <button v-if="canView(img)" class="btn btn-sm btn-icon" @click.stop="previewImage(img)" title="预览" aria-label="预览">
               <i data-lucide="expand"></i>
             </button>
             <button class="btn btn-sm btn-icon" @click.stop="downloadImage(img)" title="下载" aria-label="下载">
@@ -223,6 +235,6 @@
        只作用于之后创建的实例。放在后面的话 v-if 里的图标永远不会被替换。 -->
   <script src="/icons-subset.js?v=a139a660aa"></script>
   <script src="/icons.js?v=fc3fc216e0"></script>
-  <script src="/gallery-app.js?v=573eb12657"></script>
+  <script src="/gallery-app.js?v=7f0ded0a41"></script>
 </body>
 </html>

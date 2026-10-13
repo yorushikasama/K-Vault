@@ -75,7 +75,7 @@ describe('mobile layout contract', function () {
   });
 
   describe('the app shell header has mobile rules', function () {
-    // 顶栏从 workbench.css 抽到 app-shell.css 之后（它现在是四个分区共用的
+    // 顶栏从 workbench.css 抽到 app-shell.css 之后（它现在是各分区共用的
     // 应用外壳：上传 / 文件 / 图库 / WebDAV），这套规则随之搬家。
     // 断言跟着移到新文件，但要求不变：窄屏必须换行 + 导航可横向滚动，
     // 否则 390px 视口会把导航推出屏幕。
@@ -131,7 +131,7 @@ describe('mobile layout contract', function () {
 
     it('the app shell carries its own touch targets for the pages that skip mobile-refactor', function () {
       // index.html 不加载 mobile-refactor.css（避免两处规则重复），
-      // 所以它用到的页头元素必须自己带 44px 下限。顶栏现在由四个分区共用，
+      // 所以它用到的页头元素必须自己带 44px 下限。顶栏现在由各分区共用，
       // 这份规则随之落在 app-shell.css —— 任一分区都不会漏。
       const html = read('index.html');
       assert.doesNotMatch(html, /mobile-refactor\.css/, 'index.html 现在加载了 mobile-refactor.css，两处规则会重复');

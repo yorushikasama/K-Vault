@@ -109,7 +109,15 @@ describe('gallery list stays internally consistent', function () {
       // 直接在沙箱里求值这个函数，验证行为而不是验证源码长什么样。
       const body = /function isImageName\(name\)\s*\{([\s\S]*?)\n {2}\}/.exec(shared);
       assert.ok(body, '找不到 isImageName 的实现');
-      const fn = new Function('IMAGE_EXTS', `"use strict"; return function (name) {${body[1]}}`)(sharedList());
+      // isImageName 把扩展名提取委托给 extOf，沙箱里得把它一起注入，
+      // 否则会在求值时报 ReferenceError —— 那正是这次重构引入的风险。
+      const extOfSrc = /function extOf\(name\)\s*\{([\s\S]*?)\n {2}\}/.exec(shared);
+      assert.ok(extOfSrc, '找不到 extOf 的实现');
+      const extOf = new Function('"use strict"; return function (name) {' + extOfSrc[1] + '}')();
+      const fn = new Function('IMAGE_EXTS', 'extOf', `"use strict"; return function (name) {${body[1]}}`)(
+        sharedList(),
+        extOf
+      );
       for (const name of ['a.jpg', 'a.JPEG', 'dir/a.png', 'a.avif', 'a.HEIC', 'a.tiff']) {
         assert.strictEqual(fn(name), true, `${name} 应当被认成图片`);
       }
@@ -151,6 +159,68 @@ describe('gallery list stays internally consistent', function () {
       for (const ext of ['avif', 'webp', 'heic', 'heif', 'tiff', 'svg']) {
         assert.ok(list.includes(ext), `清单缺少 ${ext}：该格式的图片存了却不会出现在图库里`);
       }
+    });
+
+    /* ── 归类宽 / 渲染窄 ──────────────────────────────────────────
+     * 上一轮把五份清单收成一份时，顺手把"这是不是图片"和"能不能用
+     * <img> 显示"合并成了一个判断，于是 RAW、PSD 被当成可渲染图片收进
+     * 清单 —— 图库里出现一批浏览器画不出来的碎图。
+     * 这组测试钉住两个函数的分层关系：isViewableImage 必须是
+     * isImageName 的真子集，且两者确实不等。 */
+    it('VIEWABLE_IMAGE_EXTS is a strict subset of IMAGE_EXTS', function () {
+      const viewable = /var VIEWABLE_IMAGE_EXTS = \[([\s\S]*?)\];/.exec(shared);
+      assert.ok(viewable, 'kv-shared.js 里找不到 VIEWABLE_IMAGE_EXTS');
+      const viewableItems = [...viewable[1].matchAll(/"([a-z0-9]+)"/g)].map((x) => x[1]);
+      const list = sharedList();
+
+      for (const ext of viewableItems) {
+        assert.ok(list.includes(ext), `可渲染子集里的 ${ext} 不在归类清单里，两份口径矛盾`);
+      }
+      assert.ok(
+        viewableItems.length < list.length,
+        '可渲染清单与归类清单长度相同 —— 分层就没了，RAW/PSD 会重新变成碎图'
+      );
+      assert.match(shared, /window\.KVShared = \{[\s\S]*?isViewableImage: isViewableImage,/,
+        'isViewableImage 没有导出');
+    });
+
+    it('keeps camera RAW and layered formats out of the viewable list', function () {
+      // 这些是货真价实的图片，但 <img> 解不了码。
+      const viewable = /var VIEWABLE_IMAGE_EXTS = \[([\s\S]*?)\];/.exec(shared);
+      const viewableItems = [...viewable[1].matchAll(/"([a-z0-9]+)"/g)].map((x) => x[1]);
+      for (const ext of ['raw', 'cr2', 'cr3', 'nef', 'arw', 'dng', 'psd', 'ai', 'tiff', 'heic', 'jxl']) {
+        assert.ok(sharedList().includes(ext), `${ext} 应当被归类为图片，否则图库列不出来`);
+        assert.ok(!viewableItems.includes(ext), `${ext} 浏览器解不了码，不该出现在可渲染清单里`);
+      }
+    });
+
+    it('buildPreviewTarget does not send undecodable images to <img>', function () {
+      // PREVIEW_IMAGE_EXTS 必须指向窄的那份。曾经它等于 IMAGE_EXTS，
+      // 于是 RAW 被判成 native-image，弹窗里就是一坨画不出来的东西。
+      assert.match(
+        shared,
+        /var PREVIEW_IMAGE_EXTS = VIEWABLE_IMAGE_EXTS;/,
+        'PREVIEW_IMAGE_EXTS 应引用可渲染子集，而不是归类清单'
+      );
+    });
+
+    it('the gallery renders a placeholder instead of a broken image', function () {
+      assert.match(galleryHtml, /v-if="canView\(img\)"/,
+        '图库卡片应按能否解码分支');
+      assert.match(galleryHtml, /image-card-placeholder/,
+        '缺少不可渲染图片的占位卡 —— 否则 RAW 在图库里就是一张碎图');
+      assert.match(galleryApp, /canView\(img\)\s*\{\s*return KVShared\.isViewableImage\(/,
+        'canView 应委托给 KVShared.isViewableImage');
+    });
+
+    it('the preview page refuses to feed undecodable images to <img>', function () {
+      assert.match(previewApp, /new Set\(window\.KVShared\.VIEWABLE_IMAGE_EXTS\)/,
+        'preview-app.js 应复用 KVShared.VIEWABLE_IMAGE_EXTS');
+      assert.match(
+        previewApp,
+        /IMAGE_EXTS\.has\(ext\) && !VIEWABLE_IMAGE_EXTS\.has\(ext\)/,
+        'preview-app.js 应把不可解码图片分流到摘要视图，而不是塞进 <img>'
+      );
     });
   });
 

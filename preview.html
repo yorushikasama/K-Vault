@@ -12,14 +12,14 @@
   <link rel="stylesheet" href="/theme.css?v=0b56c71b52">
   <link rel="stylesheet" href="/ui-buttons.css?v=55f77f600e">
   <link rel="stylesheet" href="/preview.css?v=a80418af36">
-<script src="/kv-shared.js?v=2c55b4fa2e"></script>
+<script src="/kv-shared.js?v=1ea5bed490"></script>
   <link rel="stylesheet" href="/mobile-refactor.css?v=2f0292c228">
   <!-- 预览页此前是全站唯一没加载 theme-core.js 的页面。没有它就没有
        ThemeManager，data-theme 永远是 null，于是 preview.css 里
        html[data-theme="dark"] 的规则一条都不会命中——夜间模式在这里完全
        失效（实测两模式 body 背景同色）。它必须同步放在 <head>：首帧前把
        data-theme 写到 <html> 上，延后会闪一下白屏。 -->
-  <script src="/theme-core.js?v=6a9f70f021"></script>
+  <script src="/theme-core.js?v=4b609a8b7e"></script>
   <script src="/accent-color.js?v=35dbe085ce"></script>
   <script defer src="/theme-effects.js?v=f32f70568d"></script>
 </head>
@@ -63,7 +63,7 @@
   </div>
 
   <script src="/preview-parsers.js?v=aa7f1a3eb0"></script>
-    <script src="/preview-app.js?v=fa7ac1f161"></script>
+    <script src="/preview-app.js?v=5d79f3ea95"></script>
   <!-- 图标子集与渲染器放在 body 末尾（与其它页一致）：主题切换按钮的
        月亮/太阳图标靠它渲染，放 <head> 会挡住首帧。icons.js 在
        DOMContentLoaded 时自动扫描 data-lucide 并替换成 SVG。 -->
