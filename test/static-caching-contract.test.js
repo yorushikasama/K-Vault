@@ -198,4 +198,45 @@ describe('static asset caching contract', function () {
         '外部壁纸 URL 不应被附加 v 参数');
     });
   });
+
+  describe('dynamic file routes outrank the static-asset regex', function () {
+    /**
+     * nginx 的正则 location 优先级高于普通前缀 location —— 这条规则本身没错，
+     * 但两处叠起来会出事：修 WebDAV 遗留 404 时加的静态资源 404 规则
+     *   location ~* \.(?:css|js|svg|png|jpe?g|gif|webp|ico|...)$ { try_files $uri =404; }
+     * 会把 /file/<id>.<图片后缀> 也收走，而文件 ID 是以真实扩展名结尾的
+     * （gallery 用 /file/<name> 取图）。后果是整个图库全挂，而 .mp4 不在
+     * 正则列表里幸免 —— 看起来像「只有图片坏了」，很难联想到路由。
+     *
+     * 2026-10-14 实测：Node 直连 /file/<id>.avif 返回 200 image/avif，
+     * 经过裸机 nginx 变 404。修法是给 /file/ 加 ^~（此前缀命中后不再评估
+     * 正则 location）。这里钉住它，防止有人「整理配置」时把 ^~ 去掉。
+     */
+    const staticRegex = /location ~\* \\\.\(\?:[^)]*(?:png|jpe?g|gif|webp|avif|svg|ico)[^)]*\)\$/;
+
+    it('docker/nginx.conf marks /file/ as ^~', function () {
+      assert.match(nginx, staticRegex, 'docker/nginx.conf 里找不到静态资源正则 location，测试前提变了');
+      assert.match(
+        nginx,
+        /location \^~ \/file\/ \{/,
+        'docker/nginx.conf 的 /file/ 缺少 ^~，带图片后缀的文件会被静态资源正则抢走并 404'
+      );
+    });
+
+    it('the ^~ prefix is explained, not just present', function () {
+      // ^~ 看起来是可有可无的修饰符，很容易在「精简配置」时被删掉，
+      // 所以要求就地留下理由。
+      const m = /location \^~ \/file\/ \{/.exec(nginx);
+      const before = nginx.slice(Math.max(0, m.index - 700), m.index);
+      assert.match(before, /\^~/, '^~ 旁边没有说明它为什么必须留着');
+    });
+
+    it('file IDs keep their extensions in the frontend', function () {
+      // 这条是上面那条规则的前提：如果前端改成用没有扩展名的 ID，
+      // ^~ 就不再是必需的，这条断言会失败，提醒重新评估。
+      const gallery = fs.readFileSync(path.join(root, 'gallery.html'), 'utf8');
+      assert.match(gallery, /:src="'\/file\/' \+ img\.name"/,
+        'gallery 不再用 /file/<name> 取图；若已改成无后缀 ID，请重新评估 /file/ 的 ^~ 是否还需要');
+    });
+  });
 });
