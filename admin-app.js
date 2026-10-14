@@ -69,14 +69,11 @@
       scopeVersion: 0,
       cacheEpoch: 0,
       cacheOwner: '',
-      resourceMutationId: 0,
       requestTimers: [],
       managedControllers: [],
       folderRequestSeq: 0,
       folderError: '',
       batchMutating: false,
-      checkingFiles: false,
-      favoritePending: {},
       folderDrawerOpen: false,
       folderReturnFocus: null,
       windowWidth: window.innerWidth,
@@ -86,12 +83,9 @@
       pageDisposed: false,
       listErrorPhase: '',
       listNeedsRefresh: false,
-      checkRequestSeq: 0,
       brokenCheckSeq: 0,
       brokenCheckMessage: null,
       brokenCheckController: null,
-      tokenError: '',
-      moveDialogScopeKey: '',
       storageLabels: { all: '全部存储', telegram: 'Telegram', r2: 'R2', s3: 'S3', discord: 'Discord', huggingface: 'HuggingFace', github: 'GitHub' },
       fileConfig: {
         all: {
@@ -127,10 +121,6 @@
           icon: 'folder-open',
           count: 0
         }
-      },
-      uploadConfig: {
-        maxSize: 20 * 1024 * 1024,  // 最大上传20MB
-        maxConcurrent: 3
       },
       tableData: [],
       nextCursor: null,

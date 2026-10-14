@@ -130,7 +130,6 @@
             maxConcurrent: 3,
           },
           uploadLimits: {},
-          storageStates: {},
         },
         created() {
           this._idSequence = 0;
@@ -1714,54 +1713,6 @@
             return parts.length > 1 ? parts.pop() : "";
           },
 
-          getFileIcon(filename) {
-            const ext = this.getFileExt(filename).toLowerCase();
-            const iconMap = {
-              // 视频
-              mp4: "video",
-              webm: "video",
-              avi: "video",
-              mov: "video",
-              mkv: "video",
-              flv: "video",
-              // 音频
-              mp3: "music",
-              wav: "music",
-              ogg: "music",
-              flac: "music",
-              aac: "music",
-              m4a: "music",
-              // 文档
-              pdf: "file-text",
-              doc: "file-text",
-              docx: "file-text",
-              xls: "file-spreadsheet",
-              xlsx: "file-spreadsheet",
-              ppt: "presentation",
-              pptx: "presentation",
-              txt: "file-text",
-              md: "file-text",
-              // 压缩包
-              zip: "file-archive",
-              rar: "file-archive",
-              "7z": "file-archive",
-              tar: "file-archive",
-              gz: "file-archive",
-              // 代码
-              js: "file-code",
-              ts: "file-code",
-              py: "file-code",
-              java: "file-code",
-              c: "file-code",
-              cpp: "file-code",
-              html: "file-code",
-              css: "file-code",
-              json: "file-code",
-            };
-            return iconMap[ext] || "file";
-          },
-
-          
           handleHistoryImgError(event, item) {
             // 图片加载失败时，将其标记为非图片，让Vue重新渲染为图标
             item._imgError = true;
