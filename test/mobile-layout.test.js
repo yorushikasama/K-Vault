@@ -79,6 +79,29 @@ describe('mobile layout contract', function () {
       }
     });
 
+    it('keeps the row action buttons on one line', function () {
+      // 实测 320px：.upload-row-actions 曾带着 flex-wrap: wrap，四个 44px 按钮
+      // 各要 1/4 行宽，加上 gap 共需 4×44+3×8 = 200px，而第二行只有 178px ——
+      // 第 4 个换行，排成 3+1，容器从 44px 撑到 96px。按钮组是固定的一排，
+      // 不能像文案型按钮组那样换行。
+      const css = read('workbench.css');
+      const shared = /\.upload-inline-actions,\s*\.upload-field-row,\s*\.upload-segmented\)\s*\{([^}]*)\}/.exec(css);
+      assert.ok(shared, '找不到 .upload-inline-actions 的共享规则');
+      assert.doesNotMatch(
+        shared[1],
+        /\.upload-row-actions/,
+        '.upload-row-actions 又被并回带 flex-wrap: wrap 的共享规则，四个图标按钮会换行成 3+1'
+      );
+      const rowActions = /\.kv-workbench \.upload-row-actions\s*\{([^}]*)\}/.exec(css);
+      assert.ok(rowActions, '找不到 .upload-row-actions 的独立规则');
+      assert.doesNotMatch(
+        rowActions[1],
+        /flex-wrap:\s*wrap/,
+        '.upload-row-actions 不该允许换行（实测 320px 下排成 3+1）'
+      );
+      assert.match(rowActions[1], /display:\s*flex/, '.upload-row-actions 应保持单排 flex');
+    });
+
     it('lets long paths wrap in the file row metadata line', function () {
       // .upload-file-meta 拼的是「大小 · 存储目标 · 目录路径」。目录名由
       // 用户自建，可能整段没有空格也不带连字符，overflow-wrap: normal

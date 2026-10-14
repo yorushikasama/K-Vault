@@ -75,7 +75,14 @@
 .kv-workbench :is(.upload-destination, .upload-add, .upload-tasks, .upload-local-history) { padding: 24px 0; border-top: 1px solid var(--wb-border); }
 .kv-workbench :is(.upload-section-heading, .upload-subsection-heading) { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
 .kv-workbench .upload-subsection-heading { margin-bottom: 8px; }
-.kv-workbench :is(.upload-inline-actions, .upload-row-actions, .upload-field-row, .upload-segmented) { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+/* flex-wrap: wrap 不能带上 .upload-row-actions：它在这一行里是固定的一排
+     图标按钮，而窄屏下这一排独占第二行（第 768px 块里的网格）。带 wrap 时
+     四个 44px 按钮按 flex:1 1 0 各自想要 1/4 行宽，加上 8px 的 gap 共需要
+     4×44+3×8 = 200px，而第二行只有 178px —— 第 4 个换行，于是 320px 下
+     排成 3+1（实测容器高 96px，即两行）。inline-actions / field-row 是
+     文案型按钮组，多行换行本来就该发生，不受影响。 */
+.kv-workbench :is(.upload-inline-actions, .upload-field-row, .upload-segmented) { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.kv-workbench .upload-row-actions { display: flex; align-items: center; gap: 8px; }
 .kv-workbench .upload-field-row > input { flex: 1 1 260px; min-height: 40px; }
 .kv-workbench .upload-storage-options { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
 .kv-workbench .upload-storage-option { display: inline-flex; gap: 8px; align-items: center; min-height: 42px; padding: 8px 12px; border: 1px solid var(--wb-border); border-radius: var(--ui-radius-control); background: var(--wb-surface); color: var(--wb-ink); }
