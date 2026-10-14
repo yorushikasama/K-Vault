@@ -107,6 +107,31 @@
 .kv-workbench .upload-dropzone > .kv-icon { width: 36px; height: 36px; color: var(--wb-accent-ink); }
 .kv-workbench .upload-dropzone-copy { flex: 1; }
 .kv-workbench .upload-dropzone-copy p { margin-top: 6px; color: var(--wb-muted); font-size: 13px; }
+/* 窄屏下拖放区改为纵向排布。同一个毛病：图标 36px + 文案 flex:1 +
+   按钮 115px 三者挤在一条 flex 行里，390px 实测文案区只剩 103px
+   （占 29%），「将文件拖到这里」被压成每行两三字、说明文字压成 83px
+   高的一列窄条。min-width:auto 让它压不下去，压下去也不可读。
+   纵向排布把整行宽度给文案，按钮独占一行。 */
+@media (max-width: 768px) {
+  .kv-workbench .upload-dropzone {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "icon copy"
+      "btn btn";
+    align-items: center;
+    justify-items: start;
+    gap: 12px 16px;
+    padding: 20px;
+    min-height: 0;
+  }
+  .kv-workbench .upload-dropzone > .kv-icon { grid-area: icon; align-self: start; }
+  .kv-workbench .upload-dropzone-copy { grid-area: copy; }
+  /* 「选择文件」是这块的主要动作，独占一行并铺满 —— 在 44px 的触摸
+     目标下，横向一行足够，不必和文案争宽度。 */
+  .kv-workbench .upload-dropzone > .btn { grid-area: btn; width: 100%; min-height: 44px; justify-content: center; }
+  .kv-workbench .upload-dropzone > input { grid-area: btn; }
+}
 .kv-workbench .upload-add-context { margin-top: 8px; font-size: 13px; color: var(--wb-muted); overflow-wrap: anywhere; }
 .kv-workbench .upload-add-context strong { color: var(--wb-ink); font-weight: 600; }
 .kv-workbench .upload-advanced { margin-top: 20px; border-top: 1px solid var(--wb-border); border-bottom: 1px solid var(--wb-border); }

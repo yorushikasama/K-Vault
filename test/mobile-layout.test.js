@@ -20,6 +20,11 @@ const path = require('node:path');
  *      单行 flex 把文件名区挤到 14px，90 字符的文件名逐字折行、单行高
  *      1680px，一行记录顶掉整屏。同一批的 .upload-file-meta 也没有
  *      overflow-wrap，无空格的长目录名横向溢出到边框外。
+ *   6. 拖放区文案被挤成竖条 —— 390px 下图标 36px + 文案 flex:1 +
+ *      按钮 115px 同处一条 flex 行，文案区只剩 103px（占 29%），
+ *      「将文件拖到这里」压成每行两三字。与 5 同一个毛病：固定尺寸的
+ *      兄弟节点加一个可压缩的文字列，min-width:auto 让它压不下去，
+ *      而压到 103px 也不可读。
  *
  * 另有一批同类断言曾挂在 webdav.css 上（单列 grid 裸 1fr、.file-picker
  * 缺 min-width:0、.upload-file-row 没有 flex-wrap）。那个页面与后端功能
@@ -100,6 +105,43 @@ describe('mobile layout contract', function () {
         '.upload-row-actions 不该允许换行（实测 320px 下排成 3+1）'
       );
       assert.match(rowActions[1], /display:\s*flex/, '.upload-row-actions 应保持单排 flex');
+    });
+
+    it('stacks the dropzone on narrow screens', function () {
+      // 390px 实测：图标 36px + 文案 flex:1 + 按钮 115px 挤在一条 flex 行，
+      // 文案区只剩 103px（占 29%），「将文件拖到这里」压成每行两三字、
+      // 说明文字压成 83px 高的窄条。与上传行同一个毛病：min-width:auto
+      // 让 flex 项压不下去，而压到 103px 也不可读。
+      const css = read('workbench.css');
+      // 锚定 display: grid，否则会先匹配到基类那条 flex 规则。
+      // 终点取最后一个子项规则之后，才包含 btn 的规则体。
+      const block = /@media \(max-width: 768px\)\s*\{\s*\.kv-workbench \.upload-dropzone\s*\{[^}]*display:\s*grid[\s\S]*?\.upload-dropzone > input\s*\{[^}]*\}/.exec(css);
+      assert.ok(block, 'workbench.css 没有「窄屏下拖放区改网格」的 768px 媒体查询');
+
+      const z = /\.upload-dropzone\s*\{([^}]*)\}/.exec(block[0]);
+      assert.ok(z, '找不到窄屏 .upload-dropzone 的规则');
+      assert.match(z[1], /grid-template-areas/, '拖放区没有命名区域，三块内容会落进同一格');
+      // 命名区域里的每一行都必须列数相同，否则 grid 整体失效并回退。
+      const areas = /grid-template-areas:\s*([^;]+);/.exec(z[1]);
+      assert.ok(areas, '找不到 grid-template-areas');
+      const rows = areas[1].trim().split(/\n\s*/).map((r) => r.trim().split(/\s+/));
+      assert.ok(
+        rows.every((r) => r.length === rows[0].length),
+        `grid-template-areas 各行列数不一致（${rows.map((r) => r.length).join('/')}），网格会失效`
+      );
+      for (const area of ['icon', 'copy', 'btn']) {
+        assert.match(
+          block[0],
+          new RegExp(`grid-area:\\s*${area}\\b`),
+          `拖放区没有给 ${area} 指定 grid-area，会与文案抢同一格`
+        );
+      }
+      // 文案列必须可压缩，且不能用裸 1fr。
+      assert.match(
+        z[1],
+        /grid-template-columns:[^;]*minmax\(0,\s*1fr\)/,
+        '拖放区的文案列没有用 minmax(0, 1fr)，长文案会顶开网格'
+      );
     });
 
     it('lets long paths wrap in the file row metadata line', function () {
