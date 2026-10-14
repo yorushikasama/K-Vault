@@ -55,27 +55,55 @@
           },
           // 能力探测失败时保持关闭：普通 URL 上传不受影响
           async loadMediaResolveStatus() {
-            try {
-              const response = await fetch(
-                `${this.baseURL}/api/resolve-url/status`,
-                { credentials: "include" },
-              );
-              if (response.ok) {
-                const data = await response.json();
-                this.mediaResolve.available = data.available === true;
-                this.mediaResolve.allowedHosts = Array.isArray(
-                  data.allowedHosts,
-                )
-                  ? data.allowedHosts
-                  : [];
-                // 必须一并读回：服务端在不限域名时把 allowedHosts 返回成空数组，
-                // 只看那个字段会把所有分享链接判成普通直链。
-                this.mediaResolve.allowUnknownHosts = data.allowUnknownHosts === true;
+            // 存下这次探测的 promise：提交 URL 时要等它落地（见
+            // ensureMediaResolveStatus），而 mounted 里已经发起过一次，
+            // 这里不共享的话会再打一个请求。
+            if (this._mediaResolveStatusPromise) return this._mediaResolveStatusPromise;
+            const pending = (async () => {
+              try {
+                const response = await fetch(
+                  `${this.baseURL}/api/resolve-url/status`,
+                  { credentials: "include" },
+                );
+                if (response.ok) {
+                  const data = await response.json();
+                  this.mediaResolve.available = data.available === true;
+                  this.mediaResolve.allowedHosts = Array.isArray(
+                    data.allowedHosts,
+                  )
+                    ? data.allowedHosts
+                    : [];
+                  // 必须一并读回：服务端在不限域名时把 allowedHosts 返回成空数组，
+                  // 只看那个字段会把所有分享链接判成普通直链。
+                  this.mediaResolve.allowUnknownHosts = data.allowUnknownHosts === true;
+                }
+              } catch {
+                this.mediaResolve.available = false;
               }
-            } catch {
-              this.mediaResolve.available = false;
-            }
-            this.mediaResolve.loaded = true;
+              this.mediaResolve.loaded = true;
+            })();
+            this._mediaResolveStatusPromise = pending;
+            return pending;
+          },
+          // 等能力探测落地，最多 timeoutMs 毫秒。
+          //
+          // 为什么提交前必须等：isMediaShareLink() 的第一条判据就是
+          // mediaResolve.loaded，探测没回来时它对任何链接都返回 false，
+          // 分享链接于是被判成普通直链。服务端拿到的就是这个页面的 HTML。
+          //
+          // 2026-10-14 线上实例（tg.yorushika.cyou）：18:32:19 打开页面发起
+          // 探测，探测要跑 yt-dlp --version 等子进程（服务端实测 3.3s），
+          // 18:32:27 提交链接时探测还在路上 —— 库里多出一个 72KB 的
+          // 7696026443508451931.html，正是抖音那支视频的网页快照。
+          //
+          // 超时后不等：探测真挂了也不能把输入框永远卡住，服务端那道
+          // REMOTE_CONTENT_HTML 闸门会接住误判并回退到解析。
+          async ensureMediaResolveStatus(timeoutMs = 6000) {
+            if (this.mediaResolve.loaded) return;
+            await Promise.race([
+              this.loadMediaResolveStatus(),
+              new Promise((resolve) => setTimeout(resolve, timeoutMs)),
+            ]);
           },
           // 仅解析：拿元数据与可选清晰度，不落库
           async fetchMediaInfo(rawUrl, signal) {
@@ -278,7 +306,12 @@
 
             const data = await response.json();
             if (!response.ok) {
-              throw new Error(data.error || "上传失败");
+              const error = new Error(data.errorDetail || data.error || "上传失败");
+              // 错误码必须带上：REMOTE_CONTENT_HTML 是「这条链接其实是网页」
+              // 的信号，uploadFromUrl 靠它改走解析。
+              error.code = data.errorCode || "";
+              error.status = response.status;
+              throw error;
             }
             return data;
           },
@@ -317,29 +350,36 @@
               return;
             }
 
-            // 分享链接：交给服务端解析，先把可选清晰度摆出来让用户定，再转存
-            if (this.isMediaShareLink(submittedUrl)) {
-              // urlSubmitting 同时做两件事：按钮显示"添加中"并禁用，
-              // 以及挡住重复提交。后者在清空输入框之后变得必要 ——
-              // 框子空了，用户马上就能粘贴下一条，而解析还在路上。
-              this.urlSubmitting = true;
-              // 这一支已经"收下"了这个链接（解析 + 后续转存都由弹窗接手），
-              // 所以立即清空输入框。此前这里直接 return，输入框里一直留着
-              // 那条分享文案 —— 用户看到的就是"转存了但 URL 还在"。
-              // 清空放在发起解析之前：解析要等几秒，先清掉可以让这几秒里
-              // 输入框处于"已就绪"的观感，而不是等结果回来才变空。
-              this.urlToUpload = "";
-              try {
-                await this.openQualityPicker(submittedUrl);
-              } finally {
-                this.urlSubmitting = false;
-              }
-              return;
-            }
-
             this.urlSubmitting = true;
             this.startUrlTicker();
             try {
+              // 先等能力探测落地。isMediaShareLink() 的第一条判据是
+              // mediaResolve.loaded，探测没回来时它对任何链接都返回 false，
+              // 分享链接会被当成普通直链交给服务端 —— 服务端抓到的是平台
+              // 网页。探测在页面加载时已发起，冷启动要跑 yt-dlp 子进程
+              // （服务端实测 3.3s），所以这几秒的等待正是线上踩过的坑。
+              await this.ensureMediaResolveStatus();
+
+              // 分享链接：交给服务端解析，先把可选清晰度摆出来让用户定，再转存
+              if (this.isMediaShareLink(submittedUrl)) {
+                // 这一支已经"收下"了这个链接（解析 + 后续转存都由弹窗接手），
+                // 所以立即清空输入框。此前这里直接 return，输入框里一直留着
+                // 那条分享文案 —— 用户看到的就是"转存了但 URL 还在"。
+                this.urlToUpload = "";
+                // 自己的 try：解析失败是解析的事，别落到下面直链那句
+                // 「URL上传失败」的文案里（openQualityPicker 内部已提示过
+                // 解析失败，这里只是兜住它意外抛出的情况）。
+                try {
+                  await this.openQualityPicker(submittedUrl);
+                } catch (resolveErr) {
+                  this.showToast(
+                    "解析失败：" + (resolveErr.message || "无法解析该链接"),
+                    "error",
+                  );
+                }
+                return;
+              }
+
               const data = await this.uploadPlainUrlToServer(submittedUrl);
 
               // 处理成功响应 - 后端返回格式与普通上传一致 [{ src: '/file/xxx' }]
@@ -348,6 +388,21 @@
 
               this.urlToUpload = "";
             } catch (err) {
+              // 服务端发现这个地址返回的是网页（分享链接的典型表现）——
+              // 那条链接其实需要解析，改走解析流程，别把网页存成文件。
+              // 2026-10-14 线上就是这么多出一个 7696026443508451931.html。
+              if (err && err.code === "REMOTE_CONTENT_HTML") {
+                this.urlToUpload = "";
+                try {
+                  await this.openQualityPicker(submittedUrl);
+                } catch (resolveErr) {
+                  this.showToast(
+                    "解析失败：" + (resolveErr.message || "无法解析该链接"),
+                    "error",
+                  );
+                }
+                return;
+              }
               // 失败时保留输入框内容：用户多半要重试，清掉等于逼他重新粘贴。
               this.showToast("URL上传失败：" + err.message, "error");
             } finally {

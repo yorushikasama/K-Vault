@@ -45,6 +45,22 @@ export async function onRequestPost(context) {
       return jsonResponse({ error: fetched.error }, fetched.status || 502);
     }
 
+    // A share link answers a plain GET with the platform's own page. Saving
+    // those bytes stores a web page that looks like a file — the Node runtime
+    // rejects it with REMOTE_CONTENT_HTML too, and the front end turns that
+    // code into a resolve attempt. An explicit .html/.htm target is the one
+    // deliberate exception.
+    const fetchedContentType = String(fetched.contentType || "").split(";")[0].trim().toLowerCase();
+    if (
+      !isExplicitHtmlTarget(parsedUrl) &&
+      (fetchedContentType === "text/html" || fetchedContentType === "application/xhtml+xml")
+    ) {
+      return jsonResponse(
+        { error: "目标地址返回的是网页，不是文件。分享链接请用视频解析转存。", errorCode: "REMOTE_CONTENT_HTML" },
+        415
+      );
+    }
+
     const arrayBuffer = fetched.arrayBuffer;
     const fileSize = arrayBuffer.byteLength;
     if (!fileSize) {
@@ -201,6 +217,15 @@ function normalizeFolderPath(value) {
     output.push(piece);
   }
   return output.join("/");
+}
+
+/** 显式指向 .html/.htm 的链接算「要抓网页」，只有这种才放行 HTML 响应。 */
+function isExplicitHtmlTarget(parsedUrl) {
+  try {
+    return /\.html?$/i.test(String(parsedUrl && parsedUrl.pathname || ""));
+  } catch {
+    return false;
+  }
 }
 
 function joinStoragePath(folderPath, fileName) {

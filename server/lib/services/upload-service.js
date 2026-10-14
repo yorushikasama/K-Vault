@@ -37,6 +37,49 @@ async function collectStream(stream) {
   return Buffer.concat(chunks);
 }
 
+// A response that is a web page, not a file. Share links answer a plain GET with
+// the platform's own HTML — Douyin does exactly that for /video/<id> — and
+// storing those bytes leaves an entry that looks like a file but is a page.
+// That is how 7696026443508451931.html ended up in the library on 2026-10-14:
+// the link had been classified as a plain direct link and the page itself was
+// saved. See the guard in uploadFromUrl.
+const HTML_CONTENT_TYPE_RE = /^(?:text\/html|application\/xhtml\+xml)$/i;
+// Types that carry no information about the payload, so the bytes get a vote.
+const OPAQUE_CONTENT_TYPE_RE = /^(?:application|binary)\/octet-stream$/i;
+const HTML_HEAD_RE = /^\s*(?:<!doctype\s+html|<html[\s>]|<head[\s>]|<body[\s>])/i;
+
+// The caller's own opt-in: a URL path that ends in .html/.htm is a deliberate
+// request for a page, and only that exempts a response from the guard.
+function isExplicitHtmlTarget(finalUrl) {
+  try {
+    return /\.html?$/i.test(new URL(finalUrl).pathname);
+  } catch {
+    return false;
+  }
+}
+
+function htmlPageError() {
+  const error = new Error(
+    '目标地址返回的是网页（HTML），不是可以保存的文件。请改用视频解析粘贴分享链接，或改贴文件直链。'
+  );
+  error.code = 'REMOTE_CONTENT_HTML';
+  error.status = 415;
+  return error;
+}
+
+// Reads the first bytes of a staged body. Only used to sniff an opaque
+// Content-Type, so a short read is all that is needed.
+async function readHead(filePath, bytes = 512) {
+  const handle = await fsp.open(filePath, 'r');
+  try {
+    const buffer = Buffer.alloc(bytes);
+    const { bytesRead } = await handle.read(buffer, 0, bytes, 0);
+    return buffer.subarray(0, bytesRead).toString('latin1');
+  } finally {
+    await handle.close();
+  }
+}
+
 /**
  * Stages a body whose length is unknown onto disk, enforcing the cap while
  * writing.
@@ -296,6 +339,22 @@ class UploadService {
 
     const contentType = response.headers.get('content-type') || 'application/octet-stream';
 
+    // A share link answers with the platform's own page, and saving it produces
+    // a file that is really a web page. Refuse unless the caller explicitly
+    // asked for an .html target: the front end uses this code to re-route the
+    // URL into yt-dlp resolution instead.
+    const contentTypeBase = String(contentType).split(';')[0].trim().toLowerCase();
+    if (!isExplicitHtmlTarget(finalUrl)) {
+      if (HTML_CONTENT_TYPE_RE.test(contentTypeBase)) {
+        try {
+          await response.body?.cancel();
+        } catch {
+          // Already closed.
+        }
+        throw htmlPageError();
+      }
+    }
+
     // Derive the name from the URL we actually ended up at, not the one we were
     // asked for — after a redirect those differ.
     let fileName = '';
@@ -322,6 +381,14 @@ class UploadService {
       const tempDir = String(this.uploadTempDir || '').trim() || os.tmpdir();
       const staged = await stageBodyToTempFile(response, maxBytes, tooLarge, tempDir);
       try {
+        // A server that mislabels its page as octet-stream would otherwise slip
+        // past the Content-Type check above. Only opaque types get the byte-level
+        // sniff: a declared image/video type is trusted, and re-reading every
+        // import to guess again would be waste.
+        if (!isExplicitHtmlTarget(finalUrl) && OPAQUE_CONTENT_TYPE_RE.test(contentTypeBase)) {
+          const head = await readHead(staged.filePath);
+          if (HTML_HEAD_RE.test(head)) throw htmlPageError();
+        }
         return await this.uploadStream({
           openStream: () => fsSync.createReadStream(staged.filePath),
           fileSize: staged.size,
@@ -345,6 +412,11 @@ class UploadService {
       error.code = 'REMOTE_FILE_EMPTY';
       error.status = 422;
       throw error;
+    }
+
+    // Same byte-level check as the staged branch, for the declared-length path.
+    if (!isExplicitHtmlTarget(finalUrl) && OPAQUE_CONTENT_TYPE_RE.test(contentTypeBase)) {
+      if (HTML_HEAD_RE.test(bytes.subarray(0, 512).toString('latin1'))) throw htmlPageError();
     }
 
     return this.uploadFile({

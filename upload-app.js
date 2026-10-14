@@ -148,6 +148,9 @@
           this._resolveGeneration = 0;
           this._dialogLocked = false;
           this._isDisposed = false;
+          // 能力探测的 promise 缓存（见 upload-media.js 的 loadMediaResolveStatus）：
+          // 提交 URL 前要等它落地，否则分享链接会被判成普通直链。
+          this._mediaResolveStatusPromise = null;
         },
         computed: {
           selectedCount() {

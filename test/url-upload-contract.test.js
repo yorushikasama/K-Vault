@@ -193,6 +193,11 @@ describe('URL upload share-link detection matches the server contract', function
           async openQualityPicker(url) {
             this.pickerOpenedWith = url;
           },
+          // 提交前会等能力探测落地（见 upload-media.js 的 ensureMediaResolveStatus）。
+          // 沙箱里直接视为已就绪，专门测它的用例另建。
+          async ensureMediaResolveStatus() {
+            this.probeAwaited = (this.probeAwaited || 0) + 1;
+          },
           // extractUrlFromText 是同一模块里的真实实现，直接从文件里取出编译，
           // 避免这里再抄一份抽取逻辑。
           extractUrlFromText(text) {
@@ -271,6 +276,63 @@ describe('URL upload share-link detection matches the server contract', function
         /authChecking \|\| this\.urlSubmitting/,
         '提前返回的守卫没有包含 urlSubmitting',
       );
+    });
+
+    it('waits for the capability probe before deciding share-link vs direct', async function () {
+      // 冷启动时探测要跑 yt-dlp 子进程（服务端实测 3.3s），而
+      // isMediaShareLink() 在探测落地前对任何链接都返回 false。不等探测
+      // 就判定，分享链接会被交给普通直链接口，服务端存下的是平台网页。
+      const state = await submit({
+        isShareLink: false,
+        state: { urlToUpload: "https://example.com/file.zip" },
+      });
+      assert.strictEqual(state.probeAwaited, 1, '提交前没有等能力探测落地');
+      assert.ok(
+        uploadFromUrlBody.indexOf('await this.ensureMediaResolveStatus()') < uploadFromUrlBody.indexOf('this.isMediaShareLink(submittedUrl)'),
+        '等待探测必须发生在分享链接判定之前，否则判定拿到的仍是未探测状态',
+      );
+    });
+
+    it('re-routes to resolution when the server says the target is a web page', async function () {
+      // 服务端 uploadFromUrl 对 HTML 响应返回 415 / REMOTE_CONTENT_HTML。
+      // 前端收到这个码必须改走解析 —— 这正是 2026-10-14 那个
+      // 7696026443508451931.html 的修复点：链接被判成直链、服务端抓回网页。
+      const state = await submit({
+        isShareLink: false,
+        state: {
+          urlToUpload: "https://www.douyin.com/video/7696026443508451931",
+          async uploadPlainUrlToServer() {
+            const error = new Error("目标地址返回的是网页，不是文件。");
+            error.code = "REMOTE_CONTENT_HTML";
+            error.status = 415;
+            throw error;
+          },
+        },
+      });
+      assert.strictEqual(
+        state.pickerOpenedWith,
+        "https://www.douyin.com/video/7696026443508451931",
+        '服务端判定为网页后没有改走解析流程，网页会被存成文件',
+      );
+      assert.strictEqual(state.registered, undefined, '网页被登记成了已上传文件');
+      assert.strictEqual(state.urlToUpload, "", '改走解析后输入框应当清空');
+    });
+
+    it('only re-routes on the HTML signal, not on every failure', async function () {
+      // 其它错误仍要留在直链分支并提示，否则一个网络错误也会弹出解析框。
+      const state = await submit({
+        isShareLink: false,
+        state: {
+          urlToUpload: "https://example.com/broken.zip",
+          async uploadPlainUrlToServer() {
+            const error = new Error("远程地址不可达");
+            error.code = "IMPORT_FETCH_FAILED";
+            throw error;
+          },
+        },
+      });
+      assert.strictEqual(state.pickerOpenedWith, undefined, '非 HTML 错误不该触发解析');
+      assert.strictEqual(state.urlToUpload, "https://example.com/broken.zip", '失败时应当保留 URL 供重试');
     });
   });
 });

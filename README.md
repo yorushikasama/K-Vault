@@ -803,6 +803,8 @@ curl -u admin:your_password -X POST http://127.0.0.1:8787/api/resolve-url \
 
 > 说明：`/api/upload-from-url` 与 `/api/resolve-url` 的转存共用同一上限，默认取 `UPLOAD_MAX_SIZE`（部署的实际容量），可用 `URL_IMPORT_MAX_SIZE` 单独指定。最终还会再取一次**目标存储后端**的上限：Telegram 云端 Bot API 50MB、自部署 Bot API（`--local`）可达 2GB、Discord 25MB 等。
 
+> 另：`/api/upload-from-url` 只用于**文件直链**。目标返回 `text/html` 时会以 `415 REMOTE_CONTENT_HTML` 拒绝，不会把网页当成文件存下来——分享链接（抖音/B站等）的页面正是这个类型，应改用 `/api/resolve-url` 解析转存。网页前端收到该错误码会自动改走解析；URL 本身显式以 `.html` / `.htm` 结尾时属于有意抓取网页，仍会正常导入。
+
 ---
 
 ## 所有环境变量参考

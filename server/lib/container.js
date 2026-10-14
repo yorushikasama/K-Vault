@@ -86,6 +86,25 @@ function createContainer(env = process.env) {
     })
     .catch(() => {});
 
+  // Warm the yt-dlp / ffmpeg capability probes once at boot.
+  //
+  // The page's first /api/resolve-url/status call is what decides whether a
+  // pasted link goes to yt-dlp or to the plain URL importer, and on a cold
+  // process that call blocks on several child processes (measured 3.3s on the
+  // live box). A link pasted inside that window used to be misrouted into the
+  // plain importer, which saved the platform's HTML page as a file. Warming in
+  // the background shrinks the window; the front end now awaits the probe as
+  // well, and the importer refuses HTML responses as the last line of defence.
+  //
+  // Production only: every test container would otherwise spawn these probes,
+  // and dev restarts should not pay for a feature the operator may not use.
+  if (config.nodeEnv === 'production' && config.mediaResolve.enabled !== false) {
+    mediaResolveService
+      .getStatus()
+      .then(() => {})
+      .catch(() => {});
+  }
+
   return {
     config,
     db,

@@ -2665,6 +2665,9 @@ function createApp() {
     IMPORT_REMOTE_ERROR: '目标地址响应异常。',
     FILE_TOO_LARGE: '远程文件超过大小限制。',
     REMOTE_FILE_EMPTY: '目标地址返回了空文件。',
+    // A share link answers with the platform's page; saving it would store a web
+    // page as a file. The client turns this code into a resolve attempt.
+    REMOTE_CONTENT_HTML: '目标地址返回的是网页，不是文件。分享链接请用视频解析转存。',
   };
 
   app.post('/api/upload-from-url', async (c) => {
