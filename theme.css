@@ -170,8 +170,7 @@ html[data-theme="dark"] .batch-links {
   color: var(--ui-ink) !important;
   border-color: var(--ui-line) !important;
 }
-html[data-theme="dark"] .stats-bar,
-html[data-theme="dark"] .guest-notice {
+html[data-theme="dark"] .stats-bar {
   background: var(--ui-surface-raised) !important;
   border-color: var(--ui-line) !important;
 }
@@ -193,7 +192,6 @@ html[data-theme="dark"] .el-dialog__title {
 
 html[data-theme="dark"] .upload-hint,
 html[data-theme="dark"] .subtitle,
-html[data-theme="dark"] .file-size,
 html[data-theme="dark"] .result-item-link,
 html[data-theme="dark"] .upload-item-size,
 html[data-theme="dark"] .stat-item,
@@ -653,7 +651,6 @@ html[data-theme="dark"] .ui-bg-noise-layer {
 .list-view-card,
 .search-card,
 .stats,
-.guest-notice,
 .storage-target,
 .upload-item,
 .result-item,
@@ -739,8 +736,7 @@ html[data-theme="dark"] .gallery-theme-toggle i,
 html[data-theme="dark"] .gallery-theme-toggle svg.lucide {
   color: var(--ui-brand) !important;
 }
-html[data-theme="dark"] .stats-bar,
-html[data-theme="dark"] .guest-notice {
+html[data-theme="dark"] .stats-bar {
   background: color-mix(
     in srgb,
     var(--ui-surface) calc(var(--ui-card-opacity) * 100%),

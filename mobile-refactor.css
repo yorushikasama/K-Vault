@@ -156,10 +156,6 @@ html[data-theme="dark"] {
     padding: 16px !important;
   }
 
-  .card-header {
-    margin-bottom: 14px !important;
-  }
-
   .upload-icon {
     font-size: 2.65em !important;
     margin-bottom: 12px !important;

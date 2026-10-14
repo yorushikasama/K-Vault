@@ -17,7 +17,13 @@
  * 在那次迁移里全是「只删不加」（删除行数 > 0 且新增行数 = 0），
  * 也就是确实存在过、被显式替换掉了，而不是本来就从没用过。
  *
- * .nav-links 明明同样搜不到 HTML 引用，这里却没有删：theme-core.js:120
+ * 死因三（2026-10-13 核实）：index.css 的窄屏块（768px / 480px）里还有
+ * 一批类名，workbench 外壳接管上传页之后就没有任何元素再带它们了。
+ * 判定依据是逐个核「加载 index.css 的两个页面（index.html / admin.html）
+ * 的静态 class + 全站 JS 的 classList/拼接引用」，全部为零命中，
+ * 且都不带 :is() / :not() 变体。
+ *
+ * .nav-links 明明同样搜不到 HTML 引用，这里却没有删：theme-core.js:130
  * 有 `document.querySelector(".header .nav-links")`，一旦将来补上匹配的
  * 标记就会真的把主题按钮插进去，删了样式等于埋一个看不见的坑。
  * 这正是 docs/dead-code-boundaries.md 说的「只能证明没引用的一律留」。
@@ -49,7 +55,26 @@ const DEAD_CLASSES = [
   'theme-toggle-btn',
   'compress-mode-btn',
   'preview-stage',
-  // 注意：.nav-links 不在此列——theme-core.js 会在运行时按这个类名找元素。
+  // 2026-10-13 核实：index.css 窄屏块里已无元素会带的类名
+  'card-header',
+  'file-item',
+  'file-preview',
+  'file-actions',
+  'file-size',
+  'folder-action-row',
+  'folder-action-btn',
+  'folder-reset-btn',
+  'folder-target-row',
+  'progress-bar',
+  'progress-info',
+  'storage-label',
+  'compress-confirm-header',
+  'image-compress-head',
+  'guest-notice',
+  // 注意两处刻意不删：
+  // .nav-links —— theme-core.js:130 按这个类名查元素并插入主题按钮；
+  // .header-title —— 与 .header 同属旧版外壳形态，一并清掉会让将来
+  //   补回该标记的页面缺样式。
 ];
 
 // index.css 也有同样一批死规则（workbench 接管后没人再加载它的那部分功能）。

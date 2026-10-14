@@ -250,15 +250,6 @@
         opacity: 0.7;
       }
 
-      .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 24px;
-        flex-wrap: wrap;
-        gap: 12px;
-      }
-
       .upload-icon {
         font-size: 4em;
         color: var(--primary-light);
@@ -302,12 +293,6 @@
         font-size: 1em;
       }
 
-      .storage-label {
-        font-size: 0.9em;
-        color: var(--text-secondary);
-        font-weight: 500;
-      }
-
       .storage-options {
         display: flex;
         gap: 8px;
@@ -349,72 +334,6 @@
         color: var(--primary-color);
         font-size: 0.84em;
         font-weight: 600;
-      }
-
-      .folder-target-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .folder-target-row input {
-        flex: 1 1 260px;
-        min-width: 0;
-        border: 1px solid var(--input-border);
-        border-radius: var(--radius-sm);
-        background: var(--surface-1);
-        color: var(--text-primary);
-        padding: 12px 14px;
-        font-size: 0.92em;
-      }
-
-      .folder-target-row input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-brand) 12%, transparent);
-      }
-
-      .folder-action-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .folder-reset-btn,
-      .folder-action-btn {
-        border: 1px solid color-mix(in srgb, var(--ui-brand) 18%, transparent);
-        border-radius: var(--radius-sm);
-        background: var(--surface-1);
-        color: var(--primary-color);
-        padding: 11px 16px;
-        cursor: pointer;
-        font-weight: 600;
-        transition: var(--transition);
-      }
-
-      .folder-action-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 7px;
-      }
-
-      .folder-action-btn.is-primary {
-        background: var(--primary-color);
-        border-color: var(--primary-color);
-        color: #ffffff;
-      }
-
-      .folder-action-btn:disabled {
-        opacity: 0.55;
-        cursor: not-allowed;
-      }
-
-      .folder-reset-btn:hover,
-      .folder-action-btn:hover:not(:disabled) {
-        border-color: var(--primary-color);
       }
 
       .folder-picker-list {
@@ -502,13 +421,6 @@
 
       .image-compress-panel.is-collapsed {
         padding-block: 12px;
-      }
-
-      .image-compress-head {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 14px;
       }
 
       .image-compress-title {
@@ -1134,14 +1046,6 @@
         padding: 24px;
       }
 
-      .compress-confirm-header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 14px;
-        margin-bottom: 18px;
-      }
-
       .compress-confirm-title {
         display: flex;
         align-items: center;
@@ -1504,38 +1408,12 @@
           border-radius: 14px;
         }
 
-        .card-header {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 8px;
-        }
-
         .main-container {
           gap: 16px;
         }
 
-        .folder-target-row {
-          flex-direction: column;
-          align-items: stretch;
-        }
-
-        .folder-action-row {
-          width: 100%;
-        }
-
-        .folder-reset-btn,
-        .folder-action-btn {
-          width: 100%;
-        }
-
         .folder-create-row {
           grid-template-columns: 1fr;
-        }
-
-        .image-compress-head,
-        .compress-confirm-header {
-          flex-direction: column;
-          align-items: stretch;
         }
 
         .compress-format-grid,
@@ -1549,22 +1427,8 @@
           justify-content: center;
         }
 
-        /* 文件列表优化 */
-        .file-item {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 10px;
-        }
-
         .file-info {
           width: 100%;
-        }
-
-        .file-actions {
-          width: 100%;
-          justify-content: flex-start;
-          flex-wrap: wrap;
-          gap: 8px;
         }
 
       }
@@ -1612,14 +1476,6 @@
           border-radius: 12px;
         }
 
-        .card-header {
-          margin-bottom: 16px;
-        }
-
-        .storage-label {
-          font-size: 0.85em;
-        }
-
         .storage-options {
           gap: 6px;
         }
@@ -1630,32 +1486,8 @@
           border-radius: var(--ui-radius-control);
         }
 
-        /* 文件项优化 */
-        .file-item {
-          padding: 12px;
-          border-radius: 10px;
-        }
-
-        .file-preview {
-          width: 50px;
-          height: 50px;
-        }
-
         .file-name {
           font-size: 0.88em;
-        }
-
-        .file-size {
-          font-size: 0.75em;
-        }
-
-        /* 进度条优化 */
-        .progress-bar {
-          height: 4px;
-        }
-
-        .progress-info {
-          font-size: 0.78em;
         }
 
         .paste-upload-notice {
@@ -1680,28 +1512,6 @@
           -webkit-backdrop-filter: none;
           background: var(--card-bg);
         }
-      }
-
-      /* 访客模式提示条 */
-      .guest-notice {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        padding: 12px 24px;
-        background: rgba(230, 162, 60, 0.15);
-        border: 1px solid rgba(230, 162, 60, 0.4);
-        border-radius: var(--radius-md);
-        margin-bottom: 20px;
-        font-size: 0.9em;
-        color: var(--warning-text-color);
-        font-weight: 500;
-      }
-
-            .guest-notice i,
-      .guest-notice svg.lucide {
-        font-size: 1.1em;
-        color: var(--warning-color);
       }
 
       /* 用户偏好减少动画 */
