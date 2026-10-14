@@ -16,6 +16,10 @@ const path = require('node:path');
  *      20px 高的页脚链接、28px 的分页按钮、30px 的品牌 logo。
  *   4. el-message 硬编码 min-width:380px —— 320px 屏上左边被裁掉；
  *      它还用 left:50% + translateX(-50%) 定位，只改 left 会把它推更远。
+ *   5. 上传行的长文件名 —— 320px 视口下「缩略图 + 文件名 + 图标按钮」
+ *      单行 flex 把文件名区挤到 14px，90 字符的文件名逐字折行、单行高
+ *      1680px，一行记录顶掉整屏。同一批的 .upload-file-meta 也没有
+ *      overflow-wrap，无空格的长目录名横向溢出到边框外。
  *
  * 另有一批同类断言曾挂在 webdav.css 上（单列 grid 裸 1fr、.file-picker
  * 缺 min-width:0、.upload-file-row 没有 flex-wrap）。那个页面与后端功能
@@ -33,6 +37,61 @@ describe('mobile layout contract', function () {
       const m = /\.upload-storage-options\s*\{[^}]*grid-template-columns:\s*([^;]+);/.exec(css);
       assert.ok(m, '找不到 .upload-storage-options 的网格定义');
       assert.match(m[1], /minmax\(0,\s*1fr\)/, '存储目标网格用了裸 1fr，长站点名会把轨道撑开');
+    });
+
+    it('gives the upload file rows a two-row grid on narrow screens', function () {
+      // 长文件名实测：320px 视口下，原来「缩略图 + 文件名 + 图标按钮」
+      // 单行 flex 把 .upload-file-info 挤到 14px 宽，90 字符的文件名按
+      // overflow-wrap 逐字折行，单行高 1680px，一行记录顶掉整屏。
+      // 断点取 768：768 以上一行放得下，而铺满的按钮会被拉到 203px 宽
+      // （实测），不该让这条为窄屏写的规则去改桌面排版。
+      const css = read('workbench.css');
+      const block = /@media \(max-width: 768px\)\s*\{\s*\.kv-workbench :is\(\.upload-result-row[\s\S]*?\.upload-row-actions \.btn\s*\{/.exec(css);
+      assert.ok(block, 'workbench.css 没有「窄屏下上传行改两行网格」的 768px 媒体查询');
+
+      const rows = block[0];
+      assert.match(
+        rows,
+        /\.upload-result-row,\s*\.upload-history-row\)\s*\{[^}]*display:\s*grid/,
+        '结果/历史行在窄屏没有改成网格'
+      );
+      assert.match(rows, /\.upload-task-row\s*\{[^}]*display:\s*grid/, '队列行在窄屏没有改成网格');
+
+      // 三个子项都要有 grid-area，否则自动摆放会落进第一行的文件名列。
+      for (const area of ['select', 'thumb', 'info', 'actions']) {
+        assert.match(
+          rows,
+          new RegExp(`grid-area:\\s*${area}\\b`),
+          `窄屏上传行没有给 ${area} 指定 grid-area，自动摆放会和文件名抢同一格`
+        );
+      }
+
+      // 三列都必须是 auto 或 minmax(0, 1fr)：裸 1fr 会被 nowrap 内容顶开，
+      // 这正是上面那个 1fr 断言要防的同一个坑，网格版本同样适用。
+      for (const m of rows.matchAll(/grid-template-columns:\s*([^;]+);/g)) {
+        const value = m[1];
+        for (const track of value.trim().split(/\s+(?![^(]*\))/)) {
+          assert.ok(
+            track === 'auto' || /minmax\(0,\s*1fr\)/.test(track),
+            `窄屏上传行的轨道「${track}」既不是 auto 也不是 minmax(0, 1fr)，会被内容顶开`
+          );
+        }
+      }
+    });
+
+    it('lets long paths wrap in the file row metadata line', function () {
+      // .upload-file-meta 拼的是「大小 · 存储目标 · 目录路径」。目录名由
+      // 用户自建，可能整段没有空格也不带连字符，overflow-wrap: normal
+      // 不会断它 —— 实测该行 scrollWidth 82px / clientWidth 35px，
+      // 文字横向溢出到边框外。
+      const css = read('workbench.css');
+      const m = /\.upload-muted, \.upload-file-meta\)\s*\{([^}]*)\}/.exec(css);
+      assert.ok(m, '找不到 .upload-file-meta 的基础规则');
+      assert.match(
+        m[1],
+        /overflow-wrap:\s*anywhere/,
+        '.upload-file-meta 没有 overflow-wrap: anywhere，无空格的长目录名会横向溢出'
+      );
     });
   });
 

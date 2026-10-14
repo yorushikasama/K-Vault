@@ -48,7 +48,10 @@
 .kv-workbench .upload-sr-only, .kv-workbench .files-search-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .kv-workbench .upload-skip-link { position: fixed; top: 8px; left: 12px; z-index: 12000; transform: translateY(-160%); background: var(--wb-surface); color: var(--wb-ink); border: 1px solid var(--wb-border); padding: 10px 16px; }
 .kv-workbench .upload-skip-link:focus { transform: none; }
-.kv-workbench :is(.upload-muted, .upload-file-meta) { color: var(--wb-muted); font-size: .8125rem; line-height: 1.6; }
+/* overflow-wrap: anywhere 是必需的，不是保险：路径片段（尤其是用户自建的
+   目录名）可能整段没有空格也不带连字符，默认的 overflow-wrap: normal
+   不会断它，长路径会把所在列横向顶出边框。 */
+.kv-workbench :is(.upload-muted, .upload-file-meta) { color: var(--wb-muted); font-size: .8125rem; line-height: 1.6; overflow-wrap: anywhere; }
 .kv-workbench :is(.upload-error, .upload-notice-error, .files-error) { color: var(--wb-danger); }
 /* 按钮的视觉定义已统一到 ui-buttons.css。这里只留下首页特有的约束：
    列表里的按钮要能截断长文件名，以及文案型按钮（带下划线、无边框）——
@@ -122,6 +125,12 @@
 .kv-workbench .upload-thumb { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; padding: 0; border: 1px solid var(--wb-border); border-radius: var(--radius-sm); overflow: hidden; color: var(--wb-muted); background: var(--wb-subtle); }
 .kv-workbench .upload-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .kv-workbench .upload-thumb .kv-icon { width: 24px; height: 24px; }
+/* 这一列是行里唯一可被压缩的项：flex:1 + min-width:0。
+   窄屏下同一条 flex 行上的缩略图（48px）与图标按钮（窄屏 44px）都标了
+   flex-shrink:0，它们各自的尺寸是设计值，不能让给文件名。
+   overflow-wrap: anywhere 是必需的，不是保险：用户自建的目录名可能整段
+   没有空格也不带连字符，默认的 overflow-wrap: normal 不会断它。
+   900px 断点下这三行改为两行网格，文件名独占整行，不再与按钮争宽度。 */
 .kv-workbench .upload-file-info { flex: 1; min-width: 0; }
 .kv-workbench .upload-file-name { display: block; font-weight: 600; overflow-wrap: anywhere; }
 .kv-workbench .upload-file-link { display: block; max-width: 100%; padding: 4px 0; border: 0; background: transparent; color: var(--wb-accent-ink); text-overflow: ellipsis; overflow: hidden; white-space: nowrap; font-size: 13px; text-align: left; }
@@ -232,6 +241,64 @@
   }
   .kv-workbench .upload-field-row > input { grid-column: 1 / -1; width: 100%; min-height: 44px; }
   .kv-workbench .upload-field-row > .btn { min-height: 44px; justify-content: center; }
+
+  /* 任务 / 结果 / 历史行改用两行网格，文件名独占第一行。
+     这是实测出来的：原来三者是同一条 flex 行，.upload-file-info 的 flex:1
+     要和两排图标按钮（窄屏下每个 44px 起）抢同一份宽度，而 flex 的
+     min-width:auto 让它不会被压到 0 以下 —— 于是一个 90 字符的文件名把
+     文件名区挤到 14px（320px 视口实测），文字被压成每行一两个字符，
+     单行高 1680px，一行记录顶掉整屏。min-width:0 已经在基类里，压缩本身
+     不算 bug，但把文件名挤到 14px 同样不可用：既看不清也点不准那一列。
+     两侧用 auto（内容决定宽度），只有中间的 minmax(0, 1fr) 可压缩 ——
+     这与 flex 里 min-width:0 配 flex-shrink:0 是同一个道理，
+     全裸 1fr 会重演上面那个坑。
+     断点取 768 而不是本块外层的 900px：两行布局是为「文件名 + 按钮
+     挤在一行」准备的，768px 以上一行的宽度本来就够，而铺满的按钮在
+     900px 上会被拉到 247px 宽（实测），变成三个巨大的方块 —— 那是桌面
+     排版，不该由这条为窄屏写的规则来改。 */
+  @media (max-width: 768px) {
+  .kv-workbench :is(.upload-result-row, .upload-history-row) {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-areas:
+      "select thumb info"
+      "select thumb actions";
+    column-gap: 10px;
+    row-gap: 10px;
+    align-items: center;
+  }
+  /* 选择框跨两行，与缩略图一样顶对齐：不居中的话它会落在整块的两行中间，
+     离文件名和缩略图都有一段距离，看不出它选的是哪一行。 */
+  .kv-workbench :is(.upload-result-row, .upload-history-row) > .upload-select-control { grid-area: select; align-self: start; }
+  .kv-workbench :is(.upload-result-row, .upload-history-row) > .upload-thumb { grid-area: thumb; align-self: start; }
+  .kv-workbench :is(.upload-result-row, .upload-history-row) > .upload-file-info { grid-area: info; }
+  .kv-workbench :is(.upload-result-row, .upload-history-row) > .upload-row-actions { grid-area: actions; }
+
+  /* 队列行没有选择框；多出来的状态文字与「重试」按钮归到第二行。
+     状态整行铺开、按钮靠右，窄屏下不再和文件名抢同一行的宽度。 */
+  .kv-workbench .upload-task-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "thumb info info"
+      "state state actions";
+    column-gap: 10px;
+    row-gap: 10px;
+    align-items: center;
+  }
+  .kv-workbench .upload-task-row > .upload-thumb { grid-area: thumb; align-self: start; }
+  .kv-workbench .upload-task-row > .upload-file-info { grid-area: info; }
+  .kv-workbench .upload-task-row > .upload-task-state { grid-area: state; }
+  .kv-workbench .upload-task-row > .btn { grid-area: actions; justify-self: end; }
+
+  /* 第二行的图标按钮铺满可用宽度：多出来的空间给按钮而不是留白，
+     指头落点更大，也不会在长名下被挤成窄条。
+     max-width 不能省：767px 上铺满的按钮会被拉到 203px 宽、变成三个
+     大方块（实测）。放宽触摸目标和做成巨型按钮是两回事，88px 足够
+     好按，再宽只是留白。 */
+  .kv-workbench .upload-row-actions { display: flex; justify-content: flex-start; gap: 8px; }
+  .kv-workbench .upload-row-actions .btn { flex: 1 1 0; min-width: 44px; max-width: 88px; justify-content: center; }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
