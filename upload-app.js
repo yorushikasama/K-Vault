@@ -448,6 +448,19 @@
               this.assertUploadActive(item, signal);
               const result = Array.isArray(data) ? data[0] : data;
               if (!response.ok || result?.success === false || result?.error) {
+                // 会话过期是这个页面最常见的失败，而且原始文案完全指不出
+                // 真因：服务端对未登录的转存回的是
+                // 「Guest upload disabled. Please login first.」（HTTP 401），
+                // 那是访客策略的话术，用户会以为自己被当成访客，而不是
+                // 「你昨天登录的那个会话今天到期了」。实测 2026-10-15：
+                // 用户连点 4 次转存全是这个 401，看不出该重新登录。
+                // 换成人话，并直接把他送去登录页。
+                if (response.status === 401) {
+                  const expired = new Error("登录状态已过期，请重新登录后再转存。");
+                  expired.status = 401;
+                  expired.unauthorized = true;
+                  throw expired;
+                }
                 const detail = result?.errorDetail || result?.error;
                 const error = new Error(typeof detail === "string" ? detail : `请求失败（HTTP ${response.status}）`);
                 error.status = response.status;
@@ -1343,6 +1356,9 @@
                   this.qualityPicker.error = item.error;
                 }
                 this.showToast(`${item.name}：${item.error}`, "error");
+                // 会话过期时继续排队毫无意义：后面每一项都会以同样的 401
+                // 失败，用户看到的却是一屏重复报错。停下列队并把人送去登录。
+                if (error.unauthorized) this.redirectToLogin();
               }
             } finally {
               this._taskControllers.delete(item.id);

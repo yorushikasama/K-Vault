@@ -213,7 +213,14 @@
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ username, password })
+          // 记住登录状态：勾上给 30 天会话，不勾是随浏览器关闭而失效的
+          // 会话 cookie。此前这个复选框没有随请求发出，服务端也没读 ——
+          // 勾不勾都是 24 小时，于是「记住了」第二天照样被踢回登录页。
+          body: JSON.stringify({
+            username,
+            password,
+            remember: document.getElementById('remember').checked,
+          })
         });
         
         const data = await response.json();

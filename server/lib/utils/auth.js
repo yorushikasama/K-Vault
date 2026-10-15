@@ -52,9 +52,17 @@ class AuthService {
     return null;
   }
 
-  createSession(userName) {
+  createSession(userName, { remember = false } = {}) {
     const now = Date.now();
-    const expiresAt = now + this.config.sessionDurationMs;
+    // 「记住登录状态」勾上就给长效会话，没勾仍是默认时长。服务端记录
+    // remember 而不是只在 cookie 上写 Max-Age：浏览器里那份 Max-Age 只是
+    // 客户端的副本，DB 里的 expires_at 才是服务端真正的判定依据（getSession
+    // 只看后者）。只改 cookie 会话在服务端照样过期，而浏览器还留着 cookie，
+    // 表现就是「明明记住登录了，却一直被踢回登录页」。
+    const durationMs = remember
+      ? Math.max(this.config.sessionDurationMs, this.config.rememberedSessionDurationMs)
+      : this.config.sessionDurationMs;
+    const expiresAt = now + durationMs;
     const token = this.generateToken();
 
     run(
@@ -88,9 +96,13 @@ class AuthService {
     return cookies[this.config.sessionCookieName] || cookies[LEGACY_COOKIE_NAME] || null;
   }
 
-  createSessionCookie(token) {
-    const maxAge = Math.floor(this.config.sessionDurationMs / 1000);
-    return `${this.config.sessionCookieName}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}`;
+  createSessionCookie(token, expiresAt = 0) {
+    const base = `${this.config.sessionCookieName}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Strict`;
+    // 会话 cookie（不勾「记住登录状态」）：不给 Max-Age，让它在浏览器关闭时
+    // 一起消失；勾了则按服务端 expires_at 写到那一天为止，两者一致。
+    if (!expiresAt) return base;
+    const maxAge = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+    return `${base}; Max-Age=${maxAge}`;
   }
 
   createClearSessionCookies() {

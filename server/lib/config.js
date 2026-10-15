@@ -131,6 +131,13 @@ function loadConfig(env = process.env) {
     basicPass: normalizeEnvString(env.BASIC_PASS),
     sessionCookieName: normalizeEnvString(env.SESSION_COOKIE_NAME, 'k_vault_session'),
     sessionDurationMs: toInt(env.SESSION_DURATION_MS, 24 * 60 * 60 * 1000),
+    // 勾「记住登录状态」时的会话时长，默认 30 天。原先那个复选框是摆设
+    // （登录请求根本没读它），勾了也会在 24 小时后被踢回登录页 ——
+    // 实测 2026-10-15：用户连着 4 次转存全部 401，错误文案是
+    // 「Guest upload disabled. Please login first.」，既不提示重新登录，
+    // 勾了「记住我」也没用。默认 30 天是「记住」的合理解释；想更久可以
+    // 用 SESSION_REMEMBERED_DURATION_MS 覆盖，设 0 则退回 24 小时。
+    rememberedSessionDurationMs: toInt(env.SESSION_REMEMBERED_DURATION_MS, 30 * 24 * 60 * 60 * 1000),
 
     guestUploadEnabled: toBool(env.GUEST_UPLOAD, false),
     guestMaxFileSize: toInt(env.GUEST_MAX_FILE_SIZE, 5 * 1024 * 1024),

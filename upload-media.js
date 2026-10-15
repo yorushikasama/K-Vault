@@ -122,6 +122,15 @@
 
             const data = await response.json();
             if (!response.ok) {
+              // 401 = 会话过期。原文案是访客策略的话术（"Guest upload
+              // disabled. Please login first."），用户看不出该重新登录，
+              // 只会反复重试同一件必然失败的事。
+              if (response.status === 401) {
+                const expired = new Error("登录状态已过期，请重新登录后再转存。");
+                expired.status = 401;
+                expired.unauthorized = true;
+                throw expired;
+              }
               throw new Error(data.errorDetail || data.error || "视频解析失败");
             }
             return data;
@@ -184,6 +193,14 @@
               this.stopUrlTicker();
               this.qualityPicker.visible = false;
               this.qualityPicker.loading = false;
+              // 会话过期：光弹一句 toast 不够，用户不知道下一步该做什么，
+              // 只会继续重试同一件必然失败的事（实测 2026-10-15 连点 4 次
+              // 全部 401）。直接把人送去登录页，登录完再回来。
+              if (err && err.unauthorized) {
+                this.showToast(err.message, "error");
+                this.redirectToLogin();
+                return;
+              }
               this.showToast("解析失败：" + err.message, "error");
               return;
             }
@@ -306,6 +323,15 @@
 
             const data = await response.json();
             if (!response.ok) {
+              // 401 是会话过期，不是「上传失败」。原文案是访客策略的话术
+              // （"Guest upload disabled. Please login first."），用户看不出
+              // 该重新登录，只会反复重试同一件必然失败的事。
+              if (response.status === 401) {
+                const expired = new Error("登录状态已过期，请重新登录后再上传。");
+                expired.status = 401;
+                expired.unauthorized = true;
+                throw expired;
+              }
               const error = new Error(data.errorDetail || data.error || "上传失败");
               // 错误码必须带上：REMOTE_CONTENT_HTML 是「这条链接其实是网页」
               // 的信号，uploadFromUrl 靠它改走解析。
@@ -314,6 +340,16 @@
               throw error;
             }
             return data;
+          },
+
+          // 会话过期时把人送去登录页，登录完按 redirect 回到当前页，
+          // 正在转存的那条链接不会因此丢失。带上 pathname + search，
+          // 与 upload-app.js 里 auth 检查失败时的跳转保持一致。
+          redirectToLogin() {
+            const back =
+              window.location.pathname + window.location.search;
+            window.location.href =
+              "/login.html?redirect=" + encodeURIComponent(back);
           },
           // 抖音等平台的"复制链接"给的是整段分享文案，形如
           //   "0.71 复制打开抖音，看看【…】… https://v.douyin.com/xxxx/ 12/12 …"

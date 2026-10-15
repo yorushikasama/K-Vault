@@ -1320,10 +1320,19 @@ function createApp() {
       );
     }
 
-    const session = authService.createSession(username);
-    c.header('Set-Cookie', authService.createSessionCookie(session.token));
+    // 「记住登录状态」此前是个摆设：login.html 里有复选框，提交时却没带上，
+    // 这里也没读 —— 勾不勾都是 24 小时会话，勾了的人照样第二天被踢回登录页。
+    // 只认显式的 true/false，不把任意真值当「记住」，避免字符串 "false"
+    // 被当成勾选。
+    const rememberRaw = body.remember ?? body.rememberMe ?? body.stayLoggedIn;
+    const remember = rememberRaw === true || rememberRaw === 'true' || rememberRaw === 1;
 
-    return c.json({ success: true, message: 'Login successful.' });
+    const session = authService.createSession(username, { remember });
+    // Cookie 的 Max-Age 与服务端 expires_at 用同一个值，否则浏览器手里的
+    // 副本和服务端的判定会各走各的（曾经就是这个偏差：cookie 还在、DB 已过期）。
+    c.header('Set-Cookie', authService.createSessionCookie(session.token, remember ? session.expiresAt : 0));
+
+    return c.json({ success: true, message: 'Login successful.', remember });
   });
 
   app.post('/api/auth/logout', (c) => {
