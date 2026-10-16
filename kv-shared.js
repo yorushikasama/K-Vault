@@ -251,6 +251,67 @@
       .catch(function () { return true; });
   }
 
+  /**
+   * 退出登录。四个分区页共用这一个实现。
+   *
+   * 此前每页各写一份，四份的行为还不一样：上传 / 图库 / 视频三页用
+   * location.href 跳转，会在历史里留下一条记录——退出后按浏览器「后退」
+   * 会弹回刚退出的页面、再被认证守卫送回登录页，来回弹一次；文件页用
+   * location.replace（正确的那个），但额外做了一次无差别的
+   * sessionStorage.clear()，把整个源下的会话存储清空，包括别的页面存在
+   * 里面的状态。
+   *
+   * 现在统一成 replace + 提示 + 只清自己的 key + 顺手作废浏览器缓存的
+   * Basic 凭据（那一步原先只有文件页有）。
+   *
+   * opts.message   退出前提示的文案
+   * opts.loginPath 登录页地址（默认 ./login.html）
+   * opts.clearKeys  额外要清的 localStorage / sessionStorage key（两边都清）
+   * opts.onBeforeLogout 跳转前的清理钩子（页面要清自己的内存态时用）
+   */
+  function logout(options) {
+    var opts = options || {};
+    var loginPath = opts.loginPath || "./login.html";
+    var extraKeys = opts.clearKeys || [];
+
+    if (typeof opts.onBeforeLogout === "function") {
+      try { opts.onBeforeLogout(); } catch (e) {}
+    }
+
+    var clearKeys = function (storage, keys) {
+      for (var i = 0; i < keys.length; i++) {
+        try { storage.removeItem(keys[i]); } catch (e) {}
+      }
+    };
+    clearKeys(window.localStorage, extraKeys);
+    clearKeys(window.sessionStorage, extraKeys);
+
+    // 服务端清 cookie。失败也照跳：会话 cookie 没了，退出与否一样进不去，
+    // 而停在这一页只会让人对着一个已经失效的界面重复点。
+    return fetch("/api/auth/logout", { method: "POST", credentials: "include" })
+      .catch(function () {})
+      .then(function () {
+        // 浏览器会缓存 Basic 凭据，而 checkAuthentication 仍然认它——只删
+        // 会话 cookie 的话，用 Basic 登录的人退出后照样进得来。用一个**错的**
+        // 凭据打一次受保护接口，把浏览器手里那份换成废的（原本只有文件页做
+        // 这一步，另外三页退出后按后退键就能重新拿到身份）。
+        return fetch("/api/manage/list", {
+          method: "GET",
+          credentials: "include",
+          headers: { Authorization: "Basic " + btoa("logout:logout") },
+        }).catch(function () {});
+      })
+      .then(function () {
+        if (opts.message && window.KVShared && typeof window.KVShared.toast === "function") {
+          window.KVShared.toast(opts.message, "success");
+        }
+        // 给提示留一拍时间渲染，再离开页面
+        window.setTimeout(function () {
+          window.location.replace(loginPath);
+        }, opts.delayMs == null ? 350 : opts.delayMs);
+      });
+  }
+
   // ---------- 预览目标判定 ----------
 
   var PREVIEW_PAGE = "/preview.html";
@@ -449,6 +510,7 @@
     downloadFile: downloadFile,
     normalizeFolderPath: normalizeFolderPath,
     ensureAuth: ensureAuth,
+    logout: logout,
     buildPreviewTarget: buildPreviewTarget,
     isImageName: isImageName,
     isViewableImage: isViewableImage,

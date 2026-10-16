@@ -9,17 +9,18 @@
     <link rel="shortcut icon" href="/favicon.ico">
   <!-- Vue 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <link rel="stylesheet" href="/theme.css?v=13722e5403">
+  <link rel="stylesheet" href="/theme.css?v=3a987794a8">
   <script src="/theme-core.js?v=0df3ba0224"></script>
   <script src="/accent-color.js?v=35dbe085ce"></script>
   <script defer src="/theme-effects.js?v=f32f70568d"></script>
     <link rel="stylesheet" href="/ui-buttons.css?v=55f77f600e">
     <!-- 应用外壳（顶栏）各分区页共用，因此排在页面私有样式之前：
          上传/文件/图库/视频的顶栏必须逐字一样，页面样式只负责内容区。 -->
-    <link rel="stylesheet" href="/app-shell.css?v=2163c4e540">
+    <link rel="stylesheet" href="/app-shell.css?v=5b3d173054">
+    <link rel="stylesheet" href="/shell-panels.css?v=eae6725420">
     <link rel="stylesheet" href="/index.css?v=edcc50eb9b">
-<script src="/kv-shared.js?v=c7a66484c9"></script>
-    <link rel="stylesheet" href="/workbench.css?v=e7190c0817">
+<script src="/kv-shared.js?v=f480f6145a"></script>
+    <link rel="stylesheet" href="/workbench.css?v=291aa6be12">
   </head>
   <body class="kv-workbench kv-upload">
     <div id="app" v-cloak>
@@ -44,9 +45,9 @@
             <i data-lucide="moon" data-theme-icon></i>
             <span data-theme-label>夜间</span>
           </button>
-          <button type="button" class="workspace-tool" @click="handleLogout" v-if="isAuthenticated">
-            <kv-icon name="log-out"></kv-icon><span>退出</span>
-          </button>
+          <button type="button" class="workspace-tool workspace-tool-icon" data-shell-tool="connection" title="系统连接状态" aria-label="系统连接状态"><i data-lucide="activity"></i></button>
+          <button type="button" class="workspace-tool workspace-tool-icon" data-shell-tool="design" title="UI 设计设置" aria-label="UI 设计设置"><i data-lucide="palette"></i></button>
+          <button type="button" class="workspace-tool" data-shell-logout title="退出登录" aria-label="退出登录" v-if="isAuthenticated"><i data-lucide="log-out"></i><span>退出</span></button>
         </div>
       </header>
 
@@ -582,10 +583,11 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js" integrity="sha384-ULpZhk1pvhc/UK5ktA9kwb2guy9ovNSTyxPNHANnA35YjBQgdwI+AhLkixDvdlw4" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="/icons-subset.js?v=1ab0ddfccc"></script>
+    <script src="/icons-subset.js?v=5d9a5603cc"></script>
     <script src="/icons.js?v=fc3fc216e0"></script>
+    <script src="/shell-tools.js?v=604b33add4"></script>
 <script src="/upload-media.js?v=038e425b3d"></script>
     <script src="/upload-image.js?v=5a8bb21341"></script>
-    <script src="/upload-app.js?v=963d49fbf1"></script>
+    <script src="/upload-app.js?v=b20a6d3840"></script>
 </body>
 </html>

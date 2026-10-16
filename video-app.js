@@ -16,17 +16,8 @@
  * 一致」的部分由 test/video-gallery-parity.test.js 钉住。
  */
 (function () {
-  // 顶栏的退出按钮。与 gallery-app.js 同一机制：外壳由 theme-core.js 维护，
-  // 页面脚本只补它管不到的那个动作。
-  (function () {
-    var logoutBtn = document.getElementById('logoutBtn');
-    if (!logoutBtn) return;
-    logoutBtn.addEventListener('click', function () {
-      fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-        .catch(function () { /* 忽略：下面照样跳转，别把用户困在已登出的页面 */ })
-        .then(function () { window.location.href = '/login.html'; });
-    });
-  })();
+  // 顶栏的退出按钮由 shell-tools.js 绑定（四个分区页共用 KVShared.logout），
+  // 与 gallery-app.js 同一机制：页面脚本只补外壳管不到的动作，本页没有。
 
   new Vue({
     el: '#app',

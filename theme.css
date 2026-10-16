@@ -105,6 +105,22 @@ html[data-theme="light"] {
   color-scheme: light;
 }
 
+/* 滚动条位置固定占位。
+   四个分区页的内容高度不一样：文件页和上传页要滚，图库页和视频页常常
+   一屏放得下。有滚动条时根元素窄 10~15px，外壳页头是 width:100% 的粘性
+   元素，跟着一起变窄，于是切页时页头最后一项离窗口右边缘的距离会跳一下
+   （实测 38px ↔ 28px）。
+
+   overflow-y 也必须一起写：scrollbar-gutter 只在 overflow 是 scroll / auto
+   时才生效，根元素默认的 visible 会让它整条规则失效（实测 clientWidth 仍是
+   1600）。写 scroll 而非 auto，是为了让「本来不滚」的页面也预留出那条沟槽，
+   于是宽度与有没有滚动条无关。代价是图库 / 视频这类不满屏的页面右侧多一条
+   永远不用的空槽——换来的是切页时右边不再跳，两者取舍明确选了后者。 */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
 [v-cloak] {
   display: none !important;
 }

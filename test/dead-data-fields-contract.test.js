@@ -104,19 +104,19 @@ describe('no shadowed duplicate definitions', function () {
   const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
   const APP_FILES = [
     'upload-app.js', 'upload-media.js', 'upload-image.js',
-    'admin-app.js', 'admin-tokens.js', 'admin-ui-design.js',
+    'admin-app.js', 'admin-tokens.js',
     'gallery-app.js', 'video-app.js', 'preview-app.js',
   ];
 
-  // 混入的纯逻辑文件（upload-media / upload-image / admin-tokens /
-  // admin-ui-design）只导出 `var methods = { … }`，成员缩进 4 或 6 空格
-  // （admin-tokens 比其它多一层），没有 `methods: {` 段。
+  // 混入的纯逻辑文件（upload-media / upload-image / admin-tokens）只导出
+  // `var methods = { … }`，成员缩进 4 或 6 空格（admin-tokens 比其它多一层），
+  // 没有 `methods: {` 段。
   // preview-app.js 是个 IIFE + 内部函数，根本没有方法表，不参与这项检查。
   const COMPONENT_FILES = [
     'upload-app.js', 'admin-app.js', 'gallery-app.js', 'video-app.js',
   ];
   const MIXIN_FILES = [
-    'upload-media.js', 'upload-image.js', 'admin-tokens.js', 'admin-ui-design.js',
+    'upload-media.js', 'upload-image.js', 'admin-tokens.js',
   ];
 
   for (const file of COMPONENT_FILES) {
@@ -201,8 +201,7 @@ describe('no shadowed duplicate definitions', function () {
       });
       // 自检：检出的方法数必须与「文件里真实的方法定义数」一致，
       // 否则锚点写死了、这条断言会变成空跑。
-      // 逐个数出来：uploadUiDesignBackgroundFile 是本文件唯一的方法
-      // （第 21 行那个 if 是控制流，不是方法），所以下限是 1。
+      // 逐个数出来：本文件的方法数不为 0，所以下限是 1。
       assert.ok(counts.size >= 1, `${file} 一个方法都没检出，检测范围写死了，这条断言会变成空跑`);
       const dups = [...counts.entries()]
         .filter(([, ls]) => ls.length > 1)

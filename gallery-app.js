@@ -1,15 +1,6 @@
-/** 图库页的 Vue 应用（自 gallery.html 内联脚本拆出；含顶栏退出接线）。 */
-    // 顶栏的退出按钮。这段在 new Vue 之前，与 Vue 实例无关——
-    // 外壳由 theme-core.js 维护，页面脚本只补它管不到的那个动作。
-    (function () {
-      var logoutBtn = document.getElementById('logoutBtn');
-      if (!logoutBtn) return;
-      logoutBtn.addEventListener('click', function () {
-        fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-          .catch(function () { /* 忽略：下面照样跳转，别把用户困在已登出的页面 */ })
-          .then(function () { window.location.href = '/login.html'; });
-      });
-    })();
+/** 图库页的 Vue 应用（自 gallery.html 内联脚本拆出）。 */
+    // 顶栏的退出按钮由 shell-tools.js 绑定（四个分区页共用 KVShared.logout），
+    // 本页没有需要额外清理的登录态，所以不注册任何 key。
 
     new Vue({
       el: '#app',

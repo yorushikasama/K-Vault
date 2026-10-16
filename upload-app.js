@@ -1925,16 +1925,12 @@
             return icons[type] || icons.info;
           },
 
-          // 退出登录
-          async handleLogout() {
-            try {
-              await fetch("/api/auth/logout", {
-                method: "POST",
-                credentials: "include",
-              });
-              window.location.href = "/login.html";
-            } catch (e) {
-              this.showToast("退出失败", "error");
+          // 退出动作由外壳的 <button data-shell-logout> 触发（shell-tools.js），
+          // 这里只登记本页要跟着退出一起清的东西：记住的上传目的地属于上一个
+          // 会话，不该替下一个人做主。
+          registerShellLogout() {
+            if (window.KVShellTools) {
+              window.KVShellTools.setLogoutKeys(["storageMode"]);
             }
           },
 
@@ -2101,6 +2097,7 @@
           },
         }),
         async mounted() {
+          this.registerShellLogout();
           this.loadImageUploadDecision();
           this.loadImageCompressSettings();
           this.syncImageCompressState();

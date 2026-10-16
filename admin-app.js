@@ -156,16 +156,6 @@
       },
       loadMode: 'normal', // normal | dataSaver | noImage
       safeMode: true, // NSFW 安全模式
-      systemStatus: {
-        telegram: { connected: false, message: '检查中...' },
-        kv: { connected: false, message: '检查中...' },
-        r2: { connected: false, message: '检查中...', enabled: false },
-        s3: { connected: false, message: '检查中...', enabled: false },
-        discord: { connected: false, message: '检查中...', enabled: false },
-        huggingface: { connected: false, message: '检查中...', enabled: false },
-        github: { connected: false, message: '检查中...', enabled: false },
-        auth: { enabled: false, message: '检查中...' }
-      },
       batchToolbarPosition: {
         left: null,
         top: null
@@ -232,6 +222,9 @@
       storageFilterLabel() { return this.storageLabels[this.storageFilter] || '全部存储'; },
       sortLabel() { return { dateDesc: '时间从新到旧', nameAsc: '文件标识 A–Z', sizeDesc: '大小从大到小' }[this.sortOption] || '时间从新到旧'; },
       filterLabel() { return { all: '全部状态', favorites: '收藏', blocked: '黑名单', unblocked: '白名单', adult: 'NSFW' }[this.filterOption] || '全部状态'; },
+      // 加载方式此前是顶栏下拉里的一项，没有名字，只显示菜单项本身的文字。
+      // 下放到查询栏后按钮要自己写清当前档位。
+      loadModeLabel() { return { normal: '正常', dataSaver: '省流', noImage: '不预览' }[this.loadMode] || '正常'; },
       emptyPathLabel() {
         return { all: '全部目录文件', root: '根目录文件', unknown: '默认文件范围' }[this.emptyPathMode];
       },
@@ -459,7 +452,8 @@
       viewMode(newValue) { localStorage.setItem('adminViewMode', newValue); },
       folderPath(newValue) { localStorage.setItem('adminFolderPath', this.normalizeFolderPath(newValue)); }
     }),
-    methods: Object.assign({}, window.KVAdminShared.methods, window.KVAdminTokens.methods, window.KVAdminUiDesign.methods, {
+    // UI 设计面板已提到应用外壳（shell-tools.js），不再是本页的 Vue 方法。
+    methods: Object.assign({}, window.KVAdminShared.methods, window.KVAdminTokens.methods, {
       // localModalOpen 的 watch 调用这个（预览弹窗或移动端目录抽屉打开）。
       // 它此前从未被定义，$nextTick(undefined) 是静默空操作——于是弹窗开着
       // 还能滚背景：实测 body.style.overflow 恒为空、window.scrollY 能从 0
@@ -480,10 +474,6 @@
 
       normalizeFolderPath(value = '') {
         return KVShared.normalizeFolderPath(value);
-      },
-      isUnconfiguredStatus(item = {}) {
-        const message = String(item?.message || '').trim().toLowerCase();
-        return message === '未配置' || message === 'not configured' || message.includes('not configured');
       },
       queueMobileNavMetricsUpdate() {
         if (this.mobileNavMetricsRaf) {
@@ -730,10 +720,6 @@
         this.updateStats();
         this.closePreview();
         this.closeImageViewer();
-      },
-      connectionLabel(key) {
-        return { telegram: 'Telegram', kv: 'KV 存储', r2: 'R2 存储', s3: 'S3 存储', discord: 'Discord',
-          huggingface: 'HuggingFace', github: 'GitHub', auth: '身份验证' }[key] || key;
       },
       getStorageType(name = '') {
         return KVShared.storageTypeOf(name);
@@ -1750,34 +1736,17 @@
         KVShared.downloadFile(this.previewData.url, this.previewData.fileName);
       },
       
-      async handleLogout() {  // 退出登录
-        try {
-          const response = await fetch('./api/auth/logout', { method: 'POST', credentials: 'include' });
-          // 清除本地存储的认证信息
-          sessionStorage.clear();
-          localStorage.removeItem('storageMode');
-          // 退出后不再保留属于该会话的列表缓存。
-          this.clearFolderCache();
-          this.cacheOwner = '';
-          
-          // 尝试清除浏览器缓存的 Basic Auth 凭证
-          // 通过发送一个带有错误凭证的请求来清除缓存
-          try {
-            await fetch('./api/manage/list', {
-              method: 'GET',
-              headers: { 'Authorization': 'Basic ' + btoa('logout:logout') },
-              credentials: 'include'
-            });
-          } catch (e) { /* 忽略错误 */ }
-          
-          this.$message.success('已退出登录');
-          // 跳转到登录页，禁止返回
-          setTimeout(() => {
-            window.location.replace('./login.html');
-          }, 500);
-        } catch (e) {
-          this.$message.error('退出失败，请重试');
-        }
+      /**
+       * 退出前的内存态清理。
+       *
+       * 退出动作本身由外壳的 <button data-shell-logout> 触发
+       * （KVShared.logout，见 shell-tools.js），所以这里不再自己发请求——
+       * 只把不能留在内存里的东西清掉，页面随即离开。
+       */
+      prepareLogout() {
+        // 目录列表缓存是按登录身份存的，不该留给下一个会话。
+        this.clearFolderCache();
+        this.cacheOwner = '';
       },
       handlePageChange(page) {
         this.currentPage = page;
@@ -2129,87 +2098,19 @@
         this.tableData.forEach(file => file.selected = !allSelected);
         this.$message.success(!allSelected ? `已选中全部 ${this.tableData.length} 项` : '已取消选择');
       },
-      // 工具相关
+      // 工具相关。菜单项与 admin.html 里那一组逐字对应；系统连接与 UI 设计
+      // 已提到顶栏（shell-tools.js），不再从这里进。
       handleToolkit(command) {
         switch (command) {
           case 'selectAllInPage': this.selectAllInPage(); break;
           case 'checkBrokenFiles': this.checkBrokenFiles(); break;
           case 'editWebsites': this.editWebsites(); break;
-          case 'openUploader': this.openUploader(); break;
           case 'exportLinks': this.exportAllLinks(); break;
           case 'manageApiTokens': this.openApiTokenDialog(); break;
-          case 'checkStatus': this.checkConnectionStatus(); break;
         }
       },
-      // 检查连接状态
-      async checkConnectionStatus() {
-        const loading = this.$message({ message: '正在检查连接状态...', duration: 0 });
-        try {
-          const response = await fetch('./api/status', { credentials: 'include' });
-          const status = await response.json();
-          this.systemStatus = {
-            ...this.systemStatus,
-            ...(status || {}),
-            github: status?.github || this.systemStatus.github,
-          };
-          loading.close();
-          
-          // 显示详细状态对话框
-          const statusHtml = `
-            <div class="status-dialog">
-              <p><i data-lucide="bot" class="status-icon"></i> <b>Telegram:</b>
-                <span class="${status.telegram.connected ? 'status-ok' : 'status-fail'}">
-                  ${status.telegram.connected ? '✓' : '✗'} ${status.telegram.message}
-                </span>
-              </p>
-              <p><i data-lucide="database" class="status-icon"></i> <b>KV 存储:</b>
-                <span class="${status.kv.connected ? 'status-ok' : 'status-fail'}">
-                  ${status.kv.connected ? '✓' : '✗'} ${status.kv.message}
-                </span>
-              </p>
-              <p><i data-lucide="cloud" class="status-icon"></i> <b>R2 存储:</b>
-                <span class="${status.r2.connected ? 'status-ok' : (this.isUnconfiguredStatus(status.r2) ? 'status-unset' : 'status-fail')}">
-                  ${status.r2.connected ? '✓' : (this.isUnconfiguredStatus(status.r2) ? '○' : '✗')} ${status.r2.message}
-                </span>
-              </p>
-              <p><i data-lucide="database" class="status-icon status-icon--s3"></i> <b>S3 存储:</b>
-                <span class="${status.s3?.connected ? 'status-ok' : (this.isUnconfiguredStatus(status.s3) ? 'status-unset' : 'status-fail')}">
-                  ${status.s3?.connected ? '✓' : (this.isUnconfiguredStatus(status.s3) ? '○' : '✗')} ${status.s3?.message || '未知'}
-                </span>
-              </p>
-              <p><i class="fab fa-discord status-icon status-icon--discord"></i> <b>Discord:</b>
-                <span class="${status.discord?.connected ? 'status-ok' : (this.isUnconfiguredStatus(status.discord) ? 'status-unset' : 'status-fail')}">
-                  ${status.discord?.connected ? '✓' : (this.isUnconfiguredStatus(status.discord) ? '○' : '✗')} ${status.discord?.message || '未知'}
-                </span>
-              </p>
-              <p><i data-lucide="bot" class="status-icon status-icon--huggingface"></i> <b>HuggingFace:</b>
-                <span class="${status.huggingface?.connected ? 'status-ok' : (this.isUnconfiguredStatus(status.huggingface) ? 'status-unset' : 'status-fail')}">
-                  ${status.huggingface?.connected ? '✓' : (this.isUnconfiguredStatus(status.huggingface) ? '○' : '✗')} ${status.huggingface?.message || '未知'}
-                </span>
-              </p>
-              <p><i class="fab fa-github status-icon status-icon--github"></i> <b>GitHub:</b>
-                <span class="${status.github?.connected ? 'status-ok' : (this.isUnconfiguredStatus(status.github) ? 'status-unset' : 'status-fail')}">
-                  ${status.github?.connected ? '✓' : (this.isUnconfiguredStatus(status.github) ? '○' : '✗')} ${status.github?.message || '未知'}
-                </span>
-              </p>
-              <p><i data-lucide="lock" class="status-icon"></i> <b>身份验证:</b>
-                <span class="${status.auth.enabled ? 'status-ok' : 'status-unset'}">
-                  ${status.auth.enabled ? '✓' : '○'} ${status.auth.message}
-                </span>
-              </p>
-            </div>
-          `;
-          
-          this.$alert(statusHtml, '系统连接状态', {
-            dangerouslyUseHTMLString: true,
-            confirmButtonText: '确定'
-          });
-        } catch (error) {
-          loading.close();
-          this.$message.error('检查状态失败: ' + error.message);
-        }
-      },
-                  switchFileType(type, showMessage = true) {  // 切换文件类型
+
+      switchFileType(type, showMessage = true) {  // 切换文件类型
         // 图片与视频已经有独立页面（gallery.html / video.html）。
         // 用户从这里点它们时给一条明确的路，而不是在本页切筛选 ——
         // 本页的 fileConfig.image 是本文件的私有清单，与那两页的
@@ -2247,19 +2148,24 @@
         return memoFileValue(FILE_ICON_CACHE, filename, () => KVShared.fileIconOf(filename));
       },
                   // 加载设置处理
+      /** 切换预览的加载档位（三档，见模板里的下拉）。 */
       handleLoadSettings(command) {
-        if (command === 'safeMode') {
-          this.safeMode = !this.safeMode;
-          localStorage.setItem('safeMode', this.safeMode);
-          this.$message.success(this.safeMode ? '安全模式已开启' : '安全模式已关闭');
-        } else if (command === 'loginBackground' || command === 'uiDesign') {
-          this.showUiDesignSettingsPanel();
-        } else {
-          this.loadMode = command;
-          localStorage.setItem('loadMode', command);
-          const modeNames = { normal: '正常模式', dataSaver: '省流模式', noImage: '无图模式' };
-          this.$message.success(`已切换为${modeNames[command]}`);
-        }
+        this.loadMode = command;
+        localStorage.setItem('loadMode', command);
+        const modeNames = { normal: '正常模式', dataSaver: '省流模式', noImage: '无图模式' };
+        this.$message.success(`已切换为${modeNames[command]}`);
+      },
+      /**
+       * 安全模式开关。
+       *
+       * 原本和加载档位挤在同一个顶栏下拉里，那份还带着 uiDesign /
+       * loginBackground 两个分支——两个都指向同一个 UI 设计面板，其中一个
+       * 还自称「旧入口」。设置面板已经提到顶栏，这里只留真正属于本页的开关。
+       */
+      toggleSafeMode() {
+        this.safeMode = !this.safeMode;
+        localStorage.setItem('safeMode', this.safeMode);
+        this.$message.success(this.safeMode ? '安全模式已开启' : '安全模式已关闭');
       },
       getPreviewKey(item) {
         return String(item?.name || item?.metadata?.fileName || '');
@@ -2323,6 +2229,13 @@
       }
     }),
     async mounted() {
+      // 外壳的退出按钮由 shell-tools.js 绑定；这里登记本页要跟着退出一起
+      // 清掉的东西（目录列表缓存按登录身份存，不该留给下一个会话）。
+      if (window.KVShellTools) {
+        window.KVShellTools.setLogoutKeys(['adminFolderListCache', 'storageMode']);
+        window.KVShellTools.setBeforeLogout(this.prepareLogout.bind(this));
+      }
+
       // 先检查认证状态
       try {
         const authResponse = await fetch('./api/auth/check', { method: 'GET', credentials: 'include' });
@@ -2404,18 +2317,6 @@
       } catch {
         this.$message.error('同步数据时出错，请检查网络连接');
       }
-
-      // 检查系统连接状态
-      fetch('./api/status', { credentials: 'include' })
-        .then(response => response.json())
-        .then(status => {
-          this.systemStatus = {
-            ...this.systemStatus,
-            ...(status || {}),
-            github: status?.github || this.systemStatus.github,
-          };
-        })
-        .catch(() => {});
 
       // 恢复快捷方式设置
       if (localStorage.getItem('quickWebsites')) {

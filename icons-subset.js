@@ -1,7 +1,7 @@
 /**
  * Lucide 1.49.0 子集 — 由 scripts/build-icon-subset.cjs 生成，请勿手改。
  *
- * 只包含仓库实际用到的 126 个图标（全量 2117 个）。
+ * 只包含仓库实际用到的 124 个图标（全量 2117 个）。
  * 暴露形状与官方 UMD 一致（window.lucide.icons / createIcons / 具名导出），
  * 因此 icons.js、theme-core.js、admin.html 的 kv-icon 都无需改动。
  *
@@ -171,15 +171,6 @@ const defaultAttributes = {
     ["path", { d: "M14 8v7" }],
     ["path", { d: "M18 5v13" }],
     ["path", { d: "M22 10v3" }]
-  ];
-
-  const AudioWaveform = [
-    [
-      "path",
-      {
-        d: "M2 13a2 2 0 0 0 2-2V7a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0V4a2 2 0 0 1 4 0v13a2 2 0 0 0 4 0v-4a2 2 0 0 1 2-2"
-      }
-    ]
   ];
 
   const Ban = [
@@ -907,13 +898,6 @@ const defaultAttributes = {
     ["line", { x1: "6", x2: "6.01", y1: "18", y2: "18" }]
   ];
 
-  const Settings2 = [
-    ["path", { d: "M14 17H5" }],
-    ["path", { d: "M19 7h-9" }],
-    ["circle", { cx: "17", cy: "17", r: "3" }],
-    ["circle", { cx: "7", cy: "7", r: "3" }]
-  ];
-
   const Shell = [
     [
       "path",
@@ -1113,7 +1097,6 @@ const defaultAttributes = {
     ArrowLeft: ArrowLeft,
     ArrowUpRight: ArrowUpRight,
     AudioLines: AudioLines,
-    AudioWaveform: AudioWaveform,
     Ban: Ban,
     Bookmark: Bookmark,
     BookmarkCheck: BookmarkCheck,
@@ -1206,7 +1189,6 @@ const defaultAttributes = {
     SearchX: SearchX,
     Section: Section,
     Server: Server,
-    Settings2: Settings2,
     Shell: Shell,
     Shield: Shield,
     Square: Square,

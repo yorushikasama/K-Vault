@@ -19,6 +19,16 @@
        <div class="workspace-tools">…</div>
      </header>
 
+   工具区同样逐字相同，只有四个按钮：主题 / 系统连接 / UI 设计 / 退出。
+   它们都是全站级的 —— 与之相对，「加载模式」「安全模式」「快捷入口」
+   「文件工具」只对文件工作台有效，就挂在那一页的内容区里，不进外壳。
+   这条由 app-shell-contract.test.js 逐页核对按钮签名守着：这份注释写过
+   「逐字相同」，但此前那组测试只校验导航项，于是文件页在工具区多挂了
+   5 个按钮一直没人发现，点进去就像换了网站。
+
+   面板本体（系统连接 / UI 设计）在 shell-tools.js + shell-panels.css，
+   不在本文件。
+
    注意选择器写成 header.workspace-header（而不是 .workspace-header）：
    admin.html 同时加载 admin-imgtc.css，那里面有一批给「旧浮动页头」写的
    .header-content 规则（position: fixed / border-radius / 白底 / hover）。
@@ -228,8 +238,15 @@ header.workspace-header .workspace-nav :is(i, svg.lucide) {
   }
 
   /* 工具按钮只留图标：文字标签在 430px 以下会挤占导航空间，
-     图标本身含义明确，且各按钮都有 aria-label/title 提供可访问名称。 */
-  .workspace-tool > span {
+     图标本身含义明确，且各按钮都有 aria-label/title 提供可访问名称。
+
+     顺带把下拉箭头也收起来。上一条规则只藏得住 <span> 文字，而箭头是
+     kv-icon 渲出来的 <svg>，于是 480px 以下会出现「只剩一个图标、还挂着
+     下拉箭头」的按钮——暗示这里能展开点什么，可整页又确实没有菜单。
+     外壳工具区现在只有主题 / 系统连接 / UI设计 / 退出，都不带箭头；
+     这条规则是为了以后再有人往里加下拉时不会踩到这个坑。 */
+  .workspace-tool > span,
+  .workspace-tool > .lucide-chevron-down {
     display: none;
   }
 

@@ -30,7 +30,7 @@ describe('pruned dead methods stay pruned', function () {
    */
   const APP_FILES = {
     'index.html': ['upload-app.js', 'upload-media.js', 'upload-image.js'],
-    'admin.html': ['admin-app.js', 'admin-tokens.js', 'admin-ui-design.js'],
+    'admin.html': ['admin-app.js', 'admin-tokens.js'],
     'gallery.html': ['gallery-app.js'],
     'video.html': ['video-app.js'],
     'preview.html': ['preview-app.js', 'preview-parsers.js'],

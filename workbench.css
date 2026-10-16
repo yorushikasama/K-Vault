@@ -473,12 +473,6 @@
 .files-menu .el-dropdown-menu__item.is-current { color: var(--ui-brand); font-weight: 600; }
 .files-detail-popover { max-width: min(88vw, 380px); }
 .files-detail-popover div { overflow-wrap: anywhere; }
-.files-connection-panel .connection-title { margin: 0 0 8px; font-size: .9375rem; font-weight: 650; }
-.files-connection-panel .connection-list { display: grid; gap: 6px; margin: 0 0 12px; padding: 0; list-style: none; font-size: .8125rem; }
-.files-connection-panel .connection-list li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.files-connection-panel .connection-list li > span:last-child { color: #b45309; text-align: right; overflow-wrap: anywhere; }
-.files-connection-panel .connection-list li > span.is-connected { color: #15803d; }
-.dialog-footer { display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .token-manager-dialog .token-toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
 .token-manager-dialog .token-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 32px 16px; color: #6b7280; text-align: center; }
 .token-manager-dialog .token-empty .kv-icon { width: 26px; height: 26px; }
@@ -486,8 +480,6 @@
 
 /* ==================== 深色主题 ==================== */
 html[data-theme="dark"] .files-menu .el-dropdown-menu__item.is-current { color: var(--ui-brand-hover); }
-html[data-theme="dark"] .files-connection-panel .connection-list li > span:last-child { color: #fbbf24; }
-html[data-theme="dark"] .files-connection-panel .connection-list li > span.is-connected { color: #86efac; }
 html[data-theme="dark"] .token-manager-dialog .token-empty,
 html[data-theme="dark"] .token-manager-dialog .token-loading { color: #9ca3af; }
 

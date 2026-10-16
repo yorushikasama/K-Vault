@@ -151,8 +151,8 @@ describe('frontend third-party asset contract', function () {
     // 浏览器静默忽略，于是 KVShared 未定义、各页 Vue 全部不挂载——
     // 而「标签里有没有这个文件名」的粗检查照样通过。这里钉住标签类型。
     const MODULES = ['kv-shared.js', 'admin-shared.js', 'upload-media.js', 'upload-image.js',
-      'admin-tokens.js', 'admin-ui-design.js', 'preview-parsers.js', 'gallery-app.js',
-      'preview-app.js', 'upload-app.js', 'admin-app.js'];
+      'admin-tokens.js', 'preview-parsers.js', 'gallery-app.js',
+      'preview-app.js', 'upload-app.js', 'admin-app.js', 'shell-tools.js'];
 
     it('none of them is referenced with a <link> tag', function () {
       const offenders = [];

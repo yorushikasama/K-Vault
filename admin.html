@@ -10,13 +10,14 @@
   <!-- Vue / Element / Sentry 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://js.sentry-cdn.com" crossorigin>
-  <link rel="stylesheet" href="/theme.css?v=13722e5403">
+  <link rel="stylesheet" href="/theme.css?v=3a987794a8">
   <script src="/theme-core.js?v=0df3ba0224"></script>
   <script src="/accent-color.js?v=35dbe085ce"></script>
   <script defer src="/theme-effects.js?v=f32f70568d"></script>
   <!-- 应用外壳（顶栏）各分区页共用，因此排在页面私有样式之前：
        上传/文件/图库/视频的顶栏必须逐字一样，页面样式只负责内容区。 -->
-  <link rel="stylesheet" href="/app-shell.css?v=2163c4e540">
+  <link rel="stylesheet" href="/app-shell.css?v=5b3d173054">
+  <link rel="stylesheet" href="/shell-panels.css?v=eae6725420">
   <!-- Import CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/theme-chalk/index.css" integrity="sha384-ZUOUQ+hNJ+DV4HfNwHNFq4PcclqayiUDpCMsWD1lOpUQZ/go0ofwD/GLaYdzOcdx" crossorigin="anonymous" referrerpolicy="no-referrer">
   <!-- Sentry loader 故意不加 SRI：这个脚本内容随项目配置变化（采样率、集成项），钉死哈希会在后台改配置时把它整个拦掉。
@@ -26,9 +27,9 @@
        实打实的一块。真要上报时调 window.Sentry.captureException() 即可。 -->
   <script src="https://js.sentry-cdn.com/219f636ac7bde5edab2c3e16885cb535.min.js" data-lazy crossorigin="anonymous"></script>
   <link rel="stylesheet" href="/mobile-refactor.css?v=f5c563939c">
-  <link rel="stylesheet" href="/admin.css?v=9d5867910d">
-<script src="/kv-shared.js?v=c7a66484c9"></script>
-  <link rel="stylesheet" href="/workbench.css?v=e7190c0817">
+  <link rel="stylesheet" href="/admin.css?v=e43a51a3ce">
+<script src="/kv-shared.js?v=f480f6145a"></script>
+  <link rel="stylesheet" href="/workbench.css?v=291aa6be12">
 </head>
 <body class="kv-workbench kv-files">
   <div id="app" v-cloak>
@@ -44,49 +45,18 @@
           <a href="./gallery.html">图库</a>
           <a href="./video.html">视频</a>
         </nav>
+        <!-- 工具区四个按钮与其余三分区页逐字相同（app-shell-contract.test.js
+             守着这条）。此前这里挂过 7 个：快捷入口 / 工具 / 系统连接 /
+             设置 / UI设计 —— 但只有本工作台才用得上的（加载模式、安全模式、
+             快捷入口、文件工具）已经下放到页内，顶栏只留全站级的。 -->
         <div class="workspace-tools">
-          <el-dropdown @command="handleWebsite" trigger="click">
-            <button type="button" class="workspace-tool"><kv-icon name="external-link"></kv-icon><span>快捷入口</span><kv-icon name="chevron-down"></kv-icon></button>
-            <el-dropdown-menu slot="dropdown" class="files-menu">
-              <el-dropdown-item v-for="(site, index) in quickWebsites" :key="'site-' + index" :command="site.url"><kv-icon :name="site.icon"></kv-icon> {{ site.name }}</el-dropdown-item>
-            </el-dropdown-menu>
-          </el-dropdown>
-          <el-dropdown @command="handleToolkit" trigger="click">
-            <button type="button" class="workspace-tool"><kv-icon name="wrench"></kv-icon><span>工具</span><kv-icon name="chevron-down"></kv-icon></button>
-            <el-dropdown-menu slot="dropdown" class="files-menu">
-              <el-dropdown-item command="openUploader">上传文件</el-dropdown-item>
-              <el-dropdown-item command="manageApiTokens">API Token 管理</el-dropdown-item>
-              <el-dropdown-item command="exportLinks">导出已加载文件链接</el-dropdown-item>
-              <el-dropdown-item command="checkBrokenFiles">检测已加载文件是否失效</el-dropdown-item>
-              <el-dropdown-item command="selectAllInPage" divided>选择当前页文件</el-dropdown-item>
-              <el-dropdown-item command="editWebsites">编辑快捷入口</el-dropdown-item>
-              <el-dropdown-item command="checkStatus">检查系统连接</el-dropdown-item>
-            </el-dropdown-menu>
-          </el-dropdown>
-          <el-popover placement="bottom-end" width="280" trigger="click" popper-class="files-connection-panel">
-            <h2 class="connection-title">系统连接</h2>
-            <ul class="connection-list">
-              <li v-for="(status, key) in systemStatus" :key="key">
-                <span>{{ connectionLabel(key) }}</span>
-                <span :class="{ 'is-connected': status.connected || (key === 'auth' && status.enabled) }">{{ status.message }}</span>
-              </li>
-            </ul>
-            <el-button size="small" @click="checkConnectionStatus">重新检查连接</el-button>
-            <button slot="reference" type="button" class="workspace-tool workspace-tool-icon" title="系统连接状态" aria-label="系统连接状态"><kv-icon name="activity"></kv-icon></button>
-          </el-popover>
-          <el-dropdown @command="handleLoadSettings" trigger="click">
-            <button type="button" class="workspace-tool"><kv-icon name="settings-2"></kv-icon><span>设置</span><kv-icon name="chevron-down"></kv-icon></button>
-            <el-dropdown-menu slot="dropdown" class="files-menu">
-              <el-dropdown-item command="normal" :class="{ 'is-current': loadMode === 'normal' }">正常加载{{ loadMode === 'normal' ? ' · 当前' : '' }}</el-dropdown-item>
-              <el-dropdown-item command="dataSaver" :class="{ 'is-current': loadMode === 'dataSaver' }">省流模式{{ loadMode === 'dataSaver' ? ' · 当前' : '' }}</el-dropdown-item>
-              <el-dropdown-item command="noImage" :class="{ 'is-current': loadMode === 'noImage' }">不自动加载预览{{ loadMode === 'noImage' ? ' · 当前' : '' }}</el-dropdown-item>
-              <el-dropdown-item command="safeMode" divided>安全模式：{{ safeMode ? '已开启' : '已关闭' }}</el-dropdown-item>
-              <el-dropdown-item command="uiDesign">UI 设计设置</el-dropdown-item>
-              <el-dropdown-item command="loginBackground">登录背景设置（旧入口）</el-dropdown-item>
-            </el-dropdown-menu>
-          </el-dropdown>
-          <button type="button" class="workspace-tool workspace-tool-icon" title="UI 设计设置" aria-label="UI 设计设置" @click="showUiDesignSettingsPanel"><kv-icon name="palette"></kv-icon></button>
-          <button type="button" class="workspace-tool workspace-tool-icon" title="退出登录" aria-label="退出登录" @click="handleLogout"><kv-icon name="log-out"></kv-icon></button>
+          <button type="button" class="workspace-tool" data-theme-toggle aria-label="切换主题">
+            <i data-lucide="moon" data-theme-icon></i>
+            <span data-theme-label>夜间</span>
+          </button>
+          <button type="button" class="workspace-tool workspace-tool-icon" data-shell-tool="connection" title="系统连接状态" aria-label="系统连接状态"><i data-lucide="activity"></i></button>
+          <button type="button" class="workspace-tool workspace-tool-icon" data-shell-tool="design" title="UI 设计设置" aria-label="UI 设计设置"><i data-lucide="palette"></i></button>
+          <button type="button" class="workspace-tool" data-shell-logout title="退出登录" aria-label="退出登录"><i data-lucide="log-out"></i><span>退出</span></button>
         </div>
       </header>
       <el-main class="main-container files-main">
@@ -152,6 +122,28 @@
               </div>
               <div class="files-heading-actions">
                 <button ref="folderToggle" type="button" class="workspace-tool folder-drawer-toggle" aria-controls="files-folders" :aria-expanded="String(folderDrawerOpen)" @click="toggleFolderDrawer"><kv-icon name="folder-tree"></kv-icon>目录</button>
+                <!-- 快捷入口与工具原先挂在顶栏，但它们只对本工作台有意义（跳转
+                     本人配置的站点 / 操作本页文件）。顶栏是四个分区页共用的
+                     外壳，在那里挂本页私有的东西正是「点进文件就像换了网站」
+                     的由来，所以随各自的语义下放到这里。
+                     菜单里已去掉与本页按钮重复的项：上传文件、检查系统连接、
+                     UI 设计设置（后两者已提到顶栏）。 -->
+                <el-dropdown @command="handleWebsite" trigger="click">
+                  <button type="button" class="workspace-tool"><kv-icon name="external-link"></kv-icon><span>快捷入口</span><kv-icon name="chevron-down"></kv-icon></button>
+                  <el-dropdown-menu slot="dropdown" class="files-menu">
+                    <el-dropdown-item v-for="(site, index) in quickWebsites" :key="'site-' + index" :command="site.url"><kv-icon :name="site.icon"></kv-icon> {{ site.name }}</el-dropdown-item>
+                  </el-dropdown-menu>
+                </el-dropdown>
+                <el-dropdown @command="handleToolkit" trigger="click">
+                  <button type="button" class="workspace-tool"><kv-icon name="wrench"></kv-icon><span>工具</span><kv-icon name="chevron-down"></kv-icon></button>
+                  <el-dropdown-menu slot="dropdown" class="files-menu">
+                    <el-dropdown-item command="manageApiTokens">API Token 管理</el-dropdown-item>
+                    <el-dropdown-item command="exportLinks">导出已加载文件链接</el-dropdown-item>
+                    <el-dropdown-item command="checkBrokenFiles">检测已加载文件是否失效</el-dropdown-item>
+                    <el-dropdown-item command="selectAllInPage" divided>选择当前页文件</el-dropdown-item>
+                    <el-dropdown-item command="editWebsites">编辑快捷入口</el-dropdown-item>
+                  </el-dropdown-menu>
+                </el-dropdown>
                 <el-button size="small" icon="el-icon-refresh" :disabled="folderMutating" :loading="folderLoading" @click="refreshFolderResources">刷新</el-button>
                 <el-button size="small" type="primary" icon="el-icon-upload2" @click="openUploader">上传文件</el-button>
               </div>
@@ -213,6 +205,23 @@
                     <el-dropdown-item command="dateDesc">时间从新到旧（已加载）</el-dropdown-item>
                     <el-dropdown-item command="nameAsc">文件标识 A–Z（已加载）</el-dropdown-item>
                     <el-dropdown-item command="sizeDesc">大小从大到小（已加载）</el-dropdown-item>
+                  </el-dropdown-menu>
+                </el-dropdown>
+                <!-- 加载方式与安全模式是本页的预览偏好（只影响这一页怎么加载缩略图、
+                     显不显示 NSFW），不是全站设置，所以和类型 / 状态 / 排序放在
+                     同一排，而不是挂在外壳顶栏上。 -->
+                <el-dropdown @command="handleLoadSettings" trigger="click">
+                  <button type="button" class="files-filter-button"><kv-icon name="zap"></kv-icon><span>加载：{{ loadModeLabel }}</span><kv-icon name="chevron-down"></kv-icon></button>
+                  <el-dropdown-menu slot="dropdown" class="files-menu">
+                    <el-dropdown-item command="normal" :class="{ 'is-current': loadMode === 'normal' }">正常加载{{ loadMode === 'normal' ? ' · 当前' : '' }}</el-dropdown-item>
+                    <el-dropdown-item command="dataSaver" :class="{ 'is-current': loadMode === 'dataSaver' }">省流模式{{ loadMode === 'dataSaver' ? ' · 当前' : '' }}</el-dropdown-item>
+                    <el-dropdown-item command="noImage" :class="{ 'is-current': loadMode === 'noImage' }">不自动加载预览{{ loadMode === 'noImage' ? ' · 当前' : '' }}</el-dropdown-item>
+                  </el-dropdown-menu>
+                </el-dropdown>
+                <el-dropdown @command="toggleSafeMode" trigger="click">
+                  <button type="button" class="files-filter-button"><kv-icon name="shield"></kv-icon><span>安全模式：{{ safeMode ? '已开启' : '已关闭' }}</span></button>
+                  <el-dropdown-menu slot="dropdown" class="files-menu">
+                    <el-dropdown-item command="toggle">安全模式：{{ safeMode ? '已开启' : '已关闭' }} · 点击{{ safeMode ? '关闭' : '开启' }}</el-dropdown-item>
                   </el-dropdown-menu>
                 </el-dropdown>
                 <button v-if="search || fileType !== 'all' || filterOption !== 'all'" type="button" class="files-reset" @click="clearLocalFilters">清除本地筛选</button>
@@ -732,11 +741,11 @@ curl -X POST "{SITE_URL}/api/v1/import" \
 <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js" integrity="sha384-ULpZhk1pvhc/UK5ktA9kwb2guy9ovNSTyxPNHANnA35YjBQgdwI+AhLkixDvdlw4" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.3/lib/index.js" integrity="sha384-+gBC+PMSL+TRFl/FIZXz0BFZ9goHb5wqIwBbAscP86Bd6JJJ1TS5MwaN1SAIjzGj" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <!-- Vue 与 Lucide 就绪后注册共享指令，再创建应用。 -->
-<script src="/icons-subset.js?v=1ab0ddfccc"></script>
+<script src="/icons-subset.js?v=5d9a5603cc"></script>
 <script src="/icons.js?v=fc3fc216e0"></script>
+<script src="/shell-tools.js?v=604b33add4"></script>
 <script src="/admin-shared.js?v=44f1a15913"></script>
 <script src="/admin-tokens.js?v=5085cfdc1c"></script>
-<script src="/admin-ui-design.js?v=04415a6345"></script>
-<script src="/admin-app.js?v=2697b80691"></script>
+<script src="/admin-app.js?v=2bc4a26661"></script>
 </body>
 </html>

@@ -9,10 +9,10 @@
   <link rel="shortcut icon" href="/favicon.ico">
   <!-- 增强预览引擎按需从 unpkg 加载：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
-  <link rel="stylesheet" href="/theme.css?v=13722e5403">
+  <link rel="stylesheet" href="/theme.css?v=3a987794a8">
   <link rel="stylesheet" href="/ui-buttons.css?v=55f77f600e">
   <link rel="stylesheet" href="/preview.css?v=a80418af36">
-<script src="/kv-shared.js?v=c7a66484c9"></script>
+<script src="/kv-shared.js?v=f480f6145a"></script>
   <link rel="stylesheet" href="/mobile-refactor.css?v=f5c563939c">
   <!-- 预览页此前是全站唯一没加载 theme-core.js 的页面。没有它就没有
        ThemeManager，data-theme 永远是 null，于是 preview.css 里
@@ -67,7 +67,7 @@
   <!-- 图标子集与渲染器放在 body 末尾（与其它页一致）：主题切换按钮的
        月亮/太阳图标靠它渲染，放 <head> 会挡住首帧。icons.js 在
        DOMContentLoaded 时自动扫描 data-lucide 并替换成 SVG。 -->
-  <script src="/icons-subset.js?v=1ab0ddfccc"></script>
+  <script src="/icons-subset.js?v=5d9a5603cc"></script>
   <script src="/icons.js?v=fc3fc216e0"></script>
 </body>
 </html>
