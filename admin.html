@@ -10,10 +10,10 @@
   <!-- Vue / Element / Sentry 仍走 CDN：提前建连，省掉 DNS + TLS 往返。 -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://js.sentry-cdn.com" crossorigin>
-  <link rel="stylesheet" href="/theme.css?v=3a987794a8">
+  <link rel="stylesheet" href="/theme.css?v=a75cddd38a">
   <script src="/theme-core.js?v=0df3ba0224"></script>
   <script src="/accent-color.js?v=35dbe085ce"></script>
-  <script defer src="/theme-effects.js?v=f32f70568d"></script>
+  <script defer src="/theme-effects.js?v=1189da424d"></script>
   <!-- 应用外壳（顶栏）各分区页共用，因此排在页面私有样式之前：
        上传/文件/图库/视频的顶栏必须逐字一样，页面样式只负责内容区。 -->
   <link rel="stylesheet" href="/app-shell.css?v=5b3d173054">
@@ -743,7 +743,7 @@ curl -X POST "{SITE_URL}/api/v1/import" \
 <!-- Vue 与 Lucide 就绪后注册共享指令，再创建应用。 -->
 <script src="/icons-subset.js?v=5d9a5603cc"></script>
 <script src="/icons.js?v=fc3fc216e0"></script>
-<script src="/shell-tools.js?v=045c2439a4"></script>
+<script src="/shell-tools.js?v=5eccd882db"></script>
 <script src="/admin-shared.js?v=44f1a15913"></script>
 <script src="/admin-tokens.js?v=5085cfdc1c"></script>
 <script src="/admin-app.js?v=2bc4a26661"></script>

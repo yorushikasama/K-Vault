@@ -45,6 +45,8 @@ describe('dead CSS contract', function () {
     'theme-toggle-btn',
     'compress-mode-btn',
     'preview-stage',
+    // 2026-10-17 纸纹特效下线：theme-effects.js 不再注入该层
+    'ui-bg-noise-layer',
   ];
 
   /**

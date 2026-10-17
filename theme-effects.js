@@ -14,13 +14,7 @@
   var LEGACY_LOGIN_MODE_KEY = "loginBackgroundMode";
   var LEGACY_LOGIN_URL_KEY = "loginBackgroundUrl";
   var API_ENDPOINT = "/api/ui-config";
-  // 只剩「无特效」与「纸纹」两档。math / particle 的 canvas 动画已删除：
-  // 它们画在 z-index:-2 的全屏画布上，而 body 是 var(--ui-page-bg) 不透明
-  // 背景（→ --ui-canvas → hsl(…,97%)），所以画出来的东西必然被整个盖住，
-  // 却是实打实的每秒 450 次 fillText。保留这两个键是为了让旧配置（存着
-  // "math"）不会因校验失败而被当成非法值丢弃 —— 它们会落到 else 分支，
-  // 也就是"无特效"。
-  var EFFECT_STYLES = { none: true, math: true, particle: true, texture: true };
+
 
   var DEFAULTS = {
     version: 1,
@@ -37,7 +31,7 @@
 
   var root = document.documentElement;
   var settings = null;
-  var layers = { image: null, noise: null };
+  var layers = { image: null };
 
   function cloneSettings(input) {
     return Object.assign({}, input || {});
@@ -85,10 +79,8 @@
     next.loginBackgroundUrl = sanitizeUrl(next.loginBackgroundUrl);
     next.cardOpacity = Math.round(clampNumber(next.cardOpacity, 0, 100));
     next.cardBlur = Math.round(clampNumber(next.cardBlur, 0, 32));
-    next.effectStyle = EFFECT_STYLES[next.effectStyle]
-      ? next.effectStyle
-      : DEFAULTS.effectStyle;
-    next.effectIntensity = Math.round(clampNumber(next.effectIntensity, 0, 100));
+    next.effectStyle = "none";
+    next.effectIntensity = 0;
     next.optimizeMobile = next.optimizeMobile !== false;
     return next;
   }
@@ -376,14 +368,6 @@
     return /(^|\/)login(\.html)?$/.test(pathname);
   }
 
-  function isMobileDevice() {
-    var byWidth =
-      typeof window.matchMedia === "function"
-        ? window.matchMedia("(max-width: 768px)").matches
-        : window.innerWidth <= 768;
-    var byTouch = Number(navigator.maxTouchPoints || 0) > 0;
-    return byWidth || byTouch;
-  }
 
   function ensureLayer(tagName, className) {
     var node = document.createElement(tagName);
@@ -396,13 +380,9 @@
     if (!document.body) return false;
 
     if (!layers.image) layers.image = ensureLayer("div", "ui-bg-image-layer");
-    if (!layers.noise) layers.noise = ensureLayer("div", "ui-bg-noise-layer");
 
     if (!document.body.contains(layers.image)) {
       document.body.insertBefore(layers.image, document.body.firstChild);
-    }
-    if (!document.body.contains(layers.noise)) {
-      document.body.insertBefore(layers.noise, layers.image.nextSibling);
     }
 
     return true;
@@ -412,12 +392,9 @@
     var opacity = clampNumber(next.cardOpacity, 0, 100) / 100;
     var blur = Math.round(clampNumber(next.cardBlur, 0, 32));
 
-    // 壁纸已经退到背景里（.ui-bg-image-layer 被压到 12% 可见度），
-    // 卡片就不该再透——壁纸透进卡片等于回到磨砂玻璃的老路：
-    // 每块玻璃是一堵信息墙，深色壁纸上投影又消失，层级全靠色彩撑。
-    // 所以把下限提到 1.0：卡片一律实心，壁纸只在卡片之间的空隙里露面。
-    opacity = Math.max(1.0, opacity);
-
+    // 2026-10-17 用户决策：解除「卡片一律实心」的 1.0 下限，透明度恢复
+    // 0-100% 可调（此前 opacity 被钳在 1.0，UI 面板的透明度/模糊滑杆
+    // 全成摆设）。壁纸透进卡片多少，由用户自己拿捏。
     var transparentCards = opacity <= 0.001;
     var useBackdropFilter = blur > 0 && !transparentCards;
     // 这些表面色 theme.css 的 --ui-* 权威层已经按主题定义好了。
@@ -426,8 +403,8 @@
 // 于是同一个语义有两套值，且 CSS 那套永远不生效。这正是"样式没有统一
 // 管理"的最后一处漏点：改主题.css 改不动这里。
 // 现在改为引用权威层，只保留 JS 独有的产物（透明度旋钮本身）。
-// 注意取的是上面那个已被压到下限的 opacity，不是 next.cardOpacity：
-// 重新读原始值会让下限形同虚设，卡片按 0.86 渲染、壁纸透进正文。
+// 注意取的是上面按 cardOpacity 归一的 opacity（0-1）。transparentCards
+// 分支保留：0 透明度时表面色整体撤掉，卡片只剩描边和投影。
 var surfaceAlpha = transparentCards ? 0 : opacity;
 var cardBg = "var(--ui-surface)";
 var surface1 = "var(--ui-surface-sunken)";
@@ -462,11 +439,9 @@ void darkMode;
     // #101318，与权威层的 #0d1117 是两个值，内联那份还会把 CSS 覆盖掉。
     root.style.setProperty("--ui-card-opacity", surfaceAlpha.toFixed(2));
     root.style.setProperty("--ui-card-blur", blur + "px");
-    root.style.setProperty(
-      "--ui-card-backdrop-filter",
+    root.style.setProperty("--ui-card-backdrop-filter",
       useBackdropFilter ? "blur(" + blur + "px) saturate(115%)" : "none"
     );
-    root.style.setProperty("--ui-noise-opacity", "0");
     root.style.setProperty("--ui-shadow-soft", uiShadowSoft);
     root.style.setProperty("--ui-shadow-soft-dark", uiShadowSoftDark);
     root.style.setProperty("--bg-gradient", "none");
@@ -774,35 +749,13 @@ void darkMode;
     refreshPalette(url);
   }
 
-  /* 只剩纸纹了。
-     原来这里还有 math（数学符号）与 particle（粒子网格）两档 canvas 动画，
-     已整体移除。它们的问题不是"重"而是"白费"：画布挂在 z-index:-2，而 body
-     有 background: var(--ui-page-bg) !important（--ui-page-bg → --ui-canvas →
-     hsl(…, 97%)，完全不透明），所以画出来的东西必然被 body 背景整个盖住 ——
-     默认配置下 100% 看不见，却要每秒做 450 次 fillText（强度拉满 1200 次），
-     而且每个图元都重设一次 ctx.font。用户报"操作发卡"时实测到的就是它。
+  /* 纸纹特效（texture）已整体下线（2026-10-17 用户决策）。
+     再往前 math（数学符号）与 particle（粒子网格）两档 canvas 动画也移除过：
+     画布挂在 body 的不透明背景之下，画出来的东西 100% 看不见，却要每秒
+     数百次 fillText。特效这一族至此全部退役，配置字段（effectStyle /
+     effectIntensity / optimizeMobile）保留在结构里，normalizeSettings
+     会把存量值归零，旧 KV 数据读回来不会缺键。 */
 
-     texture（纸纹）保留：它是纯 CSS 的 background-image，没有 canvas、没有
-     rAF、不吃主线程，代价可以忽略。 */
-  function applyEffect(next) {
-    if (!ensureLayers()) return;
-
-    var style = next.effectStyle;
-    var intensity = clampNumber(next.effectIntensity, 0, 100);
-
-    if (style === "texture") {
-      var noiseBase = 0.06 + intensity / 100 * 0.16;
-      root.style.setProperty("--ui-noise-opacity", noiseBase.toFixed(3));
-    } else {
-      root.style.setProperty("--ui-noise-opacity", "0");
-    }
-
-    if (next.optimizeMobile && isMobileDevice()) {
-      root.setAttribute("data-ui-mobile-optimized", "true");
-    } else {
-      root.removeAttribute("data-ui-mobile-optimized");
-    }
-  }
 
   function hideLegacyLoginLayers() {
     if (!document.body) return;
@@ -834,7 +787,7 @@ void darkMode;
       if (isLoginPage()) document.body.classList.add("login-page");
       hideLegacyLoginLayers();
       applyBackgroundLayers(settings);
-      applyEffect(settings);
+
     }
 
     if (opts.persist) {
@@ -899,18 +852,8 @@ void darkMode;
     // background-size: cover，纸纹是静态 background-image，两者都会随视口
     // 自己重排，不需要 JS 介入。拖动窗口时的卡顿正是 resize 那个监听造成的，
     // 所以这里直接删掉而不是留一个空壳。
-    if (typeof window.matchMedia === "function") {
-      var media = window.matchMedia("(max-width: 768px)");
-      if (typeof media.addEventListener === "function") {
-        media.addEventListener("change", function () {
-          applyEffect(settings);
-        });
-      } else if (typeof media.addListener === "function") {
-        media.addListener(function () {
-          applyEffect(settings);
-        });
-      }
-    }
+    // 纸纹下线后，下面那个 768px 断点监听（唯一调用方是 applyEffect）也
+    // 一并删除：留着会在跨断点时调用不存在的函数。
   }
 
   function init() {

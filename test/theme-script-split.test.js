@@ -221,16 +221,22 @@ describe('background + base color are centrally managed', function () {
       `壁纸有效可见度 ${product.toFixed(3)} 低于 0.1 下限，等于没有背景图`);
   });
 
-  it('cards stay opaque: the opacity floor is not bypassed', function () {
-    // DESIGN.md 明令"surfaces are opaque"，theme-effects.js 也把透明度下限
-    // 压到 1.0（壁纸透进卡片等于回到磨砂玻璃的老路）。但那份下限一度形同
-    // 虚设：写 --ui-card-opacity 时又回头读了滑块的原始值，于是卡片仍按
-    // 0.86 渲染，壁纸从正文下面透出来。这里守住"写出去的是被约束过的值"。
+  it('card opacity is user-adjustable again: no silent floor', function () {
+    // 2026-10-17 用户决策：解除「卡片一律实心」的 1.0 下限。此前 opacity 被
+    // Math.max(1.0, …) 钳死，UI 面板的透明度/模糊滑杆拖了毫无反应 —— 设置项
+    // 存在但永远是摆设，比没有这个设置更糟。现在守住两件事：下限不得回流；
+    // surfaceAlpha 必须直接派生自归一后的 opacity（0-1），不留第二份读法。
     const effects = read('theme-effects.js');
-    assert.match(effects, /opacity\s*=\s*Math\.max\(\s*1(?:\.0)?\s*,\s*opacity\s*\)/,
-      'applyCompatibilityVars 不再把卡片透明度压到下限 —— 实心表面被放开了');
-    assert.doesNotMatch(effects, /surfaceAlpha\s*=[^;]*next\.cardOpacity/,
-      'surfaceAlpha 又去读未约束的 next.cardOpacity 了，下限会被绕过、壁纸透进卡片');
+    assert.doesNotMatch(effects, /Math\.max\(\s*1(?:\.0)?\s*,\s*opacity\s*\)/,
+      '卡片透明度又被钳到 1.0 —— UI 面板的透明度滑杆会再次变成摆设');
+    assert.match(effects, /surfaceAlpha\s*=\s*transparentCards\s*\?\s*0\s*:\s*opacity/,
+      'surfaceAlpha 应直接派生自归一后的 opacity（0-1）');
+    // 纸纹特效（texture）同批下线：面板不再暴露档位，存量配置在
+    // normalizeSettings 里归零。这里钉住「特效不得回流」。
+    assert.doesNotMatch(effects, /function applyEffect/,
+      'applyEffect 又回来了 —— 特效族已退役，新需求请开新设计而不是复活旧路径');
+    assert.match(effects, /effectStyle\s*=\s*"none"/,
+      'normalizeSettings 应把存量 effectStyle 强制归到 "none"');
   });
 
   it('pages do not declare their own base color or body background', function () {

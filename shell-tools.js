@@ -312,20 +312,6 @@
       rangeHtml("uiCardBlur", "模糊强度", snapshot.cardBlur, 0, 32, "px") +
       "</section>" +
 
-      '<section class="shell-panel-section">' +
-      '<div class="shell-panel-section-title">动态背景特效</div>' +
-      '<div class="shell-segmented">' +
-      '<label class="shell-segment"><input type="radio" name="uiEffectStyle" value="none" ' +
-      checked(snapshot.effectStyle !== "texture") + "><span>无特效</span></label>" +
-      '<label class="shell-segment"><input type="radio" name="uiEffectStyle" value="texture" ' +
-      checked(snapshot.effectStyle === "texture") + "><span>纸纹叠加</span></label>" +
-      "</div>" +
-      rangeHtml("uiEffectIntensity", "特效强度", snapshot.effectIntensity, 0, 100, "%") +
-      '<label class="shell-panel-check">' +
-      '<input id="uiOptimizeMobile" type="checkbox" ' + checked(snapshot.optimizeMobile !== false) + ">" +
-      "<span>移动端自动优化特效性能</span></label>" +
-      '<p class="shell-panel-tip">移动端会自动降低特效密度，减少 CPU 占用。</p>' +
-      "</section>" +
 
       '<div class="shell-panel-foot">' +
       '<button type="button" id="uiResetDefaults" class="shell-panel-btn">恢复默认</button>' +
@@ -413,7 +399,7 @@
     }
 
     function updateLabels() {
-      [["uiCardOpacity", "%", 0, 100], ["uiCardBlur", "px", 0, 32], ["uiEffectIntensity", "%", 0, 100]]
+      [["uiCardOpacity", "%", 0, 100], ["uiCardBlur", "px", 0, 32]]
         .forEach(function (row) {
           var label = node.querySelector('[data-for="' + row[0] + '"]');
           if (label) {
@@ -440,9 +426,11 @@
         loginBackgroundUrl: value("uiLoginBgUrl").trim(),
         cardOpacity: clamp(value("uiCardOpacity"), 0, 100),
         cardBlur: clamp(value("uiCardBlur"), 0, 32),
-        effectStyle: checkedValue("uiEffectStyle", "none"),
-        effectIntensity: clamp(value("uiEffectIntensity"), 0, 100),
-        optimizeMobile: Boolean(node.querySelector("#uiOptimizeMobile")?.checked),
+        // 特效已整体下线（theme-effects.js 同步退役）。字段固定归零写出，
+        // 保持与 KV 里存量 config 的结构一致，旧键不会残留 "texture"。
+        effectStyle: "none",
+        effectIntensity: 0,
+        optimizeMobile: true,
       };
     }
 
@@ -478,9 +466,7 @@
         if (radio) radio.checked = true;
       };
       checkRadio("uiLoginMode", state.loginBackgroundMode === "custom" ? "custom" : "follow-global");
-      // 旧配置里存过的 math / particle 两档已经被删掉，必须显式归到「无特效」，
-      // 否则三个 radio 一个都没选中，面板是一片空白。
-      checkRadio("uiEffectStyle", state.effectStyle === "texture" ? "texture" : "none");
+
     }
 
     function uploadBackgroundFile(file) {
@@ -535,7 +521,7 @@
     function wire() {
       var watched = [
         "uiGlobalBgUrl", "uiLoginBgUrl", "uiCardOpacity",
-        "uiCardBlur", "uiEffectIntensity", "uiOptimizeMobile",
+        "uiCardBlur",
       ];
       watched.forEach(function (id) {
         var el = node.querySelector("#" + id);
@@ -543,7 +529,7 @@
         el.addEventListener("input", applyPreview);
         el.addEventListener("change", applyPreview);
       });
-      node.querySelectorAll('input[name="uiLoginMode"], input[name="uiEffectStyle"]')
+      node.querySelectorAll('input[name="uiLoginMode"]')
         .forEach(function (el) { el.addEventListener("change", applyPreview); });
 
       var clearTo = function (btnId, inputId) {

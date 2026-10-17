@@ -490,7 +490,7 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
   --ui-card-opacity: 1;
   --ui-card-blur: 0px;
   --ui-card-backdrop-filter: none;
-  --ui-noise-opacity: 0;
+
 
   /* Radius scale (applied by role, not one global value) */
   --radius-sm: 6px;
@@ -499,14 +499,14 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
 
   /* Wallpaper strength. These two multiply: the layer shows the picture at
      --ui-wall-opacity, then a canvas-colored scrim washes it back down. The
-     product is what actually reaches the screen — 0.26 * 0.46 ≈ 0.12, i.e. the
-     picture is recognizably there instead of the 4.5% residue the old
-     0.14 + 0.68 pair produced (which is why "the wallpaper is missing" read
-     as a per-page bug when in fact it was a global visibility floor).
+     product is what actually reaches the screen. 2026-10-17 用户反馈
+     「背景图设置了没效果」：旧值 0.26 * (1 - 0.46) ≈ 14%，浅色模式下肉眼
+     几乎无感，和没设置一样。现调到 0.55 * (1 - 0.30) ≈ 39%——壁纸明确
+     可见但仍被底色拉住，状态色（报错红、加载紫）不受插画干扰。
      Scrim stays lighter in dark mode: the picture is already dim there, so a
      heavier wash would push contrast under the AA floor. */
-  --ui-wall-opacity: 0.26;
-  --ui-wall-mask: 0.46;
+  --ui-wall-opacity: 0.55;
+  --ui-wall-mask: 0.30;
 
   /* Neutral elevation scale (no colored glows) */
   --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
@@ -530,8 +530,8 @@ html[data-theme="dark"] {
   --shadow-1-dark: var(--ui-elev-1);
   --shadow-2-dark: var(--ui-elev-2);
   --shadow-3-dark: var(--ui-elev-3);
-  --ui-wall-opacity: 0.3;
-  --ui-wall-mask: 0.42;
+  --ui-wall-opacity: 0.6;
+  --ui-wall-mask: 0.28;
   /* 壁纸蒙版读的就是它，所以这个翻转必须在这里发生，否则夜间会拿浅色去
      洗一张深色底上的壁纸。 */
   --ui-canvas: var(--ui-canvas-dark);
@@ -604,14 +604,10 @@ html {
    壁纸整个盖住——同一份设置，一半页面看不见、一半页面被压字。
    负层级同时消掉这两个方向：层永远在内容之下，页面只要不铺不透明底，
    全局背景图就自然透出来。 */
-.ui-bg-image-layer,
-.ui-bg-noise-layer {
+.ui-bg-image-layer {
   position: fixed;
   inset: 0;
   pointer-events: none;
-}
-
-.ui-bg-image-layer {
   z-index: -3;
   background-size: cover;
   background-position: center;
@@ -636,25 +632,13 @@ html {
 /* .ui-bg-canvas-layer 已删除。
    它原本挂在 z-index:-2 承载数学符号 / 粒子网格动画，但 body 有
    background: var(--ui-page-bg) !important（--ui-page-bg → --ui-canvas →
-   hsl(…, 97%)，完全不透明），所以画出来的东西必然被 body 背景整个盖住：
-   默认配置下 100% 不可见，却要每秒 450 次 fillText。删除后壁纸与纸纹不受
-   影响 —— 两者都是 CSS background-image，不经过 canvas。 */
+   hsl(…, 97%)，完全不透明），所以画出来的东西必然被 body 背景整个盖住:
+   默认配置下 100% 不可见，却要每秒 450 次 fillText。删除后壁纸不受
+   影响 —— 它是 CSS background-image，不经过 canvas。
 
-.ui-bg-noise-layer {
-  z-index: -1;
-  opacity: var(--ui-noise-opacity);
-  background-image:
-    radial-gradient(rgba(17, 24, 39, 0.11) 0.4px, transparent 0.5px),
-    radial-gradient(rgba(17, 24, 39, 0.06) 0.5px, transparent 0.6px);
-  background-size: 4px 4px, 6px 6px;
-  background-position: 0 0, 1px 2px;
-  mix-blend-mode: multiply;
-}
-
-html[data-theme="dark"] .ui-bg-noise-layer {
-  mix-blend-mode: screen;
-  opacity: calc(var(--ui-noise-opacity) * 0.75);
-}
+   纸纹层（ui-bg-noise-layer）也于 2026-10-17 随特效功能整体下线：
+   theme-effects.js 不再注入该层，noise opacity token 一并移除，
+   dead-css-contract.test.js 钉住了「不得回流」。 */
 
 .header,
 .header-content,
