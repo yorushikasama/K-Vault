@@ -465,9 +465,7 @@
       setValue("uiCardBlur", clamp(state.cardBlur, 0, 32));
       setValue("uiWallpaperOpacity", clamp(state.wallpaperOpacity, 0, 100));
       setValue("uiWallpaperMask", clamp(state.wallpaperMask, 0, 100));
-      setValue("uiEffectIntensity", clamp(state.effectIntensity, 0, 100));
-      var mobile = node.querySelector("#uiOptimizeMobile");
-      if (mobile) mobile.checked = state.optimizeMobile !== false;
+
       var checkRadio = function (name, value) {
         var radio = node.querySelector('input[name="' + name + '"][value="' + value + '"]');
         if (radio) radio.checked = true;

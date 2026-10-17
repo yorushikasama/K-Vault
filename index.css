@@ -1,8 +1,8 @@
       /* 跨页别名（--card-bg/--shadow/--surface-* 等）已于 2026-10-17 集中到
          theme.css 的 back-compat 区统一管理，本页不再重复定义；
-         --warning-text-color 也改由权威层 --ui-warning 派生。
+         --warning-text-color 全仓无消费者，已随之整体删除。
          theme-effects.js 运行时会以内联样式覆盖其中一部分（带用户透明度），
-         这里的集中区定义就是 JS 未执行时的统一回退。 */
+         集中区定义就是 JS 未执行时的统一回退。 */
 
       html[data-theme="dark"] .image-compress-panel,
       html[data-theme="dark"] .compress-control,

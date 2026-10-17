@@ -22,7 +22,7 @@
   --wb-accent: var(--ui-brand);
   --wb-accent-ink: var(--ui-brand);
   --wb-accent-soft: var(--ui-brand-soft);
-  --wb-on-accent: var(--ui-brand-ink);
+
   --wb-danger: var(--ui-danger-strong);
   --wb-success: var(--ui-success-strong);
   margin: 0; padding: 0; color: var(--wb-ink);

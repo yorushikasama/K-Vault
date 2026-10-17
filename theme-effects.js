@@ -714,19 +714,6 @@ void darkMode;
     });
   }
 
-  /** 首帧之前尽量用上次的结果，避免"先黑白再上色"的闪动。 */
-  function applyCachedPalette(url) {
-    var api = paletteApi();
-    if (!api) return;
-    var cached = readPaletteCache();
-    if (!cached || cached.url !== url) return;
-    if (url && (typeof cached.hue !== "number" || !cached.brandLight)) return;
-    applyPalette({
-      hue: cached.hue,
-      tint: cached.tint,
-      accent: { light: cached.brandLight, dark: cached.brandDark },
-    });
-  }
 
   function paletteApi() {
     return window.KVAccentColor || null;

@@ -36,7 +36,7 @@ const RESERVED_ALIASES = [
   '--transition', '--surface-1', '--surface-2', '--surface-3',
   '--surface-border', '--input-border',
   '--text-primary', '--text-secondary', '--text-muted',
-  '--warning-text-color',
+
 ];
 
 function readSheet(name) {

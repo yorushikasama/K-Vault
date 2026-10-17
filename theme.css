@@ -35,31 +35,6 @@
   flex-shrink: 0;
 }
 
-/* ===== Light :root — legacy aliases onto the authoritative brand =====
-   These names predate the --ui-* layer and are kept so older rules keep
-   resolving. They must stay *aliases* — a literal here is a second source of
-   truth that the theme swap cannot reach. */
-:root {
-  --primary-color: var(--ui-brand);
-  --primary-light: var(--ui-brand-hover);
-  --primary-dark: var(--ui-brand-active);
-  /* 粉色不是本项目的品牌色，也没有消费者 —— 留着只会让下一个人以为它是
-     "第二支强调色"。强调色即 --ui-brand*。 */
-  --accent-color: var(--ui-brand);
-  --success-color: #67c23a;
-  --warning-color: #e6a23c;
-  --danger-color: #f56c6c;
-  --info-color: #909399;
-  --text-primary: #2f3243;
-  --text-secondary: #555d72;
-  --text-muted: #8b93aa;
-  --surface-1: #ffffff;
-  --surface-2: rgba(255, 255, 255, 0.82);
-  --surface-3: #f0f3fa;
-  --surface-border: rgba(255, 255, 255, 0.55);
-  --input-border: #e8eaf2;
-  --transition: all 0.2s ease-out;
-}
 
 /* Shared keyframes (de-duplicated from per-page copies). */
 @keyframes spin {
@@ -125,25 +100,11 @@ html {
   display: none !important;
 }
 
-/* Legacy dark block, folded into the single token layer further down.
-   Kept as aliases so old references (--primary, --card-bg, --shadow …) resolve
-   from --ui-*, which means one swap in one place now drives every page. */
+/* Dark 是值交换不是规则复制：所有 --ui-* 的翻转都在文件后段的权威层
+   dark 块里。历史别名（--primary / --card-bg / --shadow …）定义在 :root
+   集中区且解析晚，暗色下自动取到翻转后的值，这里无需重复定义。 */
 html[data-theme="dark"] {
   color-scheme: dark;
-  --primary-color: var(--ui-brand);
-  --primary-light: var(--ui-brand-hover);
-  --primary-dark: var(--ui-brand-active);
-  --primary: var(--ui-brand);
-  /* 曾经这里是写死的淡紫 #8d9dd8：夜间把强调色钉死在第三个紫上，
-     和亮色档的 --ui-brand 不是一个色，主题切换时这一处不跟着走。
-     它唯一的消费者是图库批量条的计数文字，本就是"强调"，指回品牌色。 */
-  --accent-color: var(--ui-brand);
-  --accent: var(--ui-brand);
-  --bg-gradient: var(--ui-canvas);
-  --bg: var(--ui-canvas);
-  --card-bg: var(--ui-surface);
-  --shadow: var(--ui-elev-1);
-  --shadow-hover: var(--ui-elev-2);
 }
 
 html[data-theme="dark"] body {
@@ -492,10 +453,6 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
   --ui-card-backdrop-filter: none;
 
 
-  /* Radius scale (applied by role, not one global value) */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
 
   /* Wallpaper strength. These two multiply: the layer shows the picture at
      --ui-wall-opacity, then a canvas-colored scrim washes it back down. The
@@ -508,10 +465,9 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
   --ui-wall-opacity: 0.55;
   --ui-wall-mask: 0.30;
 
-  /* Neutral elevation scale (no colored glows) */
-  --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
-  --shadow-2: 0 4px 12px rgba(15, 23, 42, 0.08);
-  --shadow-3: 0 12px 28px rgba(15, 23, 42, 0.14);
+  /* Neutral elevation scale (no colored glows). --shadow-1/2/3 的非 dark
+     变体由集中区别名指向 --ui-elev-*；-dark 变体在这里保留字面值 ——
+     admin 等页在亮色下也消费它们当"深影"用。 */
   --shadow-1-dark: 0 1px 2px rgba(0, 0, 0, 0.28), 0 1px 1px rgba(0, 0, 0, 0.22);
   --shadow-2-dark: 0 4px 12px rgba(0, 0, 0, 0.34);
   --shadow-3-dark: 0 12px 28px rgba(0, 0, 0, 0.46);
@@ -523,27 +479,41 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
   /* -- 跨页别名集中区（2026-10-17 样式统一管理）--------------------------
      这些名字（--card-bg / --primary / --shadow …）曾是各页 CSS 各抄一份的
      转发别名，gallery/index/login/video/preview 里都有，回退值还各不相同。
-     现在只在这里定义一份，全部指向权威层 token；各页文件不得再定义。
+     现在只在这里定义一份，全部指向权威层 token；各页文件不得再定义
+     （css-single-source-contract 测试守卫）。本文件历史上另有三处平行的
+     back-compat 区（文件头 light 字面值、dark 块、文件尾 :root），三区
+     互相覆盖、--surface-* 语义各说各话，2026-10-17 全部合并进这一区。
      注意：theme-effects.js 运行时会把其中一部分（--card-bg/--surface-*/…
      带用户透明度的 color-mix 版）以内联样式写在 <html> 上，内联优先级
      高于这里 —— 这份定义只在 JS 未执行时作统一回退。 */
-  --bg-gradient: var(--ui-canvas);
-  --card-bg: var(--ui-surface);
-  --shadow: var(--ui-elev-1);
-  --shadow-hover: var(--ui-elev-2);
-  --primary: var(--ui-brand);
+  --primary-color: var(--ui-brand);
   --primary-light: var(--ui-brand-hover);
   --primary-dark: var(--ui-brand-active);
+  --primary: var(--ui-brand);
   --accent: var(--ui-brand);
-  --surface-1: var(--ui-surface-sunken);
+  --danger-color: var(--ui-danger);
+  --bg: var(--ui-canvas);
+  --bg-gradient: var(--ui-canvas);
+  --card-bg: var(--ui-surface);
+  /* surface 档位沿用历史语义：1 = 卡片主面（输入框 / 下拉的底），2 = 嵌套
+     面板，3 = 再深一层的沉底 —— 数字越大越"沉"。不要"修"成 raised：
+     浮起面是 --ui-surface-raised 的事，和这组历史档位无关。 */
+  --surface-1: var(--ui-surface);
   --surface-2: var(--ui-surface);
-  --surface-3: var(--ui-surface-raised);
+  --surface-3: var(--ui-surface-sunken);
   --surface-border: var(--ui-line);
-  --input-border: var(--ui-line-strong);
+  --input-border: var(--ui-line);
   --text-primary: var(--ui-ink);
   --text-secondary: var(--ui-ink-secondary);
   --text-muted: var(--ui-ink-muted);
-  --warning-text-color: var(--ui-warning);
+  --radius-sm: var(--ui-radius-sm);
+  --radius-md: var(--ui-radius-md);
+  --radius-lg: var(--ui-radius-lg);
+  --shadow-1: var(--ui-elev-1);
+  --shadow-2: var(--ui-elev-2);
+  --shadow-3: var(--ui-elev-3);
+  --shadow: var(--ui-elev-1);
+  --shadow-hover: var(--ui-elev-2);
   --transition: all 0.2s ease-out;
 
   /* -- 全局字体（原先只有 mobile-refactor.css 的 --m-font/--m-title-font
@@ -837,7 +807,7 @@ html[data-theme="dark"] .el-button--danger {
   --ui-brand-active: color-mix(in srgb, var(--ui-brand) 62%, var(--ui-ink));
   --ui-brand-ink: var(--ui-ink-inverse);
   --ui-brand-soft: color-mix(in srgb, var(--ui-brand) 10%, transparent);
-  --ui-brand-soft-hover: color-mix(in srgb, var(--ui-brand) 16%, transparent);
+
   --ui-brand-ring: color-mix(in srgb, var(--ui-brand) 35%, transparent);
 
   /* -- Semantic (Element UI compatible) --------------------------------- */
@@ -925,39 +895,13 @@ html[data-theme="dark"] .el-button--danger {
   --ui-radius-sm: 6px;
   --ui-radius-md: 10px;
   --ui-radius-lg: 14px;
-  --ui-radius-pill: 9999px;
+
 
   /* -- Elevation -------------------------------------------------------- */
   --ui-elev-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
   --ui-elev-2: 0 4px 8px -2px rgba(16, 24, 40, 0.1), 0 2px 4px -2px rgba(16, 24, 40, 0.06);
   --ui-elev-3: 0 12px 16px -4px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.03);
 
-  /* -- Spacing ---------------------------------------------------------- */
-  --ui-space-1: 4px;
-  --ui-space-2: 8px;
-  --ui-space-3: 12px;
-  --ui-space-4: 16px;
-  --ui-space-5: 20px;
-  --ui-space-6: 24px;
-  --ui-space-8: 32px;
-
-  /* -- Type ------------------------------------------------------------- */
-  --ui-font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC",
-    system-ui, sans-serif;
-  --ui-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
-  --ui-text-xs: 0.75rem;
-  --ui-text-sm: 0.8125rem;
-  --ui-text-base: 0.875rem;
-  --ui-text-md: 1rem;
-  --ui-text-lg: 1.125rem;
-  --ui-text-xl: 1.375rem;
-  --ui-leading: 1.6;
-  --ui-leading-tight: 1.35;
-
-  /* -- Motion ----------------------------------------------------------- */
-  --ui-dur-fast: 120ms;
-  --ui-dur: 200ms;
-  --ui-ease: cubic-bezier(0.4, 0, 0.2, 1);
 
   /* -- Layout -----------------------------------------------------------
      内容宽度原先各页自定，从 900px 到 1600px 都有（admin 900、旧 webdav 980、
@@ -973,11 +917,8 @@ html[data-theme="dark"] .el-button--danger {
   --ui-width-content: 1280px;
   --ui-width-wide: 1600px;
 
-  /* 页面纵向节奏：容器留白与区块间距共用同一组值，
-     避免有的页面顶到边、有的页面留一大片。 */
+  /* 页面纵向节奏：容器留白共用同一组值，避免有的页面顶到边、有的页面留一大片。 */
   --ui-page-pad: 16px;
-  --ui-stack-gap: 16px;
-  --ui-block-gap: 12px;
 }
 
 /* Dark is a value swap: no rule is duplicated per theme. */
@@ -1016,37 +957,6 @@ html[data-theme="dark"] {
   --ui-elev-3: 0 12px 16px -4px rgba(0, 0, 0, 0.5);
 }
 
-/* Bridge the historical names onto the new layer so the pages that still
-   read --primary-color / --card-bg / --radius-md keep working while they
-   migrate. Each is a pure alias — no page owns a value any more, and the
-   dark swap propagates for free because the alias resolves late. */
-:root {
-  --primary-color: var(--ui-brand);
-  --primary-light: var(--ui-brand-hover);
-  --primary-dark: var(--ui-brand-active);
-  --success-color: var(--ui-success);
-  --warning-color: var(--ui-warning);
-  --danger-color: var(--ui-danger);
-  --info-color: var(--ui-info);
-  --text-primary: var(--ui-ink);
-  --text-secondary: var(--ui-ink-secondary);
-  --text-muted: var(--ui-ink-muted);
-  --surface-1: var(--ui-surface);
-  --surface-3: var(--ui-surface-sunken);
-  --input-border: var(--ui-line);
-  --card-bg: var(--ui-surface);
-  --bg: var(--ui-canvas);
-  --radius-sm: var(--ui-radius-sm);
-  --radius-md: var(--ui-radius-md);
-  --radius-lg: var(--ui-radius-lg);
-  /* 按钮专用档，供各页的历史类名引用（例如 .action-btn）。 */
-  --radius-control: var(--ui-radius-control);
-  --shadow-1: var(--ui-elev-1);
-  --shadow-2: var(--ui-elev-2);
-  --shadow-3: var(--ui-elev-3);
-  --shadow: var(--ui-elev-1);
-  --shadow-hover: var(--ui-elev-2);
-}
 
 body.login-page {
   min-height: 100dvh !important;
