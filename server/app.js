@@ -905,7 +905,9 @@ function createApp() {
   }
 
   const UI_CONFIG_FILE_NAME = 'ui_config.json';
-  const UI_EFFECT_STYLES = new Set(['none', 'math', 'particle', 'texture']);
+  // 特效族（math/particle/texture）已随 2026-10-17 的面板改版整体下线，
+  // 客户端 normalizeSettings 会把存量值归到 'none'，这里同步只认 'none'。
+  const UI_EFFECT_STYLES = new Set(['none']);
   const DEFAULT_UI_CONFIG = {
     version: 1,
     baseColor: '#fafaf8',
@@ -914,6 +916,8 @@ function createApp() {
     loginBackgroundUrl: '',
     cardOpacity: 86,
     cardBlur: 14,
+    wallpaperOpacity: 55,
+    wallpaperMask: 30,
     effectStyle: 'none',
     effectIntensity: 22,
     optimizeMobile: true,
@@ -960,6 +964,8 @@ function createApp() {
     next.loginBackgroundUrl = sanitizeUiUrl(next.loginBackgroundUrl);
     next.cardOpacity = Math.round(clampUiNumber(next.cardOpacity, 0, 100));
     next.cardBlur = Math.round(clampUiNumber(next.cardBlur, 0, 32));
+    next.wallpaperOpacity = Math.round(clampUiNumber(next.wallpaperOpacity, 0, 100));
+    next.wallpaperMask = Math.round(clampUiNumber(next.wallpaperMask, 0, 100));
     next.effectStyle = UI_EFFECT_STYLES.has(next.effectStyle) ? next.effectStyle : DEFAULT_UI_CONFIG.effectStyle;
     next.effectIntensity = Math.round(clampUiNumber(next.effectIntensity, 0, 100));
     next.optimizeMobile = next.optimizeMobile !== false;

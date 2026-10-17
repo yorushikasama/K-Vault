@@ -286,7 +286,9 @@
       '<input id="uiUploadGlobalInput" type="file" accept="image/*" class="shell-hidden-input">' +
       '<button type="button" id="uiClearGlobalBg" class="shell-panel-btn">清除</button>' +
       "</div>" +
-      '<p class="shell-panel-tip">将应用到首页、图库、视频库、后台及其他所有可见页面。</p>' +
+      rangeHtml("uiWallpaperOpacity", "壁纸显示强度", snapshot.wallpaperOpacity, 0, 100, "%") +
+      rangeHtml("uiWallpaperMask", "背景蒙版浓度", snapshot.wallpaperMask, 0, 100, "%") +
+      '<p class="shell-panel-tip">强度 100% 完整显示壁纸；蒙版 0% 不压色。将应用到首页、图库、视频库、后台及其他所有页面。</p>' +
       "</section>" +
 
       '<section class="shell-panel-section">' +
@@ -399,7 +401,8 @@
     }
 
     function updateLabels() {
-      [["uiCardOpacity", "%", 0, 100], ["uiCardBlur", "px", 0, 32]]
+      [["uiCardOpacity", "%", 0, 100], ["uiCardBlur", "px", 0, 32],
+       ["uiWallpaperOpacity", "%", 0, 100], ["uiWallpaperMask", "%", 0, 100]]
         .forEach(function (row) {
           var label = node.querySelector('[data-for="' + row[0] + '"]');
           if (label) {
@@ -426,6 +429,8 @@
         loginBackgroundUrl: value("uiLoginBgUrl").trim(),
         cardOpacity: clamp(value("uiCardOpacity"), 0, 100),
         cardBlur: clamp(value("uiCardBlur"), 0, 32),
+        wallpaperOpacity: clamp(value("uiWallpaperOpacity"), 0, 100),
+        wallpaperMask: clamp(value("uiWallpaperMask"), 0, 100),
         // 特效已整体下线（theme-effects.js 同步退役）。字段固定归零写出，
         // 保持与 KV 里存量 config 的结构一致，旧键不会残留 "texture"。
         effectStyle: "none",
@@ -458,6 +463,8 @@
       setValue("uiLoginBgUrl", state.loginBackgroundUrl || "");
       setValue("uiCardOpacity", clamp(state.cardOpacity, 0, 100));
       setValue("uiCardBlur", clamp(state.cardBlur, 0, 32));
+      setValue("uiWallpaperOpacity", clamp(state.wallpaperOpacity, 0, 100));
+      setValue("uiWallpaperMask", clamp(state.wallpaperMask, 0, 100));
       setValue("uiEffectIntensity", clamp(state.effectIntensity, 0, 100));
       var mobile = node.querySelector("#uiOptimizeMobile");
       if (mobile) mobile.checked = state.optimizeMobile !== false;
@@ -521,7 +528,7 @@
     function wire() {
       var watched = [
         "uiGlobalBgUrl", "uiLoginBgUrl", "uiCardOpacity",
-        "uiCardBlur",
+        "uiCardBlur", "uiWallpaperOpacity", "uiWallpaperMask",
       ];
       watched.forEach(function (id) {
         var el = node.querySelector("#" + id);

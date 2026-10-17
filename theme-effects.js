@@ -24,6 +24,8 @@
     loginBackgroundUrl: "",
     cardOpacity: 86,
     cardBlur: 14,
+    wallpaperOpacity: 55,
+    wallpaperMask: 30,
     effectStyle: "none",
     effectIntensity: 22,
     optimizeMobile: true,
@@ -79,6 +81,8 @@
     next.loginBackgroundUrl = sanitizeUrl(next.loginBackgroundUrl);
     next.cardOpacity = Math.round(clampNumber(next.cardOpacity, 0, 100));
     next.cardBlur = Math.round(clampNumber(next.cardBlur, 0, 32));
+    next.wallpaperOpacity = Math.round(clampNumber(next.wallpaperOpacity, 0, 100));
+    next.wallpaperMask = Math.round(clampNumber(next.wallpaperMask, 0, 100));
     next.effectStyle = "none";
     next.effectIntensity = 0;
     next.optimizeMobile = next.optimizeMobile !== false;
@@ -442,6 +446,17 @@ void darkMode;
     root.style.setProperty("--ui-card-backdrop-filter",
       useBackdropFilter ? "blur(" + blur + "px) saturate(115%)" : "none"
     );
+
+    // 壁纸强度旋钮（2026-10-17 开放给用户）：图层不透明度与画布色蒙版
+    // 原本钉死在 theme.css（0.55/0.30），用户拉到 100% 也能完整显示壁纸。
+    // 内联写在 <html> 上会同时覆盖亮/暗两档 CSS 值 —— DIY 取向下接受
+    // 全主题统一：用户要什么强度就是什么强度，不再由设计替他拿主意。
+    // CSS 里的默认值仅在 JS 未执行时兜底。
+    var wallOpacity = clampNumber(next.wallpaperOpacity, 0, 100) / 100;
+    var wallMask = clampNumber(next.wallpaperMask, 0, 100) / 100;
+    root.style.setProperty("--ui-wall-opacity", wallOpacity.toFixed(2));
+    root.style.setProperty("--ui-wall-mask", wallMask.toFixed(2));
+
     root.style.setProperty("--ui-shadow-soft", uiShadowSoft);
     root.style.setProperty("--ui-shadow-soft-dark", uiShadowSoftDark);
     root.style.setProperty("--bg-gradient", "none");

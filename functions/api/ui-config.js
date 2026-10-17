@@ -3,7 +3,9 @@ import { apiError, apiSuccess } from '../utils/api-v1.js';
 
 const UI_CONFIG_KEY = 'ui_config';
 const KV_BINDING_CANDIDATES = ['img_url', 'KV', 'UI_CONFIG_KV'];
-const EFFECT_STYLES = new Set(['none', 'math', 'particle', 'texture']);
+// 特效族（math/particle/texture）已随 2026-10-17 的面板改版整体下线，
+// 客户端 normalizeSettings 会把存量值归到 'none'，这里同步只认 'none'。
+const EFFECT_STYLES = new Set(['none']);
 
 const DEFAULT_UI_CONFIG = {
   version: 1,
@@ -13,6 +15,8 @@ const DEFAULT_UI_CONFIG = {
   loginBackgroundUrl: '',
   cardOpacity: 86,
   cardBlur: 14,
+  wallpaperOpacity: 55,
+  wallpaperMask: 30,
   effectStyle: 'none',
   effectIntensity: 22,
   optimizeMobile: true,
@@ -59,6 +63,8 @@ function normalizeUiConfig(raw) {
   next.loginBackgroundUrl = sanitizeUrl(next.loginBackgroundUrl);
   next.cardOpacity = Math.round(clampNumber(next.cardOpacity, 0, 100));
   next.cardBlur = Math.round(clampNumber(next.cardBlur, 0, 32));
+  next.wallpaperOpacity = Math.round(clampNumber(next.wallpaperOpacity, 0, 100));
+  next.wallpaperMask = Math.round(clampNumber(next.wallpaperMask, 0, 100));
   next.effectStyle = EFFECT_STYLES.has(next.effectStyle) ? next.effectStyle : DEFAULT_UI_CONFIG.effectStyle;
   next.effectIntensity = Math.round(clampNumber(next.effectIntensity, 0, 100));
   next.optimizeMobile = next.optimizeMobile !== false;

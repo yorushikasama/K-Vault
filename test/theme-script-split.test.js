@@ -209,6 +209,9 @@ describe('background + base color are centrally managed', function () {
   it('keeps the wallpaper above the visibility floor in both themes', function () {
     // 实测阈值：低于 ~10% 时浅色壁纸被压进同色底，等于没壁纸（这正是本次
     // "有些页面没有背景图"的观感来源）。这里解析 token 并守住乘积下限。
+    // 注意：这只钉 CSS 里的默认值（JS 未执行时的回退）。2026-10-17 起
+    // 壁纸强度由用户在 UI 面板接管（wallpaperOpacity / wallpaperMask），
+    // 用户自己调低不在此限 —— 下一条断言钉住"用户旋钮必须存在"。
     const tokens = {};
     const re = /--(ui-wall-(?:opacity|mask))\s*:\s*([\d.]+)\s*;/g;
     let m;
@@ -219,6 +222,24 @@ describe('background + base color are centrally managed', function () {
     const product = tokens['ui-wall-opacity'] * tokens['ui-wall-mask'];
     assert.ok(product >= 0.1,
       `壁纸有效可见度 ${product.toFixed(3)} 低于 0.1 下限，等于没有背景图`);
+  });
+
+  it('wallpaper strength knobs belong to the user, not the stylesheet', function () {
+    // 2026-10-17 用户决策「最大程度 DIY」：壁纸显示强度原被钉死在 theme.css
+    // （0.55/0.30），用户拉不到 100%。现在 wallpaperOpacity / wallpaperMask
+    // 是用户设置，theme-effects.js 必须把它们写进两个 token —— 内联值压过
+    // :root，CSS 默认值仅作 JS 未执行时的回退。同时服务端两端（server/app.js
+    // 与 functions/api/ui-config.js）的 normalize 必须放行这两个键，否则
+    // 保存后回读校验失败，设置退回本地缓存。
+    const effects = read('theme-effects.js');
+    assert.match(effects, /wallpaperOpacity/, 'DEFAULTS 缺少 wallpaperOpacity');
+    assert.match(effects, /"--ui-wall-opacity"/, 'JS 必须把用户值写进 --ui-wall-opacity');
+    assert.match(effects, /"--ui-wall-mask"/, 'JS 必须把用户值写进 --ui-wall-mask');
+    for (const serverish of ['server/app.js', 'functions/api/ui-config.js']) {
+      const src = read(serverish);
+      assert.match(src, /wallpaperOpacity\s*[:=]/, `${serverish} 未接纳 wallpaperOpacity`);
+      assert.match(src, /wallpaperMask\s*[:=]/, `${serverish} 未接纳 wallpaperMask`);
+    }
   });
 
   it('card opacity is user-adjustable again: no silent floor', function () {
