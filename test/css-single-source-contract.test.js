@@ -224,6 +224,31 @@ describe('card blur consumer chain', function () {
     }
   });
 
+  it('preview paper/gate/media faces never re-declare an opaque background', function () {
+    // 第十一批收编面：预览页的纸面页（markdown/data/archive/font/summary/
+    // email/doc-page）、视图容器（summary/email/enhanced/doc/text-view）、
+    // 加载门（deferred-gate）、媒体台（media-frame/preview-image/
+    // preview-video）、音频台（audio-console）、压缩包代码窗
+    // （archive-entry-preview/archive-list）与文件面板（file-panel）——
+    // 这些块历史上散落 #fff/#f8fafc/#0f172a 系硬编码，用户拖「卡片
+    // 透明度」时整面纹丝不动，暗色模式下还保持死白/死黑。逐块扫描：
+    // 背景必须转发 token（--panel / surface 别名 / --ui-stage / --code-bg）。
+    const src = stripComments(readSheet('preview.css'));
+    const blockRe = /(^|\})\s*([^{}]*\.(?:topbar|viewer|file-panel|markdown-page|data-page|archive-page|font-page|summary-page|email-page|email-body|email-header|email-view|enhanced-view|doc-view|doc-page|summary-view|text-view|deferred-gate|audio-console|media-frame|preview-image|preview-video|archive-entry-preview|archive-list)\b[^{}]*)\{([^}]*)\}/g;
+    let m;
+    while ((m = blockRe.exec(src)) !== null) {
+      const decls = m[3];
+      const bg = /(?:^|;)\s*background:\s*([^;]+);/.exec(decls);
+      if (!bg) continue;
+      const value = bg[1].trim();
+      assert.ok(
+        /var\(--(panel|surface-[123]|card-bg|ui-stage|code-bg)\)/.test(value) && !/var\(--ui-surface\)/.test(value),
+        `preview.css 的「${m[2].trim().replace(/\s+/g, ' ')}」声明了架空背景「${value}」` +
+        `—— 预览页透明度旋钮会被这条规则架空`
+      );
+    }
+  });
+
   it('workbench --wb-subtle carries the user card opacity', function () {
     // --wb-subtle 用于拖放区/限额条/空态等大块嵌套面。曾裸引 sunken 实色：
     // 用户拖「卡片透明度」时上传/文件页大片区域纹丝不动。必须走 color-mix
