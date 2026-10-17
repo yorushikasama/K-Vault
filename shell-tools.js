@@ -423,11 +423,12 @@
         });
     }
 
+    function checkedValue(name, fallback) {
+      var hit = node.querySelector('input[name="' + name + '"]:checked');
+      return hit ? hit.value : fallback;
+    }
+
     function readValues() {
-      var checkedValue = function (name, fallback) {
-        var hit = node.querySelector('input[name="' + name + '"]:checked');
-        return hit ? hit.value : fallback;
-      };
       var value = function (id) {
         var el = node.querySelector("#" + id);
         return el ? el.value : "";
