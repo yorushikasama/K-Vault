@@ -63,9 +63,9 @@ export async function onRequestPost(context) {
 
   } catch (error) {
     console.error('Login error:', error);
-    return new Response(JSON.stringify({ 
-      success: false, 
-      message: '登录失败：' + error.message 
+    return new Response(JSON.stringify({
+      success: false,
+      message: '登录失败，请稍后重试'
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

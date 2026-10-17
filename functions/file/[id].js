@@ -166,6 +166,30 @@ function addCorsHeaders(headers) {
   return headers;
 }
 
+// 能被浏览器当文档解析并执行脚本的 MIME 类型。上传的 .html/.svg 直链若以这些
+// 类型 inline 返回，脚本会在站点自身源下执行（存储型 XSS），可读取 localStorage、
+// 带 cookie 调 /api/manage/**。对所有 /file/ 响应统一加固：nosniff 阻断 MIME 嗅探；
+// 危险类型再加 CSP sandbox（无 allow-* 子句 = 脚本不执行、源隔离），
+// 而 img/视频这类子资源加载不受 sandbox 影响——SVG 图库展示、PDF 预览因此不受损。
+const SCRIPTABLE_DOCUMENT_TYPES = new Set([
+  'text/html',
+  'application/xhtml+xml',
+  'image/svg+xml',
+  'application/xml',
+  'text/xml',
+  'text/javascript',
+  'application/javascript',
+  'application/x-javascript',
+]);
+
+function hardenFileResponse(headers) {
+  headers.set('X-Content-Type-Options', 'nosniff');
+  const contentType = String(headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
+  if (SCRIPTABLE_DOCUMENT_TYPES.has(contentType)) {
+    headers.set('Content-Security-Policy', 'sandbox');
+  }
+}
+
 function addResponseHeaders(headers, fileName, mimeType, upstream = null) {
   addCorsHeaders(headers);
   headers.set('Content-Type', mimeType || 'application/octet-stream');
@@ -176,6 +200,7 @@ function addResponseHeaders(headers, fileName, mimeType, upstream = null) {
     requestDeclaresImmutable ? 'public, max-age=31536000, immutable' : 'no-store, max-age=0'
   );
   headers.set('Accept-Ranges', 'bytes');
+  hardenFileResponse(headers);
 
   if (fileName) {
     const encoded = encodeURIComponent(fileName);

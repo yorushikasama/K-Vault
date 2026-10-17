@@ -89,12 +89,20 @@ function createApp() {
     } catch (error) {
       safeLogError(error);
       const payload = toStorageErrorPayload(error, 500);
+      // Classified (known business) errors keep their readable detail; an
+      // unclassified exception is unexpected and its raw message may carry
+      // internal implementation details, so clients get a traceId reference
+      // instead — the X-Trace-Id header and server logs carry the full story.
+      const knownBusinessError = payload.code && payload.code !== 'UNKNOWN';
+      const detail = knownBusinessError
+        ? payload.detail
+        : `Internal error; see server logs with traceId ${traceId}`;
       const envelope = {
         success: false,
         error: {
           code: payload.code || 'INTERNAL_ERROR',
           message: payload.message || 'Internal Server Error',
-          detail: payload.detail || String(error?.message || 'unknown'),
+          detail,
           retriable: payload.retriable === true,
         },
         traceId,
@@ -1058,6 +1066,30 @@ function createApp() {
     return new URL(path, `${getPublicOrigin(c)}/`).toString();
   }
 
+  // 可被浏览器当文档解析并执行脚本的 MIME 类型（与 functions/file/[id].js 的
+  // SCRIPTABLE_DOCUMENT_TYPES 保持一致）。上传的 .html/.svg 直链若以这些类型
+  // inline 返回，脚本会在站点自身源下执行（存储型 XSS）。加固策略：nosniff
+  // 阻断 MIME 嗅探；危险类型加 CSP sandbox（无 allow-* = 脚本不执行、源隔离），
+  // 子资源加载（img 里的 SVG、video）不受影响，图库展示与 PDF 预览因此不受损。
+  const SCRIPTABLE_DOCUMENT_TYPES = new Set([
+    'text/html',
+    'application/xhtml+xml',
+    'image/svg+xml',
+    'application/xml',
+    'text/xml',
+    'text/javascript',
+    'application/javascript',
+    'application/x-javascript',
+  ]);
+
+  function hardenFileResponseHeaders(headers) {
+    headers.set('X-Content-Type-Options', 'nosniff');
+    const contentType = String(headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
+    if (SCRIPTABLE_DOCUMENT_TYPES.has(contentType)) {
+      headers.set('Content-Security-Policy', 'sandbox');
+    }
+  }
+
   /**
    * 文件代理响应头。
    *
@@ -1087,6 +1119,7 @@ function createApp() {
       const safeName = encodeURIComponent(result.file.file_name || result.file.id);
       headers.set('Content-Disposition', `inline; filename="${safeName}"; filename*=UTF-8''${safeName}`);
     }
+    hardenFileResponseHeaders(headers);
 
     return headers;
   }
@@ -1138,6 +1171,7 @@ function createApp() {
       const safeName = encodeURIComponent(parsed.fileName || `${parsed.fileId}.${parsed.fileExtension}`);
       headers.set('Content-Disposition', `inline; filename="${safeName}"; filename*=UTF-8''${safeName}`);
     }
+    hardenFileResponseHeaders(headers);
 
     if (headOnly) {
       return new Response(null, { status: upstream.status, statusText: upstream.statusText, headers });
@@ -1353,6 +1387,30 @@ function createApp() {
     return c.json({
       authRequired: Boolean(authService.isAuthRequired()),
     });
+  });
+
+  // Requirement (SEC-03): the manage dashboard fails closed when auth is not
+  // configured — the same semantics /api/admin/** already enforces. The manage
+  // tree carries write endpoints (delete, editName, toggleLike, block, white,
+  // move-folder, settings, folder mutations), and leaving them reachable by
+  // anyone on an unconfigured deployment is a configuration error that must be
+  // refused, not silently allowed. Session endpoints (login/logout/check) are
+  // part of the auth flow itself and stay reachable. Mirrors the Pages-side
+  // middleware in functions/api/manage/_middleware.js.
+  app.use('/api/manage/*', async (c, next) => {
+    const { authService } = getServices(c);
+    if (authService.isAuthRequired()) {
+      return next();
+    }
+    const segment = String(c.req.path).replace(/^\/api\/manage\/?/, '').split('/')[0];
+    if (segment === 'login' || segment === 'logout' || segment === 'check') {
+      return next();
+    }
+    return apiV1Error(
+      'ADMIN_AUTH_NOT_CONFIGURED',
+      'Manage API requires BASIC_USER and BASIC_PASS to be configured. Manage endpoints fail closed when no admin credential is set.',
+      503
+    );
   });
 
   // Compatibility aliases
@@ -3596,6 +3654,7 @@ function createApp() {
   });
 
   // --- Manage API ---
+
   app.get('/api/manage/list', (c) => {
     const unauthorized = requireAuth(c);
     if (unauthorized) return unauthorized;

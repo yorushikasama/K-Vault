@@ -128,6 +128,11 @@ describe('Docker runtime API v1 parity', function () {
   });
 
   it('moves files by stable id or unique display name without changing public links', async function () {
+    // The manage API fails closed when auth is unconfigured; authenticate
+    // like a real admin client so the folder-move parity stays under test.
+    process.env.BASIC_USER = 'admin';
+    process.env.BASIC_PASS = 'docker-parity-pass';
+    const adminAuth = `Basic ${Buffer.from('admin:docker-parity-pass').toString('base64')}`;
     const db = initDatabase(process.env.DB_PATH);
     const config = loadConfig(process.env);
     const storageRepo = new StorageConfigRepository(db, config);
@@ -152,7 +157,7 @@ describe('Docker runtime API v1 parity', function () {
     const app = createApp();
     const moveResponse = await app.fetch(new Request('http://localhost/api/manage/files/move-folder', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: adminAuth },
       body: JSON.stringify({
         files: [{ fileName: 'photo-display-name.webp' }],
         targetFolderPath: '图片',
@@ -167,17 +172,24 @@ describe('Docker runtime API v1 parity', function () {
     assert.strictEqual(moved.id, 'telegram-stable-id');
     assert.strictEqual(`/file/${moved.id}`, '/file/telegram-stable-id');
 
-    const foldersResponse = await app.fetch(new Request('http://localhost/api/manage/folders'));
+    const foldersResponse = await app.fetch(new Request('http://localhost/api/manage/folders', {
+      headers: { Authorization: adminAuth },
+    }));
     await expectStatus(foldersResponse, 200);
     const foldersPayload = await foldersResponse.json();
     assert.ok(foldersPayload.folders.some((folder) => folder.path === '图片'));
   });
 
   it('rejects folder moves when no requested files can be resolved', async function () {
+    // The manage API fails closed when auth is unconfigured; authenticate
+    // like a real admin client so the 404 contract stays under test.
+    process.env.BASIC_USER = 'admin';
+    process.env.BASIC_PASS = 'docker-parity-pass';
+    const adminAuth = `Basic ${Buffer.from('admin:docker-parity-pass').toString('base64')}`;
     const app = createApp();
     const moveResponse = await app.fetch(new Request('http://localhost/api/manage/files/move-folder', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: adminAuth },
       body: JSON.stringify({
         ids: ['missing-file-id'],
         targetFolderPath: '图片',

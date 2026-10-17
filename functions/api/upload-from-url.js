@@ -12,6 +12,7 @@ import {
   shouldUseSignedTelegramLinks,
   shouldWriteTelegramMetadata,
 } from "../utils/telegram.js";
+import { MAX_REDIRECTS, validateRedirectLocation, validateRemoteUrl } from "../utils/ssrf-guard.js";
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
 const FETCH_TIMEOUT = 30000;
@@ -40,9 +41,12 @@ export async function onRequestPost(context) {
       return jsonResponse({ error: "URL 格式无效" }, 400);
     }
 
-    const fetched = await fetchRemote(url);
+    const fetched = await fetchRemote(url, env);
     if (!fetched.ok) {
-      return jsonResponse({ error: fetched.error }, fetched.status || 502);
+      return jsonResponse(
+        fetched.errorCode ? { error: fetched.error, errorCode: fetched.errorCode } : { error: fetched.error },
+        fetched.status || 502
+      );
     }
 
     // A share link answers a plain GET with the platform's own page. Saving
@@ -120,53 +124,179 @@ export async function onRequestPost(context) {
     return await uploadToTelegram(arrayBuffer, fileName, fileExtension, contentType, fileSize, env, new URL(request.url).origin, folderPath);
   } catch (error) {
     console.error("URL upload error:", error);
-    return jsonResponse({ error: `服务器错误：${error.message}` }, 500);
+    return jsonResponse({ error: "服务器内部错误" }, 500);
   }
 }
 
-async function fetchRemote(url) {
+/**
+ * URL 导入的内存上限，与 Docker 端 resolveUrlImportMaxSize 语义一致：
+ * 显式 URL_IMPORT_MAX_SIZE 优先，缺省回落 UPLOAD_MAX_SIZE，再缺省 100MB。
+ */
+function resolveUrlImportMaxSize(env) {
+  const explicit = Number(env?.URL_IMPORT_MAX_SIZE);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  const uploadCap = Number(env?.UPLOAD_MAX_SIZE);
+  if (Number.isFinite(uploadCap) && uploadCap > 0) return uploadCap;
+  return MAX_FILE_SIZE;
+}
+
+/**
+ * SSRF-safe remote fetch: the initial URL and every redirect hop go through
+ * ssrf-guard validation before any request leaves, and the body is read under
+ * the import size cap instead of being buffered unconditionally. Mirrors the
+ * Node runtime's server/lib/utils/remote-fetch.js semantics.
+ */
+async function fetchRemote(url, env) {
+  const maxBytes = resolveUrlImportMaxSize(env);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
+  const tooLarge = () => ({
+    ok: false,
+    status: 413,
+    error: `远程文件超过导入大小上限（${formatSize(maxBytes)}）`,
+    errorCode: "FILE_TOO_LARGE",
+  });
+  const ssrfBlocked = () => ({
+    ok: false,
+    status: 403,
+    error: "目标地址被 SSRF 防护拒绝",
+    errorCode: "SSRF_BLOCKED",
+  });
+
   try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 YoruVault URL Uploader",
-        Accept: "image/*,video/*,audio/*,application/*,*/*",
-      },
-    });
+    let currentUrl = String(url);
 
-    if (!response.ok) {
+    for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
+      const check = validateRemoteUrl(currentUrl);
+      if (!check.ok) {
+        if (check.code === "INVALID_URL") {
+          return { ok: false, status: 400, error: "URL 格式无效或协议不受支持" };
+        }
+        return ssrfBlocked();
+      }
+
+      let response;
+      try {
+        response = await fetch(currentUrl, {
+          redirect: "manual",
+          signal: controller.signal,
+          headers: {
+            "User-Agent": "Mozilla/5.0 YoruVault URL Uploader",
+            Accept: "image/*,video/*,audio/*,application/*,*/*",
+          },
+        });
+      } catch (error) {
+        if (error.name === "AbortError") {
+          return {
+            ok: false,
+            status: 408,
+            error: "远程 URL 请求超时",
+          };
+        }
+
+        return {
+          ok: false,
+          status: 502,
+          error: `无法获取远程 URL：${error.message}`,
+        };
+      }
+
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get("location") || "";
+        if (!location) {
+          return {
+            ok: false,
+            status: 502,
+            error: "远程 URL 返回了缺少 Location 的重定向",
+          };
+        }
+        const redirectCheck = validateRedirectLocation(location, currentUrl);
+        if (!redirectCheck.ok) {
+          if (redirectCheck.code === "INVALID_REDIRECT") {
+            return {
+              ok: false,
+              status: 502,
+              error: "远程 URL 返回了无效的重定向地址",
+            };
+          }
+          if (redirectCheck.code === "INVALID_URL") {
+            return { ok: false, status: 400, error: "URL 格式无效或协议不受支持" };
+          }
+          return ssrfBlocked();
+        }
+        try {
+          await response.body?.cancel();
+        } catch {
+          // The socket may already be gone; nothing to release.
+        }
+        currentUrl = redirectCheck.url.href;
+        continue;
+      }
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          status: 502,
+          error: `远程 URL 响应异常：${response.status} ${response.statusText}`,
+        };
+      }
+
+      const contentType = response.headers.get("content-type") || "application/octet-stream";
+
+      // Declared Content-Length is a pre-check only; the streaming cap below is
+      // authoritative, so a body that lies about (or omits) its length is still
+      // abandoned the moment it crosses the cap.
+      const declared = Number(response.headers.get("content-length"));
+      if (Number.isFinite(declared) && declared > maxBytes) {
+        try {
+          await response.body?.cancel();
+        } catch {
+          // Already closed.
+        }
+        return tooLarge();
+      }
+
+      const reader = response.body?.getReader?.();
+      if (!reader) {
+        const arrayBuffer = await response.arrayBuffer();
+        if (arrayBuffer.byteLength > maxBytes) return tooLarge();
+        return { ok: true, contentType, arrayBuffer };
+      }
+
+      const chunks = [];
+      let received = 0;
+      try {
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          received += value.byteLength;
+          if (received > maxBytes) return tooLarge();
+          chunks.push(value);
+        }
+      } finally {
+        try {
+          await reader.cancel();
+        } catch {
+          // Already closed by the reader or the peer.
+        }
+      }
+
+      const arrayBuffer = new Uint8Array(received);
+      let offset = 0;
+      for (const chunk of chunks) {
+        arrayBuffer.set(chunk, offset);
+        offset += chunk.byteLength;
+      }
+
       return {
-        ok: false,
-        status: 502,
-        error: `远程 URL 响应异常：${response.status} ${response.statusText}`,
+        ok: true,
+        contentType,
+        arrayBuffer: arrayBuffer.buffer,
       };
     }
 
-    const contentType = response.headers.get("content-type") || "application/octet-stream";
-    const arrayBuffer = await response.arrayBuffer();
-
-    return {
-      ok: true,
-      contentType,
-      arrayBuffer,
-    };
-  } catch (error) {
-    if (error.name === "AbortError") {
-      return {
-        ok: false,
-        status: 408,
-        error: "远程 URL 请求超时",
-      };
-    }
-
-    return {
-      ok: false,
-      status: 502,
-      error: `无法获取远程 URL：${error.message}`,
-    };
+    return ssrfBlocked();
   } finally {
     clearTimeout(timeout);
   }

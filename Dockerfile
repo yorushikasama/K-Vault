@@ -12,7 +12,9 @@ RUN apk add --no-cache nginx ca-certificates ffmpeg \
 # based, so the musllinux build is the correct artefact. The download is best
 # effort: an offline build still produces a working image and the feature
 # simply reports itself unavailable at runtime.
-ARG YTDLP_VERSION=latest
+# SEC-05: the version is pinned (instead of `latest`) so builds are
+# reproducible and traceable; bump deliberately when upgrading.
+ARG YTDLP_VERSION=2026.08.19
 RUN if [ "$YTDLP_VERSION" = "latest" ]; then \
       YTDLP_URL="https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_musllinux"; \
     else \

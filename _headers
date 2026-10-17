@@ -10,15 +10,19 @@
 
 /*.css
   Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
 
 /*.js
   Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
 
 /*.svg
   Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
 
 /*.woff2
   Cache-Control: public, max-age=31536000, immutable
+  X-Content-Type-Options: nosniff
 
 # 图标与 logo 没有版本串（被 <link rel="icon"> 和 manifest 按固定路径引用），
 # 给一天缓存加回源校验：换图后最迟一天生效，而不是一年。
@@ -36,9 +40,11 @@
 /
   Cache-Control: public, no-cache
   X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
 
 /*.html
   Cache-Control: public, no-cache
   X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin

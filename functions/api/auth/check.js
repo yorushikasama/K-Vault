@@ -42,7 +42,7 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify({
       authenticated: false,
       authRequired: true,
-      error: error.message
+      error: '服务器内部错误'
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

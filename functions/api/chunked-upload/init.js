@@ -76,7 +76,7 @@ export async function onRequestPost(context) {
     });
   } catch (error) {
     console.error('Init upload error:', error);
-    return jsonResponse({ error: error.message }, 500);
+    return jsonResponse({ error: '服务器内部错误' }, 500);
   }
 }
 
@@ -107,7 +107,8 @@ export async function onRequestGet(context) {
       ...taskData,
     });
   } catch (error) {
-    return jsonResponse({ error: error.message }, 500);
+    console.error('Get upload task error:', error);
+    return jsonResponse({ error: '服务器内部错误' }, 500);
   }
 }
 

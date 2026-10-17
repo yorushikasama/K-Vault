@@ -101,7 +101,7 @@ export async function onRequestPost(context) {
     });
   } catch (error) {
     console.error('Chunk upload error:', error);
-    return jsonResponse({ error: error.message }, 500);
+    return jsonResponse({ error: '服务器内部错误' }, 500);
   }
 }
 

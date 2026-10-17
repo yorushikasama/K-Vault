@@ -149,6 +149,37 @@ describe('static asset caching contract', function () {
     assert.doesNotMatch(dockerfile, /^COPY\s+_headers/m);
   });
 
+  describe('security response headers on both deployments', function () {
+    // 两套部署各有一套响应头来源：Pages 走 _headers，Docker 走 nginx.conf。
+    // 任何一侧漏配，同一份前端在两种部署下防护等级就不同，所以这里双端一起锁。
+    it('sets nosniff on versioned assets in _headers', function () {
+      for (const pattern of ['/*.css', '/*.js', '/*.svg', '/*.woff2']) {
+        const block = (headers.split(pattern)[1] || '').split(/\n\/|\n#/)[0];
+        assert.match(block, /X-Content-Type-Options:\s*nosniff/, `${pattern} 缺 nosniff`);
+      }
+    });
+
+    it('sets nosniff on the asset location in nginx', function () {
+      const at = nginx.indexOf('location ~* \\.(?:css|js|svg');
+      assert.notStrictEqual(at, -1, '找不到静态资源 location 块');
+      const block = nginx.slice(at, nginx.indexOf('}', at));
+      assert.match(block, /X-Content-Type-Options\s+"?\s*nosniff/, 'nginx 静态资源块缺 nosniff');
+    });
+
+    it('denies framing on HTML in both deployments', function () {
+      const htmlBlocks = [headers.slice(headers.indexOf('/*.html'))];
+      for (const marker of ['location ~* \\.html$ {', 'location / {']) {
+        const at = nginx.indexOf(marker);
+        assert.notStrictEqual(at, -1, `找不到 ${marker}`);
+        htmlBlocks.push(nginx.slice(at, nginx.indexOf('}', at)));
+      }
+      for (const block of htmlBlocks) {
+        assert.match(block, /X-Frame-Options:\s*DENY|X-Frame-Options\s+"?\s*DENY/i,
+          'HTML 响应缺 X-Frame-Options: DENY');
+      }
+    });
+  });
+
   it('ships the generated icon subset in the Docker image', function () {
     // 图标子集是本地文件而非 CDN 依赖，漏拷进镜像的话 Docker 部署会整站没图标。
     const dockerfile = fs.readFileSync(path.join(root, 'Dockerfile'), 'utf8');
@@ -229,6 +260,18 @@ describe('static asset caching contract', function () {
       const m = /location \^~ \/file\/ \{/.exec(nginx);
       const before = nginx.slice(Math.max(0, m.index - 700), m.index);
       assert.match(before, /\^~/, '^~ 旁边没有说明它为什么必须留着');
+    });
+
+    it('docker/nginx.conf marks /api/ as ^~ (SEC-10)', function () {
+      // 2026-10-17 生产实测：/api/manage/delete/<id>.html 被 \.html$ 静态
+      // 正则截胡返回 nginx 404 —— 凡文件 ID 以 .html 等扩展名结尾的 manage
+      // 端点（delete/editName/block/white/toggleLike）与 DELETE /api/v1/file/:id
+      // 全部中招，与 /file/ 的坑同源，修法同样是 ^~。
+      assert.match(
+        nginx,
+        /location \^~ \/api\/ \{/,
+        'docker/nginx.conf 的 /api/ 缺少 ^~，带 .html 后缀文件 ID 的 manage/v1 端点会被静态正则抢走并 404'
+      );
     });
 
     it('file IDs keep their extensions in the frontend', function () {

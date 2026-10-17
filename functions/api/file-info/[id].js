@@ -97,7 +97,7 @@ export async function onRequest(context) {
     return jsonResponse(
       {
         error: 'Internal server error',
-        message: error.message,
+
       },
       500
     );

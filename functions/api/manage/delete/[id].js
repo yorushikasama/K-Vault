@@ -172,7 +172,7 @@ export async function onRequest(context) {
     });
   } catch (error) {
     console.error('Delete error:', error);
-    return jsonResponse({ success: false, error: error.message }, 500);
+    return jsonResponse({ success: false, error: '服务器内部错误' }, 500);
   }
 }
 
