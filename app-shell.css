@@ -52,13 +52,19 @@ header.workspace-header {
   margin: 0;
   z-index: 100;
   box-sizing: border-box;
-  background: var(--ui-surface) !important;
+  background: var(--card-bg) !important;
   border: 0 !important;
   border-bottom: 1px solid var(--ui-line-strong) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  /* 2026-10-17：顶栏原是裸 var(--ui-surface) + backdrop-filter: none ——
+     「卡片透明度」「模糊强度」两个旋钮对四个分区页的顶栏全部无效
+     （同款消费链断裂，见 css-single-source-contract 的守卫注释）。
+     sticky 顶栏恰是磨砂最有意义的位置：内容从底下滚过时被压成毛玻璃。
+     --card-bg 由 theme-effects.js 写为携带用户透明度的 color-mix 版，
+     JS 未执行时回退 theme.css 集中区的 var(--ui-surface)，零回归。 */
+  backdrop-filter: var(--ui-card-backdrop-filter);
+  -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
   /* 品牌名、导航、工具按钮都按这一档字号排，四个页面因此长得一样。
      各页 body 的字体栈不同（图库用 system 栈、旧 WebDAV 页用 Manrope），
      顶栏作为共用组件不能跟着飘。 */
@@ -183,6 +189,9 @@ header.workspace-header .workspace-nav :is(i, svg.lucide) {
     gap: 8px 12px;
     row-gap: 6px;
     padding: 10px 14px !important;
+    /* 移动端禁用高消耗效果（全站断点惯例，mobile-refactor 同款） */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .workspace-nav {

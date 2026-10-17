@@ -11,7 +11,9 @@
   }
   
   .container {
-    background: var(--ui-surface);
+    background: var(--card-bg);
+    backdrop-filter: var(--ui-card-backdrop-filter);
+    -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
     border-radius: var(--ui-radius-lg);
     padding: 48px 40px;
     max-width: var(--ui-width-prose);

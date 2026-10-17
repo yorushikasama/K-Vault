@@ -126,12 +126,17 @@ describe('card blur consumer chain', function () {
 
   /** 页面文件 → 至少需要的标准消费数（-webkit- 前缀行不计）。 */
   const BLUR_CONSUMERS = {
-    'index.css': 2,      // .header / .card（另有弹窗）
-    'workbench.css': 2,  // files-query / file-tile 等
-    'gallery.css': 2,    // .toolbar / .image-card
-    'video.css': 3,      // .toolbar / .video-folders / .video-card
-    'login.css': 1,      // .login-card
-    'preview.css': 3,    // .topbar / .file-panel / .viewer
+    'index.css': 2,       // .header / .card（另有弹窗）
+    'workbench.css': 2,   // files-query / file-tile 等
+    'gallery.css': 2,     // .toolbar / .image-card
+    'video.css': 3,       // .toolbar / .video-folders / .video-card
+    'login.css': 1,       // .login-card
+    'preview.css': 3,     // .topbar / .file-panel / .viewer
+    'app-shell.css': 1,   // header.workspace-header（四分区页共用顶栏）
+    'shell-panels.css': 1, // .shell-panel（系统连接 / UI 设计浮层）
+    'block-img.css': 1,   // .container
+    'whitelist-on.css': 1, // .container
+    'theme.css': 3,       // el-dialog + toast
   };
 
   function countBlurConsumers(sheet) {
@@ -151,12 +156,34 @@ describe('card blur consumer chain', function () {
   it('mobile breakpoints keep disabling backdrop-filter (perf convention)', function () {
     // 移动端禁用高耗效果是全站惯例。各页自己断点内关闭；login 的
     // .login-card 由 mobile-refactor.css 的 900px 断点兜住。
-    const selfDisabling = ['index.css', 'gallery.css', 'video.css', 'preview.css', 'mobile-refactor.css'];
+    const selfDisabling = ['index.css', 'gallery.css', 'video.css', 'preview.css', 'app-shell.css', 'mobile-refactor.css'];
     for (const sheet of selfDisabling) {
       const src = stripComments(readSheet(sheet));
       assert.ok(
         /backdrop-filter:\s*none/.test(src),
         `${sheet} 的移动端断点缺少 backdrop-filter: none —— 高耗效果惯例被破坏`
+      );
+    }
+  });
+
+  it('top-level card surfaces do not regress to bare --ui-surface', function () {
+    // 2026-10-17 同款断链的第三批修复：app-shell 顶栏 / shell-panels 浮层 /
+    // block-img / whitelist-on 卡片曾裸引 var(--ui-surface)，对「卡片透明度」
+    // 旋钮完全无感。这些顶层卡片面必须走 --card-bg（theme-effects.js 写的
+    // color-mix 版；嵌套小控件保持实色是 workbench --wb-subtle 的既有决策，
+    // 不在本断言范围）。
+    const MUST_USE_CARD_BG = [
+      'app-shell.css',     // header.workspace-header
+      'shell-panels.css',  // .shell-panel
+      'block-img.css',     // .container
+      'whitelist-on.css',  // .container
+    ];
+    for (const sheet of MUST_USE_CARD_BG) {
+      const src = stripComments(readSheet(sheet));
+      assert.ok(
+        /background:\s*var\(--card-bg\)/.test(src),
+        `${sheet} 的顶层卡片面必须用 var(--card-bg)（携带用户透明度），` +
+        `裸 var(--ui-surface) 会让「卡片透明度」滑杆在该页失效`
       );
     }
   });

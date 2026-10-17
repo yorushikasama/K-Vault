@@ -33,7 +33,14 @@
   padding: 14px 16px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  background: var(--ui-surface);
+  /* 面板本体跟随「卡片透明度/模糊强度」旋钮：--card-bg 是 theme-effects.js
+     写出的 color-mix 版（JS 未执行时回退 var(--ui-surface)，零回归）。
+     面板内的小控件（.shell-panel-input / .shell-panel-btn /
+     .shell-segmented）保持实色 —— 与 workbench --wb-subtle 同一决策：
+     嵌套面再叠一层透明会双重 mix，透出率失真。 */
+  background: var(--card-bg);
+  backdrop-filter: var(--ui-card-backdrop-filter);
+  -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
   border: 1px solid var(--ui-line-strong);
   border-radius: var(--ui-radius-lg);
   box-shadow: var(--ui-shadow-soft);

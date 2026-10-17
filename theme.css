@@ -60,6 +60,10 @@
 .toast {
   padding: 12px 20px;
   background: var(--surface-1);
+  /* surface-1 在 JS 执行后携带用户透明度，低透明度时 toast 会透底叠字，
+     补上与 el-dialog 同款的模糊（滑杆为 0 时它就是 none）。 */
+  backdrop-filter: var(--ui-card-backdrop-filter);
+  -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   margin-bottom: 10px;
