@@ -201,4 +201,40 @@ describe('card blur consumer chain', function () {
       'preview.css 的 --panel 必须经 color-mix 消费 --ui-card-opacity'
     );
   });
+
+  it('preview .topbar/.viewer rules never re-declare an opaque background', function () {
+    // preview.css 历史上叠了三套同名 .topbar/.viewer 规则，最终生效的是
+    // 最后一套的硬编码（#fbfffe / 裸 --ui-surface）—— 把第一套携带用户
+    // 透明度的 --panel 整个架空，预览页旋钮失效的直接元凶。此断言逐块
+    // 扫描 .topbar / .viewer 选择器：背景一旦是裸 ui-surface 或硬编码
+    // 色值即失败（--panel / surface 别名合法）。
+    const src = stripComments(readSheet('preview.css'));
+    const blockRe = /(^|\})\s*([^{}]*\.(?:topbar|viewer)\b[^{}]*)\{([^}]*)\}/g;
+    let m;
+    while ((m = blockRe.exec(src)) !== null) {
+      const decls = m[3];
+      const bg = /(?:^|;)\s*background:\s*([^;]+);/.exec(decls);
+      if (!bg) continue;
+      const value = bg[1].trim();
+      assert.ok(
+        /var\(--(panel|surface-[123]|card-bg|ui-stage)\)/.test(value) && !/var\(--ui-surface\)/.test(value),
+        `preview.css 的 .topbar/.viewer 规则声明了架空背景「${value}」` +
+        `—— 预览页旋钮会被这条规则整体失效`
+      );
+    }
+  });
+
+  it('workbench --wb-subtle carries the user card opacity', function () {
+    // --wb-subtle 用于拖放区/限额条/空态等大块嵌套面。曾裸引 sunken 实色：
+    // 用户拖「卡片透明度」时上传/文件页大片区域纹丝不动。必须走 color-mix
+    // （单层：sunken 基色 × 用户透明度，非嵌套双重 mix）。
+    const src = stripComments(readSheet('workbench.css'));
+    const def = /--wb-subtle:\s*([^;]+);/.exec(src);
+    assert.ok(def, 'workbench.css 缺少 --wb-subtle 定义');
+    assert.ok(
+      /var\(--ui-card-opacity\)/.test(def[1]),
+      `--wb-subtle 必须消费 --ui-card-opacity（现为「${def[1].trim()}」），` +
+      `否则拖放区/限额条/空态对透明度旋钮无感`
+    );
+  });
 });

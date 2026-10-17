@@ -35,7 +35,7 @@
       padding: 8px 14px;
       border: 1px solid var(--ui-line-strong);
       border-radius: var(--ui-radius-sm);
-      background: var(--ui-surface);
+      background: var(--surface-2);
       color: var(--ui-ink);
       font: inherit;
       font-size: 0.9rem;
@@ -232,7 +232,7 @@
     .video-card-stage {
       position: relative;
       aspect-ratio: 16 / 9;
-      background: var(--ui-surface-sunken);
+      background: var(--surface-3);
     }
 
     /* 播放器铺满 stage，外框裁掉。object-fit: contain 而不是 cover：

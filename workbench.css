@@ -12,10 +12,14 @@
   /* 2026-10-17：--wb-surface 原是裸 var(--ui-surface)，与 UI 面板的
      「卡片透明度」完全无关 —— 上传页拖滑杆毫无反应就是它。改为
      color-mix 消费 --ui-card-opacity（theme-effects.js 写，0-1），
-     100% 时与原值一致。--wb-subtle 是卡片内部的嵌套面，保持实色，
-     避免与卡片面双重叠加透出。 */
+     100% 时与原值一致。
+     --wb-subtle 同批跟进：它用于拖放区 / 限额条 / 空态等大块嵌套面，
+     原裸 sunken 实色时这些区域对透明度旋钮完全无感（用户侧表现为
+     「不是所有地方都受影响」）。同样是单层 color-mix（sunken 基色
+     × 用户透明度），不是嵌套双重 mix —— 卡片 60% 时嵌套面也是
+     sunken 的 60%，层级关系保持。 */
   --wb-surface: color-mix(in srgb, var(--ui-surface) calc(var(--ui-card-opacity) * 100%), transparent);
-  --wb-subtle: var(--ui-surface-sunken);
+  --wb-subtle: color-mix(in srgb, var(--ui-surface-sunken) calc(var(--ui-card-opacity) * 100%), transparent);
   --wb-border: var(--ui-line-strong);
   --wb-ink: var(--ui-ink);
   --wb-muted: var(--ui-ink-secondary);

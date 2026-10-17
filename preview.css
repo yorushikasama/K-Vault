@@ -142,6 +142,10 @@
       min-height: 0;
     }
 
+    /* viewer 的背景只允许这一处：--panel（携带用户透明度的 color-mix）。
+       本文件历史上曾叠过三套同名 .topbar/.viewer 规则，最后一套的硬编码
+       （#fbfffe / 裸 --ui-surface）把这条架空 —— 预览页旋钮失效的直接
+       元凶。后续同名规则不得再声明背景（守卫断言逐块扫描）。 */
     .viewer {
       flex: 1;
       min-height: calc(100vh - 210px);
@@ -159,7 +163,7 @@
     }
 
     .viewer.media {
-      background: #070b12;
+      background: var(--ui-stage);
     }
 
     .preview-image,
@@ -169,7 +173,7 @@
       max-height: calc(100vh - 230px);
       object-fit: contain;
       display: block;
-      background: #070b12;
+      background: var(--ui-stage);
     }
 
     .preview-video {
@@ -209,7 +213,7 @@
 
     .doc-view {
       padding: 32px;
-      background: #eef2f6;
+      background: var(--surface-3);
     }
 
     .doc-page {
@@ -396,7 +400,7 @@
     .topbar {
       min-height: 68px;
       padding: 14px 24px;
-      background: #fbfcff;
+
     }
 
     .title-group h1 {
@@ -417,18 +421,18 @@
 
     .pill {
       border-radius: var(--radius-md);
-      background: #f3f6fa;
+      background: var(--surface-3);
       font-weight: 650;
     }
 
     .viewer {
       border-radius: var(--radius-md);
-      background: var(--ui-surface);
+
       box-shadow: var(--shadow-1);
     }
 
     .viewer.media {
-      background: #080d16;
+      background: var(--ui-stage);
     }
 
     .viewer.media::before {
@@ -783,7 +787,7 @@
       position: relative;
       overflow: hidden;
       border-radius: var(--radius-md);
-      background: #080d16;
+      background: var(--ui-stage);
     }
 
     .deferred-gate::before {
@@ -799,7 +803,7 @@
     }
 
     body.embed .viewer {
-      background: #080d16;
+      background: var(--ui-stage);
     }
 
     body.embed .media-frame {
@@ -864,7 +868,7 @@
     .topbar {
       min-height: 64px;
       border-bottom-color: rgba(15, 143, 138, 0.16);
-      background: var(--ui-surface);
+
     }
 
     .file-panel,
@@ -879,20 +883,6 @@
       box-shadow: var(--shadow);
     }
 
-    .viewer,
-    body.embed .viewer,
-    .viewer.media {
-      background: #fbfffe;
-    }
-
-    .viewer.media::before {
-      background-image: none;
-      opacity: 0.42;
-    }
-
-    .preview-image {
-      background: #f7fbfa;
-    }
 
     .media-frame .preview-video {
       background: #071111;
@@ -902,7 +892,7 @@
     .audio-console {
       color: var(--text);
       border: 1px solid rgba(15, 143, 138, 0.18);
-      background: #ffffff;
+      background: var(--surface-2);
       box-shadow: var(--shadow);
     }
 
@@ -939,7 +929,7 @@
       min-height: 520px;
       overflow: auto;
       align-self: stretch;
-      background: #edf7f5;
+      background: var(--surface-2);
       padding: 26px;
     }
 
@@ -995,19 +985,19 @@
       padding: 10px 12px;
       border: 1px solid var(--line);
       border-radius: var(--radius-md);
-      background: #f8fdfc;
+      background: var(--surface-3);
     }
 
     .enhanced-view {
       padding: 0;
-      background: #fbfffe;
+      background: var(--surface-2);
     }
 
     .enhanced-shell {
       width: 100%;
       height: 100%;
       min-height: inherit;
-      background: #fbfffe;
+      background: var(--surface-2);
     }
 
     .enhanced-shell flyfish-file-viewer {

@@ -530,7 +530,7 @@
       padding: 18px 14px;
       border-radius: var(--radius-md);
       border: 1px dashed color-mix(in srgb, var(--ui-brand) 45%, transparent);
-      background: var(--ui-surface-sunken);
+      background: var(--surface-3);
       text-align: center;
       color: var(--ui-ink-secondary);
       margin-bottom: 8px;

@@ -120,7 +120,7 @@
   display: grid;
   gap: 8px;
   padding: 12px;
-  background: var(--ui-surface-sunken);
+  background: var(--surface-3);
   border: 1px solid var(--ui-line);
   border-radius: var(--ui-radius-md);
 }

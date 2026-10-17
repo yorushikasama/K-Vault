@@ -40,7 +40,7 @@
       padding: 8px 14px;
       border: 1px solid var(--ui-line-strong);
       border-radius: var(--ui-radius-sm);
-      background: var(--ui-surface);
+      background: var(--surface-2);
       color: var(--ui-ink);
       font: inherit;
       font-size: 0.9rem;

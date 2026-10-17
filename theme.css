@@ -139,11 +139,25 @@ html[data-theme="dark"] .el-message-box__header,
 html[data-theme="dark"] .el-message-box__btns,
 html[data-theme="dark"] .el-card:not(.video-card):not(.audio-card):not(.file-card),
 html[data-theme="dark"] .image-card,
-html[data-theme="dark"] .format-tab,
+/* 暗色下的大面元素走 surface 别名（theme-effects.js 写出的 color-mix 版，
+   携带用户卡片透明度）——与亮色下各页的用法对称。2026-10-17 之前这条
+   名单统一钉 var(--ui-surface) !important：暗色用户拖「卡片透明度」时
+   这些列表项/统计块/通知全部纹丝不动。输入类（el-input / 原生 input /
+   batch-links / format-tab）是嵌套小控件，保持实色（亮色下 element-ui
+   默认白底同样不透明，两主题一致）。 */
 html[data-theme="dark"] .upload-item,
 html[data-theme="dark"] .result-item,
-html[data-theme="dark"] .stats,
-html[data-theme="dark"] .toast,
+html[data-theme="dark"] .stats {
+  background: var(--surface-2) !important;
+  color: var(--ui-ink) !important;
+  border-color: var(--ui-line) !important;
+}
+html[data-theme="dark"] .toast {
+  background: var(--surface-1) !important;
+  color: var(--ui-ink) !important;
+  border-color: var(--ui-line) !important;
+}
+html[data-theme="dark"] .format-tab,
 html[data-theme="dark"] .search-card .el-input__inner,
 html[data-theme="dark"] .el-input__inner,
 html[data-theme="dark"] .url-input-container input,
@@ -153,7 +167,7 @@ html[data-theme="dark"] .batch-links {
   border-color: var(--ui-line) !important;
 }
 html[data-theme="dark"] .stats-bar {
-  background: var(--ui-surface-raised) !important;
+  background: var(--surface-3) !important;
   border-color: var(--ui-line) !important;
 }
 
