@@ -12,9 +12,7 @@
       --brand: var(--ui-brand);
       --brand-dark: var(--ui-brand-active);
       --danger: var(--ui-danger);
-      --shadow: var(--ui-elev-1);
-      /* 放映台底色：嵌入模式专用，不随主题翻转 */
-      --ui-stage: #070b12;
+
     }
 
     * {
@@ -823,11 +821,12 @@
       --brand: var(--ui-brand);
       --brand-dark: var(--ui-brand-hover);
       --danger: var(--ui-danger);
-      --shadow: var(--ui-elev-1);
+
     }
 
-    /* 预览器自己的私有 token 只有代码块配色（它跟正文底色无关，属于内容
-       语义，不跟着壁纸走）。底色/文字/线条一律引用全局权威层，见文件顶部。
+    /* 代码块配色已上移 theme.css 权威层（--ui-code-bg / --ui-code-text，
+       亮暗两档），本页消费点直接引用。底色/文字/线条一律引用全局权威层，
+       见文件顶部。
        这里原先还有一条 --accent: #f59e0b（琥珀）—— 本页从未消费它，而它
        与"品牌强调色"同名却是完全无关的语义。同名两义正是配色分叉的起点，
        删掉；需要强调色时用 --ui-brand*。
@@ -835,13 +834,8 @@
        "预览页与主站要区分开"。但全站现在没有主题色 —— 强调色是壁纸算出来
        的，页面之间共用同一套推导才能保证跳转时观感连续。 */
     :root {
-      --code-bg: #f6f8fa;
-      --code-text: #1f2328;
-    }
-
-    html[data-theme="dark"] {
-      --code-bg: #010409;
-      --code-text: #e6edf3;
+      --code-bg: var(--ui-code-bg);
+      --code-text: var(--ui-code-text);
     }
 
     body {

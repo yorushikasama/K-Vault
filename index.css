@@ -1,33 +1,8 @@
-      /* 同样改为引用 token：原先这里钉死了亮色值，深色档再写一份覆盖，
-         两份容易走偏（--bg-gradient 亮色 #ffd7e4 实际是个粉色，与
-         --accent-color 撞了）。现在深浅都由 theme.css 的 token 决定。 */
-      :root {
-        --bg-gradient: var(--ui-canvas);
-        --card-bg: var(--ui-surface);
-        --shadow: var(--ui-elev-1);
-        --shadow-hover: var(--ui-elev-2);
-        --warning-text-color: #b88230;
-        --border-radius: var(--ui-radius-md);
-      }
-
-      html[data-theme="dark"] {
-        /* 夜间色板原先在这里另写一份（底色 #111a2d、卡片 #0f1727、
-           surface-1/2/3 各一套），和 theme.css 的 --ui-* 权威层各说各话：
-           两处深色底色不一样，从首页跳到别的分区会看到底色跳一下。
-           现在夜间只留"首页特有"的语义变量，底色与面板一律走权威层。 */
-        --card-bg: var(--ui-surface);
-        --shadow: var(--shadow-1-dark);
-        --shadow-hover: var(--shadow-2-dark);
-        --text-primary: var(--ui-ink);
-        --text-secondary: var(--ui-ink-secondary);
-        --text-muted: var(--ui-ink-muted);
-        --surface-1: var(--ui-surface-sunken);
-        --surface-2: var(--ui-surface);
-        --surface-3: var(--ui-surface-raised);
-        --surface-border: var(--ui-line);
-        --input-border: var(--ui-line-strong);
-        --warning-text-color: #e8be73;
-      }
+      /* 跨页别名（--card-bg/--shadow/--surface-* 等）已于 2026-10-17 集中到
+         theme.css 的 back-compat 区统一管理，本页不再重复定义；
+         --warning-text-color 也改由权威层 --ui-warning 派生。
+         theme-effects.js 运行时会以内联样式覆盖其中一部分（带用户透明度），
+         这里的集中区定义就是 JS 未执行时的统一回退。 */
 
       html[data-theme="dark"] .image-compress-panel,
       html[data-theme="dark"] .compress-control,

@@ -138,7 +138,9 @@ describe('dead CSS contract', function () {
     });
 
     it('keeps .batch-toolbar in the surface rule', function () {
-      assert.match(mobile, /\.batch-toolbar\s*\{\s*\n\s*border-radius: var\(--m-radius-lg\)/);
+      // 2026-10-17 起 --m-radius-lg 已随 --m-* 体系拆除，圆角改引全局
+      // --radius-md（同值 10px，见 css-single-source-contract）。
+      assert.match(mobile, /\.batch-toolbar\s*\{\s*\n\s*border-radius: var\(--radius-md\)/);
     });
 
     it('leaves no selector without a rule body', function () {

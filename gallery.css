@@ -1,22 +1,8 @@
-    :root {
-      /* --bg 原本是 #ffd7e4 —— 那是上面 --accent 的值，复制粘贴时错位了。
-         它被下方 body { background: var(--bg) } 消费，语义上是页面底色，
-         写成强调色粉色属于明显的笔误。theme.css 现在用
-         background: var(--ui-canvas) !important 接管了 body 背景，所以这个
-         错误一直没被看见；但 :root 里的错值仍会误导后来者，也可能被未来的
-         规则读到。这里删掉，让 --bg 继承 theme.css 的别名（指向 --ui-canvas），
-         深浅两套都由 token 层负责。 */
-      --primary: var(--ui-brand);
-      --primary-light: var(--ui-brand-hover);
-      --primary-dark: var(--ui-brand-active);
-      /* 曾经是 #ffd7e4（粉色）—— 与本页主题色不是一支，是上面那处 --bg 笔误
-         的同一批残留。它唯一的用途是批量条里的计数强调，指回品牌色。 */
-      --accent: var(--ui-brand);
-      --card-bg: var(--ui-surface);
-      --shadow: var(--ui-elev-1);
-      --shadow-hover: var(--ui-elev-2);
-      --transition: all 0.2s ease-out;
-    }
+     /* 跨页别名（--primary/--card-bg/--shadow 等）已于 2026-10-17 集中到
+        theme.css 的 back-compat 区统一管理，本页不再重复定义。
+        （历史注记：这里原先还定义过 --bg: #ffd7e4 —— 那是 --accent 的值，
+        复制粘贴错位。body 背景已被 theme.css 接管，错值从未生效，随别名
+        集中一并删除。） */
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 

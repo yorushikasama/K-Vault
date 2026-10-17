@@ -1,31 +1,20 @@
 /* Unified mobile refactor layer: loaded after page styles */
 
+/* 2026-10-17 样式统一管理：原先这里有一整套 --m-* 私有 token（surface/
+   border/shadow/radius/font 亮暗各一份硬编码真值），是全仓最后一个
+   绕开 theme.css 权威层的独立体系 —— 移动端卡片是纯白 rgb(255,255,255)，
+   不跟随主题、壁纸取色与 UI 面板设置。现已整体拆除：颜色/阴影/圆角/
+   字体全部改引 theme.css 的全局 token（见下方各消费点），亮暗切换由
+   权威层自动完成。仅保留 --nav-height/--nav-offset 两个导航布局尺寸
+   常量（非主题样式，属于本组件的结构参数）。 */
 :root {
-  --m-font: "Manrope", "Noto Sans SC", "PingFang SC", "Segoe UI", sans-serif;
-  --m-title-font: "Sora", "Manrope", "Noto Sans SC", sans-serif;
-  --m-surface: rgb(255, 255, 255);
-  --m-surface-soft: rgb(255, 255, 255);
-  --m-border: rgba(17, 24, 39, 0.09);
-  --m-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-  --m-shadow-soft: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 1px rgba(15, 23, 42, 0.04);
-  --m-radius-xl: 14px;
-  --m-radius-lg: 10px;
-  --m-radius-md: 8px;
   --nav-height: 96px;
   --nav-offset: 104px;
 }
 
-html[data-theme="dark"] {
-  --m-surface: rgb(14, 23, 39);
-  --m-surface-soft: rgb(20, 31, 52);
-  --m-border: rgba(146, 166, 207, 0.24);
-  --m-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
-  --m-shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.12), 0 1px 1px rgba(0, 0, 0, 0.08);
-}
-
 @media (max-width: 900px) {
   body {
-    font-family: var(--m-font);
+    font-family: var(--ui-font-body);
     background-attachment: scroll !important;
     padding-bottom: calc(env(safe-area-inset-bottom) + 14px);
   }
@@ -55,9 +44,9 @@ html[data-theme="dark"] {
   .login-card,
   .header-content,
   .batch-toolbar {
-    border-radius: var(--m-radius-lg) !important;
-    border: 1px solid var(--m-border) !important;
-    box-shadow: var(--m-shadow-soft) !important;
+    border-radius: var(--radius-md) !important;
+    border: 1px solid var(--ui-line) !important;
+    box-shadow: var(--ui-elev-1) !important;
   }
 
   .header,
@@ -68,12 +57,15 @@ html[data-theme="dark"] {
   .header-content {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    background: var(--m-surface) !important;
+    /* --card-bg 由 theme-effects.js 写入（携带用户卡片透明度的 color-mix），
+       而非裸 --ui-surface —— 移动端卡片与全站一样响应 UI 面板设置；
+       JS 未执行时回退到 theme.css 集中区的 var(--ui-surface)。 */
+    background: var(--card-bg) !important;
   }
 
   .header-title,
   .title {
-    font-family: var(--m-title-font);
+    font-family: var(--ui-font-display);
     letter-spacing: 0.01em;
   }
 
@@ -250,7 +242,7 @@ html[data-theme="dark"] {
     width: auto !important;
     max-width: none !important;
     transform: none !important;
-    border-radius: var(--m-radius-lg) !important;
+    border-radius: var(--radius-md) !important;
   }
 
   .batch-toolbar {
@@ -328,7 +320,7 @@ html[data-theme="dark"] {
 
   .login-card {
     padding: 28px 22px !important;
-    border-radius: var(--m-radius-xl) !important;
+    border-radius: var(--radius-lg) !important;
   }
 
   .form-input {
@@ -714,7 +706,7 @@ html[data-theme="dark"] {
   .video-card:hover,
   .audio-card:hover,
   .file-card:hover {
-    box-shadow: var(--m-shadow-soft) !important;
+    box-shadow: var(--ui-elev-1) !important;
   }
 }
 

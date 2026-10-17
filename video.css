@@ -5,16 +5,8 @@
  * 空状态那一套全部一致，两个页面来回切时内容区不会横向错位。
  * 差异只集中在 .video-* 开头的卡片部分。
  */
-    :root {
-      --primary: var(--ui-brand);
-      --primary-light: var(--ui-brand-hover);
-      --primary-dark: var(--ui-brand-active);
-      --accent: var(--ui-brand);
-      --card-bg: var(--ui-surface);
-      --shadow: var(--ui-elev-1);
-      --shadow-hover: var(--ui-elev-2);
-      --transition: all 0.2s ease-out;
-    }
+    /* 跨页别名（--primary/--card-bg/--shadow 等）已于 2026-10-17 集中到
+       theme.css 的 back-compat 区统一管理，本页不再重复定义。 */
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 

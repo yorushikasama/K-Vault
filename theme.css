@@ -519,6 +519,37 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
   /* Back-compat aliases: existing rules read --ui-shadow-soft */
   --ui-shadow-soft: var(--shadow-1);
   --ui-shadow-soft-dark: var(--shadow-1-dark);
+
+  /* -- 跨页别名集中区（2026-10-17 样式统一管理）--------------------------
+     这些名字（--card-bg / --primary / --shadow …）曾是各页 CSS 各抄一份的
+     转发别名，gallery/index/login/video/preview 里都有，回退值还各不相同。
+     现在只在这里定义一份，全部指向权威层 token；各页文件不得再定义。
+     注意：theme-effects.js 运行时会把其中一部分（--card-bg/--surface-*/…
+     带用户透明度的 color-mix 版）以内联样式写在 <html> 上，内联优先级
+     高于这里 —— 这份定义只在 JS 未执行时作统一回退。 */
+  --bg-gradient: var(--ui-canvas);
+  --card-bg: var(--ui-surface);
+  --shadow: var(--ui-elev-1);
+  --shadow-hover: var(--ui-elev-2);
+  --primary: var(--ui-brand);
+  --primary-light: var(--ui-brand-hover);
+  --primary-dark: var(--ui-brand-active);
+  --accent: var(--ui-brand);
+  --surface-1: var(--ui-surface-sunken);
+  --surface-2: var(--ui-surface);
+  --surface-3: var(--ui-surface-raised);
+  --surface-border: var(--ui-line);
+  --input-border: var(--ui-line-strong);
+  --text-primary: var(--ui-ink);
+  --text-secondary: var(--ui-ink-secondary);
+  --text-muted: var(--ui-ink-muted);
+  --warning-text-color: var(--ui-warning);
+  --transition: all 0.2s ease-out;
+
+  /* -- 全局字体（原先只有 mobile-refactor.css 的 --m-font/--m-title-font
+     两个私有定义，亮暗双源问题同源） */
+  --ui-font-body: "Manrope", "Noto Sans SC", "PingFang SC", "Segoe UI", sans-serif;
+  --ui-font-display: "Sora", "Manrope", "Noto Sans SC", sans-serif;
 }
 
 html[data-theme="dark"] {
@@ -819,6 +850,17 @@ html[data-theme="dark"] .el-button--danger {
   --ui-danger-strong: #b91c1c;
   --ui-success-strong: #15803d;
 
+  /* 代码块配色（原 preview.css 里 #f6f8fa/#1f2328 亮暗两份硬编码，
+     2026-10-17 收进权威层）。--ui-stage 是预览页代码舞台的固定深底，
+     亮暗模式下都不变，所以只有一份。 */
+  --ui-code-bg-light: #f6f8fa;
+  --ui-code-bg-dark: #010409;
+  --ui-code-text-light: #1f2328;
+  --ui-code-text-dark: #e6edf3;
+  --ui-code-bg: var(--ui-code-bg-light);
+  --ui-code-text: var(--ui-code-text-light);
+  --ui-stage: #070b12;
+
   /* -- Surfaces (opaque; alpha lives in the legacy -rgb knobs) ----------
      色相/强度同样来自壁纸。三档明度差（sunken < canvas < surface）撑起
      层级，彩度按面积分配：卡片是大块，拿得少；下沉区小、拿得多一点才看得出。
@@ -950,6 +992,8 @@ html[data-theme="dark"] {
   --ui-info: #9ca3af;
   --ui-danger-strong: #ef4444;
   --ui-success-strong: #16a34a;
+  --ui-code-bg: var(--ui-code-bg-dark);
+  --ui-code-text: var(--ui-code-text-dark);
 
   --ui-canvas: var(--ui-canvas-dark);
   --ui-surface: var(--ui-surface-dark);
