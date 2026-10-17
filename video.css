@@ -61,7 +61,7 @@
       margin-bottom: 20px;
       flex-wrap: wrap;
       gap: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.5);
+      border: 1px solid var(--ui-line);
       box-shadow: var(--shadow);
     }
 
@@ -96,7 +96,7 @@
       background: var(--card-bg);
       backdrop-filter: var(--ui-card-backdrop-filter);
       -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
-      border: 1px solid rgba(255, 255, 255, 0.5);
+      border: 1px solid var(--ui-line);
       border-radius: var(--radius-md);
       box-shadow: var(--shadow);
     }
@@ -213,7 +213,7 @@
       backdrop-filter: var(--ui-card-backdrop-filter);
       -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
       box-shadow: var(--shadow);
-      border: 1px solid rgba(255, 255, 255, 0.5);
+      border: 1px solid var(--ui-line);
       transition: transform 0.2s ease, box-shadow 0.2s ease;
       contain: layout style;
     }

@@ -64,13 +64,14 @@
      补上与 el-dialog 同款的模糊（滑杆为 0 时它就是 none）。 */
   backdrop-filter: var(--ui-card-backdrop-filter);
   -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  /* 细节（圆角档位/动画时长）对齐原 index.css 重复份的现行生效值。 */
+  border-radius: var(--radius-md);
+  box-shadow: var(--ui-elev-2);
   margin-bottom: 10px;
   display: flex;
   align-items: center;
   gap: 10px;
-  animation: slideIn 0.25s ease-out;
+  animation: slideIn 0.3s ease;
 }
 .toast .lucide { flex-shrink: 0; }
 .toast.success { border-left: 4px solid var(--ui-success, #67c23a); }

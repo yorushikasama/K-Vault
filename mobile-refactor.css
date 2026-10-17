@@ -802,7 +802,7 @@ html[data-theme="dark"] .header-content .actions > .theme-admin-toggle {
   background: rgba(31, 44, 72, 0.96) !important;
   border-color: rgba(153, 177, 230, 0.48) !important;
   color: #eef5ff !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16) !important;
+  box-shadow: var(--ui-elev-2) !important;
 }
 
 html[data-theme="dark"] .header-content .actions > i:hover,
@@ -818,7 +818,7 @@ html[data-theme="dark"] .el-select-dropdown,
 html[data-theme="dark"] .el-popover {
   background: rgba(15, 23, 39, 0.98) !important;
   border-color: rgba(153, 177, 230, 0.32) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16) !important;
+  box-shadow: var(--ui-elev-2) !important;
 }
 
 html[data-theme="dark"] .el-dropdown-menu__item,

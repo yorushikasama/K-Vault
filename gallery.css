@@ -65,7 +65,7 @@
       margin-bottom: 20px;
       flex-wrap: wrap;
       gap: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.5);
+      border: 1px solid var(--ui-line);
       box-shadow: var(--shadow);
     }
 
@@ -144,7 +144,7 @@
       box-shadow: var(--shadow);
       cursor: pointer;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
-      border: 1px solid rgba(255, 255, 255, 0.5);
+      border: 1px solid var(--ui-line);
       will-change: transform;
       contain: layout style paint;
     }

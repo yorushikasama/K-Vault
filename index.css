@@ -4,19 +4,23 @@
          theme-effects.js 运行时会以内联样式覆盖其中一部分（带用户透明度），
          集中区定义就是 JS 未执行时的统一回退。 */
 
+      /* 暗色下这四件的表面原被 rgba(20,29,49,0.92) 钉死，2026-10-17 起亮色
+         值已收编为 surface token（--surface-2/--card-bg，暗色自动翻转），
+         background 覆盖随之删除；border-color 的暗色加倍（12%→24%）是
+         有意的对比度适配，保留。 */
       html[data-theme="dark"] .image-compress-panel,
       html[data-theme="dark"] .compress-control,
       html[data-theme="dark"] .compress-confirm-card,
       html[data-theme="dark"] .compress-stat {
-        background: rgba(20, 29, 49, 0.92);
         border-color: color-mix(in srgb, var(--ui-brand) 24%, transparent);
       }
       html[data-theme="dark"] .compress-format-btn:hover:not(:disabled) {
         background: color-mix(in srgb, var(--ui-brand) 14%, transparent);
       }
 
-      html[data-theme="dark"] .storage-target,
-      html[data-theme="dark"] .stats-bar {
+      /* stats-bar 不在此组：暗色下它的背景被 theme.css 的大名单以
+         !important 钉为 var(--ui-surface-raised)，本页这份覆盖是死代码。 */
+      html[data-theme="dark"] .storage-target {
         background: color-mix(in srgb, var(--ui-brand) 20%, transparent);
       }
 
@@ -284,7 +288,7 @@
         padding: 16px 18px;
         border-radius: var(--radius-md);
         border: 1px solid color-mix(in srgb, var(--ui-brand) 12%, transparent);
-        background: rgba(255, 255, 255, 0.9);
+        background: var(--surface-2);
         display: grid;
         gap: 10px;
       }
@@ -327,7 +331,7 @@
       .folder-picker-chip {
         border: 1px solid color-mix(in srgb, var(--ui-brand) 14%, transparent);
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.68);
+        background: var(--surface-2);
         color: var(--text-secondary);
         padding: 7px 12px;
         display: inline-flex;
@@ -391,13 +395,13 @@
         padding: 14px 16px;
         border-radius: var(--radius-md);
         border: 1px solid color-mix(in srgb, var(--ui-brand) 14%, transparent);
-        background: rgba(255, 255, 255, 0.72);
+        background: var(--surface-2);
         transition: var(--transition);
       }
 
       .image-compress-panel.is-enabled {
         border-color: color-mix(in srgb, var(--ui-brand) 48%, transparent);
-        background: rgba(255, 255, 255, 0.94);
+        background: var(--card-bg);
       }
 
       .image-compress-panel.is-collapsed {
@@ -570,7 +574,7 @@
         padding: 12px 14px;
         border: 1px solid color-mix(in srgb, var(--ui-brand) 12%, transparent);
         border-radius: var(--radius-md);
-        background: rgba(255, 255, 255, 0.62);
+        background: var(--surface-2);
       }
 
       .compress-control label,
@@ -1213,19 +1217,9 @@
       /* 滚动条样式已移到 theme.css：它只被本页加载的那份让全站十页里
          只有上传页是紫滑块，其余是浏览器默认灰。定义收口到权威层。 */
 
-      /* Toast 通知 */
-
-      .toast {
-        padding: 12px 20px;
-        background: var(--surface-1);
-        border-radius: var(--radius-md);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        margin-bottom: 10px;
-        animation: slideIn 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
+      /* Toast 通知：样式已在 theme.css 统一定义（index / gallery 共用，
+         KVShared.toast 注入）。本页曾另抄一份且靠加载顺序取胜 —— 两边
+         细节（圆角/动画时长/阴影）各不相同，属重复定义，已删。 */
 
       .paste-upload-notice {
         position: fixed;
