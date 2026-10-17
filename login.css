@@ -54,6 +54,8 @@
 
     .login-card {
       background: var(--card-bg);
+      backdrop-filter: var(--ui-card-backdrop-filter);
+      -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
       border-radius: var(--radius-md);
       padding: 48px 40px;
       box-shadow: var(--shadow-1);

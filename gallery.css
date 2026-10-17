@@ -59,6 +59,8 @@
       align-items: center;
       padding: 14px 24px;
       background: var(--card-bg);
+      backdrop-filter: var(--ui-card-backdrop-filter);
+      -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
       border-radius: var(--radius-md);
       margin-bottom: 20px;
       flex-wrap: wrap;
@@ -137,6 +139,8 @@
       border-radius: var(--radius-md);
       overflow: hidden;
       background: var(--card-bg);
+      backdrop-filter: var(--ui-card-backdrop-filter);
+      -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
       box-shadow: var(--shadow);
       cursor: pointer;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -599,11 +603,14 @@
         font-size: 2em;
       }
 
-      /* 移动端禁用高消耗效果 */
-      .toolbar {
+      /* 移动端禁用高消耗效果。背景原先硬编码 #ffffff：暗色模式下移动端
+         工具栏会被钉成白底，改回 --card-bg（跟随透明度旋钮，JS 未执行时
+         回退 theme.css 集中区）。 */
+      .toolbar,
+      .image-card {
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
-        background: #ffffff;
+        background: var(--card-bg);
       }
 
       .image-card:hover {

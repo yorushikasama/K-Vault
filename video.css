@@ -55,6 +55,8 @@
       align-items: center;
       padding: 14px 24px;
       background: var(--card-bg);
+      backdrop-filter: var(--ui-card-backdrop-filter);
+      -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
       border-radius: var(--radius-md);
       margin-bottom: 20px;
       flex-wrap: wrap;
@@ -92,6 +94,8 @@
       padding: 8px;
       margin-bottom: 12px;
       background: var(--card-bg);
+      backdrop-filter: var(--ui-card-backdrop-filter);
+      -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
       border: 1px solid rgba(255, 255, 255, 0.5);
       border-radius: var(--radius-md);
       box-shadow: var(--shadow);
@@ -206,6 +210,8 @@
       border-radius: var(--radius-md);
       overflow: hidden;
       background: var(--card-bg);
+      backdrop-filter: var(--ui-card-backdrop-filter);
+      -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
       box-shadow: var(--shadow);
       border: 1px solid rgba(255, 255, 255, 0.5);
       transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -366,6 +372,14 @@
       /* 留白落在内容容器上而不是 body：顶栏在 #app 外面，
          body 上留白会把全宽外框缩成内缩的一条。 */
       #app { padding: 12px; }
+
+      /* 移动端禁用高消耗效果（与 gallery/index 的断点惯例一致） */
+      .toolbar,
+      .video-folders,
+      .video-card {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
 
       .header-search {
         max-width: none;

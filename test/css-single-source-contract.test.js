@@ -116,3 +116,62 @@ describe('CSS single-source contract', function () {
       `theme.css 的 back-compat 集中区缺少：${missing.join(', ')}`);
   });
 });
+describe('card blur consumer chain', function () {
+  // 「模糊强度」滑杆的载体是 --ui-card-backdrop-filter（theme-effects.js
+  // 按需写出 blur(Npx) saturate(115%) 或 none）。2026-10-17 之前只有
+  // index / workbench / admin 弹窗消费它，gallery / video / login / preview
+  // 四页的卡片没有任何 backdrop-filter —— 滑杆在那四页是摆设（透明度
+  // 却有效，因为 --card-bg 走 color-mix 全局生效），典型的"消费链断裂"。
+  // 这组断言钉住每页的最低消费数，防止重构时再把某页的模糊摘掉。
+
+  /** 页面文件 → 至少需要的标准消费数（-webkit- 前缀行不计）。 */
+  const BLUR_CONSUMERS = {
+    'index.css': 2,      // .header / .card（另有弹窗）
+    'workbench.css': 2,  // files-query / file-tile 等
+    'gallery.css': 2,    // .toolbar / .image-card
+    'video.css': 3,      // .toolbar / .video-folders / .video-card
+    'login.css': 1,      // .login-card
+    'preview.css': 3,    // .topbar / .file-panel / .viewer
+  };
+
+  function countBlurConsumers(sheet) {
+    const src = stripComments(readSheet(sheet));
+    return (src.match(/backdrop-filter:\s*var\(--ui-card-backdrop-filter\)/g) || []).length;
+  }
+
+  for (const [sheet, min] of Object.entries(BLUR_CONSUMERS)) {
+    it(`${sheet} consumes --ui-card-backdrop-filter at least ${min}x`, function () {
+      const hits = countBlurConsumers(sheet);
+      assert.ok(hits >= min,
+        `${sheet} 仅 ${hits} 处 backdrop-filter 消费（需 ≥ ${min}）——` +
+        `「模糊强度」滑杆在该页会失效`);
+    });
+  }
+
+  it('mobile breakpoints keep disabling backdrop-filter (perf convention)', function () {
+    // 移动端禁用高耗效果是全站惯例。各页自己断点内关闭；login 的
+    // .login-card 由 mobile-refactor.css 的 900px 断点兜住。
+    const selfDisabling = ['index.css', 'gallery.css', 'video.css', 'preview.css', 'mobile-refactor.css'];
+    for (const sheet of selfDisabling) {
+      const src = stripComments(readSheet(sheet));
+      assert.ok(
+        /backdrop-filter:\s*none/.test(src),
+        `${sheet} 的移动端断点缺少 backdrop-filter: none —— 高耗效果惯例被破坏`
+      );
+    }
+  });
+
+  it('preview --panel carries the user card opacity (not a bare surface)', function () {
+    // preview.css 曾裸引 var(--ui-surface)：预览页对「卡片透明度」滑杆
+    // 完全无感（同日的另一处消费链断裂）。--panel 必须走 color-mix
+    // 消费 --ui-card-opacity，与 workbench 的 --wb-surface 同模式。
+    const src = stripComments(readSheet('preview.css'));
+    const bare = /^\s*--panel:\s*var\(--ui-surface\)\s*;/m.test(src);
+    assert.ok(!bare,
+      'preview.css 的 --panel 又变回裸 var(--ui-surface)，透明度旋钮在预览页会失效');
+    assert.ok(
+      /--panel:\s*color-mix\(\s*in srgb,\s*var\(--ui-surface\)\s*calc\(var\(--ui-card-opacity\)/.test(src),
+      'preview.css 的 --panel 必须经 color-mix 消费 --ui-card-opacity'
+    );
+  });
+});

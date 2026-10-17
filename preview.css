@@ -5,7 +5,11 @@
        且哪一份生效取决于 CSS 加载顺序。现在统一到下方那一份 :root。 */
     :root {
       --bg: var(--ui-canvas);
-      --panel: var(--ui-surface);
+      /* color-mix 携带用户卡片透明度（--ui-card-opacity 由 theme-effects.js
+         写，0-1），100% 时与裸 var(--ui-surface) 完全一致 —— 与 workbench
+         的 --wb-surface 同模式。此前 --panel 裸引权威层，预览页对
+         「卡片透明度」滑杆完全无感。 */
+      --panel: color-mix(in srgb, var(--ui-surface) calc(var(--ui-card-opacity) * 100%), transparent);
       --text: var(--ui-ink);
       --muted: var(--ui-ink-muted);
       --line: var(--ui-line);
@@ -51,6 +55,8 @@
       gap: 16px;
       padding: 16px 24px;
       background: var(--panel);
+      backdrop-filter: var(--ui-card-backdrop-filter);
+      -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
       border-bottom: 1px solid var(--line);
     }
 
@@ -97,6 +103,8 @@
       margin: 18px auto 0;
       width: min(1180px, calc(100% - 32px));
       background: var(--panel);
+      backdrop-filter: var(--ui-card-backdrop-filter);
+      -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
       border: 1px solid var(--line);
       border-radius: var(--radius-md);
       padding: 14px 16px;
@@ -138,6 +146,8 @@
       flex: 1;
       min-height: calc(100vh - 210px);
       background: var(--panel);
+      backdrop-filter: var(--ui-card-backdrop-filter);
+      -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
       border: 1px solid var(--line);
       border-radius: var(--radius-md);
       box-shadow: var(--shadow);
@@ -814,7 +824,7 @@
        统一处理。 */
     :root {
       --bg: var(--ui-canvas);
-      --panel: var(--ui-surface);
+      --panel: color-mix(in srgb, var(--ui-surface) calc(var(--ui-card-opacity) * 100%), transparent);
       --text: var(--ui-ink);
       --muted: var(--ui-ink-muted);
       --line: var(--ui-line);
@@ -1034,6 +1044,14 @@
     }
 
     @media (max-width: 720px) {
+      /* 移动端禁用高消耗效果（全站断点惯例） */
+      .topbar,
+      .file-panel,
+      .viewer {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
+
       .topbar {
         align-items: stretch;
         flex-direction: column;
