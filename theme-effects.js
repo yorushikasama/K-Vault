@@ -410,10 +410,21 @@
 // 注意取的是上面按 cardOpacity 归一的 opacity（0-1）。transparentCards
 // 分支保留：0 透明度时表面色整体撤掉，卡片只剩描边和投影。
 var surfaceAlpha = transparentCards ? 0 : opacity;
-var cardBg = "var(--ui-surface)";
-var surface1 = "var(--ui-surface-sunken)";
-var surface2 = "var(--ui-surface)";
-var surface3 = "var(--ui-surface-raised)";
+// 2026-10-17：表面别名统一携带用户透明度。此前别名是裸 var(--ui-surface)，
+// 消费方（--card-bg / --surface-1/2/3 / --wf-surface）全部不透明 ——
+// 上传页 workbench 与旧页 .card 都感受不到透明度滑杆，全站只有 admin
+// 的 element-ui 弹窗（theme.css 里 color-mix 消费 --ui-card-opacity）
+// 在动，用户侧看到的就是「拖了没效果」。100% 时 color-mix 与裸值
+// 完全一致，默认观感零回归。
+var mixSurface = function (base) {
+  return transparentCards
+    ? "transparent"
+    : "color-mix(in srgb, " + base + " " + Math.round(opacity * 100) + "%, transparent)";
+};
+var cardBg = mixSurface("var(--ui-surface)");
+var surface1 = mixSurface("var(--ui-surface-sunken)");
+var surface2 = mixSurface("var(--ui-surface)");
+var surface3 = mixSurface("var(--ui-surface-raised)");
 var border = "var(--ui-line)";
 var inputBorder = "var(--ui-line-strong)";
 var shadow = "var(--ui-elev-2)";

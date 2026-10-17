@@ -252,6 +252,12 @@ describe('background + base color are centrally managed', function () {
       '卡片透明度又被钳到 1.0 —— UI 面板的透明度滑杆会再次变成摆设');
     assert.match(effects, /surfaceAlpha\s*=\s*transparentCards\s*\?\s*0\s*:\s*opacity/,
       'surfaceAlpha 应直接派生自归一后的 opacity（0-1）');
+    // 表面别名（--card-bg / --surface-1/2/3 / --wf-surface）必须携带用户
+    // 透明度。2026-10-17 事故：别名是裸 var(--ui-surface)，上传页 workbench
+    // （--wb-surface 同源）与旧页 .card 全部感受不到滑杆，全站只有 admin
+    // 弹窗在动 —— 用户侧看到「拖了没效果」。
+    assert.match(effects, /mixSurface\s*=\s*function/,
+      '表面别名应经 mixSurface 生成（color-mix 携带用户透明度）');
     // 纸纹特效（texture）同批下线：面板不再暴露档位，存量配置在
     // normalizeSettings 里归零。这里钉住「特效不得回流」。
     assert.doesNotMatch(effects, /function applyEffect/,

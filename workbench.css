@@ -9,7 +9,12 @@
    上传页用站点主色，文件页用青色（.kv-files 覆盖）——同一个后台里
    「上传」和「文件」两区一眼能分开。 */
 .kv-workbench {
-  --wb-surface: var(--ui-surface);
+  /* 2026-10-17：--wb-surface 原是裸 var(--ui-surface)，与 UI 面板的
+     「卡片透明度」完全无关 —— 上传页拖滑杆毫无反应就是它。改为
+     color-mix 消费 --ui-card-opacity（theme-effects.js 写，0-1），
+     100% 时与原值一致。--wb-subtle 是卡片内部的嵌套面，保持实色，
+     避免与卡片面双重叠加透出。 */
+  --wb-surface: color-mix(in srgb, var(--ui-surface) calc(var(--ui-card-opacity) * 100%), transparent);
   --wb-subtle: var(--ui-surface-sunken);
   --wb-border: var(--ui-line-strong);
   --wb-ink: var(--ui-ink);
@@ -192,6 +197,7 @@
   display: flex; flex-direction: column; gap: 12px;
   padding: 20px 22px; border: 1px solid var(--wb-border); border-radius: var(--radius-md);
   background: var(--wb-surface); color: var(--wb-ink); box-shadow: 0 18px 48px rgba(15, 23, 42, .28);
+  backdrop-filter: var(--ui-card-backdrop-filter); -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
 }
 .kv-workbench .compress-confirm-card.upload-dialog { width: min(100%, 760px); max-height: min(86vh, 760px); padding: 24px; }
 .kv-workbench .upload-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -367,7 +373,7 @@
 /* 搜索与筛选：明确标注仅作用于已加载文件。
    层级原则：主操作（搜索框 + 存储切换）一行，次要筛选器（类型/状态/排序）
    一行，说明文字沉到最底且降一级字色——不再三段平铺、各自为政。 */
-.kv-files .files-query { display: grid; gap: 12px; padding: 12px 16px; border: 1px solid var(--wb-border); border-radius: var(--radius-md); background: var(--wb-surface); }
+.kv-files .files-query { display: grid; gap: 12px; padding: 12px 16px; border: 1px solid var(--wb-border); border-radius: var(--radius-md); background: var(--wb-surface); backdrop-filter: var(--ui-card-backdrop-filter); -webkit-backdrop-filter: var(--ui-card-backdrop-filter); }
 .kv-files .files-query-main { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .kv-files .files-search { flex: 1 1 280px; min-width: 0; }
 .kv-files .files-query-filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -397,6 +403,7 @@
 .kv-files .file-tile {
   display: flex; flex-direction: column; min-width: 0; overflow: hidden;
   border: 1px solid var(--wb-border); border-radius: var(--radius-md); background: var(--wb-surface);
+  backdrop-filter: var(--ui-card-backdrop-filter); -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
   transition: border-color .16s ease, box-shadow .16s ease;
 }
 .kv-files .file-tile:hover { border-color: var(--wb-accent); }

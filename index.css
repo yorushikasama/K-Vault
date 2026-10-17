@@ -83,6 +83,8 @@
         align-items: center;
         padding: 16px 28px;
         background: var(--card-bg);
+        backdrop-filter: var(--ui-card-backdrop-filter);
+        -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
         border-radius: var(--radius-md);
         margin-bottom: 24px;
         box-shadow: var(--shadow-2);
@@ -166,6 +168,8 @@
       /* 卡片样式 */
       .card {
         background: var(--card-bg);
+        backdrop-filter: var(--ui-card-backdrop-filter);
+        -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
         border-radius: var(--radius-md);
         padding: 28px;
         box-shadow: var(--shadow);
@@ -178,10 +182,12 @@
       }
 
       /* 清晰度选择弹窗：和 .card 用完全同一套表面（同一个 --card-bg、同一个圆角
-         档位）。全站表面已改成不透明实心 + 发丝边框，不再有磨砂，所以这里也
-         不再需要叠 backdrop-filter。内部分区保持透明，避免叠出第二层底色。 */
+         档位）。卡片透明度 2026-10-17 起重新可调，磨砂也随之回来：backdrop-filter
+         引用 --ui-card-backdrop-filter（用户把模糊设为 0 时它就是 none）。 */
       html .quality-picker-dialog {
         background: var(--card-bg) !important;
+        backdrop-filter: var(--ui-card-backdrop-filter);
+        -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
         border: 1px solid var(--surface-border);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-3);
