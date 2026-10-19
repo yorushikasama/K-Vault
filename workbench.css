@@ -140,6 +140,12 @@
      目标下，横向一行足够，不必和文案争宽度。 */
   .kv-workbench .upload-dropzone > .btn { grid-area: btn; width: 100%; min-height: 44px; justify-content: center; }
   .kv-workbench .upload-dropzone > input { grid-area: btn; }
+
+  /* 来源按钮区（粘贴上传 / 从 URL 转存 / 快速转存）：三个按钮在窄屏换行
+     后各自铺满可用宽度并抬高到 44px 触摸目标。flex-basis 给 160px 而不是
+     0：换行后每个按钮独占一行的机会更高（三个 160px 在 390px 屏必换行），
+     不会出现「两个挤一行、一个孤零零」的不均衡排版。 */
+  .kv-workbench .upload-source-actions .btn { flex: 1 1 160px; min-height: 44px; justify-content: center; }
 }
 .kv-workbench .upload-add-context { margin-top: 8px; font-size: 13px; color: var(--wb-muted); overflow-wrap: anywhere; }
 .kv-workbench .upload-add-context strong { color: var(--wb-ink); font-weight: 600; }

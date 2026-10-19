@@ -153,6 +153,15 @@
 
             const data = await response.json();
             if (!response.ok) {
+              // 与 uploadPlainUrlToServer 对齐：401 是会话过期，不是转存失败。
+              // 快速路径不经过 openQualityPicker（那里有 401 跳登录），
+              // 没有这个特判的话，过期用户只会看到反复「转存失败」。
+              if (response.status === 401) {
+                const expired = new Error("登录状态已过期，请重新登录后再转存。");
+                expired.status = 401;
+                expired.unauthorized = true;
+                throw expired;
+              }
               throw new Error(data.errorDetail || data.error || "视频转存失败");
             }
             return data;
@@ -272,6 +281,10 @@
             // 标题里已经带了同样的后缀就不重复追加
             return raw.toLowerCase().endsWith(`.${ext.toLowerCase()}`) ? raw : `${raw}.${ext}`;
           },
+          // 返回 true/false：快速路径（quickImportFromClipboard）要靠返回值
+          // 区分成败——失败时把链接回填到表单，用户可改走完整流程手选清晰度
+          // （比如最佳档超限时）。返回值对既有调用方（confirmQualityAndUpload
+          // 等）无影响，它们本来就忽略返回值。
           async runMediaUpload(rawUrl, variant, mediaFileName) {
             this.startUrlTicker();
             try {
@@ -279,10 +292,20 @@
               if (!Array.isArray(data) || !data[0]?.src) throw new Error("未返回文件路径");
               this.registerUploadedUrlFile(data[0].src, rawUrl, mediaFileName);
               this.urlToUpload = "";
+              return true;
             } catch (err) {
+              // 会话过期：与 openQualityPicker 同样处理——光 toast 不够，
+              // 过期用户只会反复重试同一件必然失败的事，直接送去登录页。
+              if (err && err.unauthorized) {
+                this.showToast(err.message, "error");
+                this.redirectToLogin();
+                return false;
+              }
               this.showToast("转存失败：" + err.message, "error");
+              return false;
+            } finally {
+              this.stopUrlTicker();
             }
-            this.stopUrlTicker();
           },
           // 文件名优先级：解析出的视频标题 > URL 末段。
           // URL 末段是最差的选择：分享链接常常没有文件名（YouTube 的
@@ -441,6 +464,91 @@
               }
               // 失败时保留输入框内容：用户多半要重试，清掉等于逼他重新粘贴。
               this.showToast("URL上传失败：" + err.message, "error");
+            } finally {
+              this.urlSubmitting = false;
+              this.stopUrlTicker();
+            }
+          },
+
+          // 快速转存：一键完成「取链接 → 判定 → 转存」，跳过 URL 表单与
+          // 清晰度选择两步交互。链接来源优先级：表单里已有的内容（用户贴好
+          // 再点快速 = 只想跳过选择器）> 剪贴板文字（extractUrlFromText 兼容
+          // 抖音式分享文案）。分享链接刻意**不做** fetchMediaInfo 预解析——
+          // 那是纯为弹选择器服务的，快速路径直接 submitMediaUpload(url, null)
+          // 让服务端一次调用内完成解析 + 最佳清晰度 + 下载入库，用户感知的
+          // 等待减半；variant 为 null 的语义（服务端取最佳）服务端本就支持。
+          async quickImportFromClipboard() {
+            if (this.authChecking || this.urlSubmitting || this.urlUploading || this.urlResolving || this.qualityPicker.visible) return;
+
+            let candidate = String(this.urlToUpload || "").trim();
+            let fromClipboard = false;
+            if (!candidate) {
+              this.quickReading = true;
+              try {
+                // readText 而不是 read()：只要文字里的链接，剪贴板里的图片
+                // 归「粘贴上传」管。必须在点击手势的同步链路里发起，否则
+                // iOS Safari 会以「非用户手势」为由拒绝。
+                const text = await navigator.clipboard.readText();
+                candidate = String(text || "").trim();
+                fromClipboard = true;
+              } catch {
+                // 移动端兜底：权限框被拒 / 非安全上下文时读不到剪贴板，
+                // 不判死刑——展开 URL 表单让用户手动粘贴，走完整流程。
+                this.quickReading = false;
+                this.showUrlInput = true;
+                this.$nextTick(() => this.$refs.urlInput && this.$refs.urlInput.focus());
+                this.showToast("无法读取剪贴板，请粘贴链接后使用「加入转存队列」", "error");
+                return;
+              }
+              this.quickReading = false;
+            }
+
+            const submittedUrl = this.extractUrlFromText(candidate) || candidate;
+            try {
+              const url = new URL(submittedUrl);
+              if (!["http:", "https:"].includes(url.protocol)) {
+                this.showToast("仅支持HTTP/HTTPS协议的URL", "error");
+                return;
+              }
+            } catch {
+              // 没抽出可用链接：剪贴板原文回填表单（可能是分享文案，让用户
+              // 自己确认），表单保持展开并聚焦。
+              if (fromClipboard) this.urlToUpload = candidate;
+              this.showUrlInput = true;
+              this.$nextTick(() => this.$refs.urlInput && this.$refs.urlInput.focus());
+              this.showToast("剪贴板中未找到链接，请粘贴后提交", "error");
+              return;
+            }
+
+            this.urlSubmitting = true;
+            this.startUrlTicker();
+            try {
+              await this.ensureMediaResolveStatus();
+              if (this.isMediaShareLink(submittedUrl)) {
+                await this.runMediaUpload(submittedUrl, null);
+                return;
+              }
+              const data = await this.uploadPlainUrlToServer(submittedUrl);
+              if (!Array.isArray(data) || !data[0]?.src) throw new Error("未返回文件路径");
+              this.registerUploadedUrlFile(data[0].src, submittedUrl);
+              this.urlToUpload = "";
+            } catch (err) {
+              // 直链被服务端认出其实是网页（分享链接的典型表现）→ 仍走快速
+              // 路径：直接交给解析 + 最佳清晰度，不弹选择器。
+              if (err && err.code === "REMOTE_CONTENT_HTML") {
+                await this.runMediaUpload(submittedUrl, null);
+                return;
+              }
+              if (err && err.unauthorized) {
+                this.showToast(err.message, "error");
+                this.redirectToLogin();
+                return;
+              }
+              // 失败回填：最佳清晰度超限这类失败，改走完整流程手选低档就
+              // 能过——把链接留在表单里，别逼用户重新复制。
+              this.urlToUpload = submittedUrl;
+              this.showUrlInput = true;
+              this.showToast("快速转存失败：" + err.message + "；可改用「从 URL 转存」选择其他清晰度。", "error");
             } finally {
               this.urlSubmitting = false;
               this.stopUrlTicker();

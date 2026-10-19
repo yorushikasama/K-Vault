@@ -18,6 +18,9 @@
           historyReadBlocked: false,
           historyConfirmOpen: false,
           clipboardReading: false,
+          // 快速转存的剪贴板读取态：readText 通常瞬时返回，但 iOS 权限框
+          // 期间可能停留数秒，按钮需要独立的 loading 文案。
+          quickReading: false,
           linkFormats: [
             { value: "url", label: "直链" },
             { value: "markdown", label: "Markdown" },

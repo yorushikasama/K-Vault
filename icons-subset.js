@@ -1,7 +1,7 @@
 /**
  * Lucide 1.49.0 子集 — 由 scripts/build-icon-subset.cjs 生成，请勿手改。
  *
- * 只包含仓库实际用到的 124 个图标（全量 2117 个）。
+ * 只包含仓库实际用到的 125 个图标（全量 2117 个）。
  * 暴露形状与官方 UMD 一致（window.lucide.icons / createIcons / 具名导出），
  * 因此 icons.js、theme-core.js、admin.html 的 kv-icon 都无需改动。
  *
@@ -176,6 +176,16 @@ const defaultAttributes = {
   const Ban = [
     ["circle", { cx: "12", cy: "12", r: "10" }],
     ["path", { d: "M4.929 4.929 19.07 19.071" }]
+  ];
+
+  const Bolt = [
+    [
+      "path",
+      {
+        d: "M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+      }
+    ],
+    ["circle", { cx: "12", cy: "12", r: "4" }]
   ];
 
   const Bookmark = [
@@ -1098,6 +1108,7 @@ const defaultAttributes = {
     ArrowUpRight: ArrowUpRight,
     AudioLines: AudioLines,
     Ban: Ban,
+    Bolt: Bolt,
     Bookmark: Bookmark,
     BookmarkCheck: BookmarkCheck,
     Bot: Bot,

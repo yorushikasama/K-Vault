@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="/shell-panels.css?v=31cb35e8fb">
     <link rel="stylesheet" href="/index.css?v=e066576374">
 <script src="/kv-shared.js?v=f480f6145a"></script>
-    <link rel="stylesheet" href="/workbench.css?v=b523b8f1ff">
+    <link rel="stylesheet" href="/workbench.css?v=0550a7dd30">
   </head>
   <body class="kv-workbench kv-upload">
     <div id="app" v-cloak>
@@ -234,6 +234,10 @@
             </button>
             <button class="btn" type="button" :aria-expanded="showUrlInput" aria-controls="upload-url-form"
               @click="toggleUrlInput"><kv-icon name="link" aria-hidden="true"></kv-icon>从 URL 转存</button>
+            <button class="btn" type="button" :disabled="!canAddUploads || urlSubmitting" @click="quickImportFromClipboard"
+              :title="quickReading ? '正在读取剪贴板' : '读取剪贴板链接，自动以最佳清晰度转存，无需手动选择'">
+              <kv-icon name="bolt" aria-hidden="true"></kv-icon>{{ quickReading ? '读取剪贴板中' : '快速转存' }}
+            </button>
           </div>
           <form id="upload-url-form" class="upload-url-form" v-if="showUrlInput" @submit.prevent="uploadFromUrl">
             <label for="upload-url">文件直链或视频分享链接</label>
@@ -248,6 +252,7 @@
             </div>
             <p id="upload-url-help" class="upload-muted">
               {{ mediaResolve.available ? '已启用视频解析；如有多个可用清晰度，将先让你选择。' : '当前仅支持文件直链；视频解析以服务端能力为准。' }}
+              「快速转存」直接读取剪贴板链接并自动采用服务端最佳清晰度，跳过选择；失败时链接会回填到这里供改走完整流程。
               URL 与视频与本地文件共用队列。远程转存大小由服务端按部署配置、目标与访客限制另行校验，可能低于上方本地上传上限；分片不能绕过此限制。
             </p>
           </form>
@@ -583,11 +588,11 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js" integrity="sha384-ULpZhk1pvhc/UK5ktA9kwb2guy9ovNSTyxPNHANnA35YjBQgdwI+AhLkixDvdlw4" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="/icons-subset.js?v=5d9a5603cc"></script>
+    <script src="/icons-subset.js?v=d8aaa459ac"></script>
     <script src="/icons.js?v=fc3fc216e0"></script>
     <script src="/shell-tools.js?v=7eb454e143"></script>
-<script src="/upload-media.js?v=038e425b3d"></script>
+<script src="/upload-media.js?v=700433b491"></script>
     <script src="/upload-image.js?v=5a8bb21341"></script>
-    <script src="/upload-app.js?v=9832256cbd"></script>
+    <script src="/upload-app.js?v=e8debd9bb1"></script>
 </body>
 </html>
