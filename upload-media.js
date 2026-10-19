@@ -483,23 +483,37 @@
             let candidate = String(this.urlToUpload || "").trim();
             let fromClipboard = false;
             if (!candidate) {
+              // 前置检测：不少移动浏览器（HeyTapBrowser 等国产内核）不暴露
+              // clipboard API——不试就知道会失败，别闪「读取中」再打脸，
+              // 直接展开表单走两步路径（粘贴后再点一次快速转存）。
+              const clip = (typeof navigator !== "undefined" && navigator.clipboard
+                && typeof navigator.clipboard.readText === "function") ? navigator.clipboard : null;
+              if (!clip) {
+                this.showUrlInput = true;
+                this.$nextTick(() => this.$refs.urlInput && this.$refs.urlInput.focus());
+                this.showToast("此浏览器不支持读剪贴板：请把链接粘贴到输入框，再点一次「快速转存」", "error");
+                return;
+              }
               this.quickReading = true;
               try {
                 // readText 而不是 read()：只要文字里的链接，剪贴板里的图片
-                // 归「粘贴上传」管。必须在点击手势的同步链路里发起，否则
+                // 归「粘贴上传」管。必须在点击手势的同步链路内发起，否则
                 // iOS Safari 会以「非用户手势」为由拒绝。
-                const text = await navigator.clipboard.readText();
+                const text = await clip.readText();
                 candidate = String(text || "").trim();
                 fromClipboard = true;
               } catch {
-                // 移动端兜底：权限框被拒 / 非安全上下文时读不到剪贴板，
-                // 不判死刑——展开 URL 表单让用户手动粘贴，走完整流程。
+                // 权限框被拒 / 非安全上下文 / 部分手机浏览器直接 reject：
+                // 不判死刑——展开 URL 表单，用户粘贴后再点一次快速转存
+                // （表单内容优先于剪贴板），手机上仍是两步最短路径。
                 this.quickReading = false;
                 this.showUrlInput = true;
                 this.$nextTick(() => this.$refs.urlInput && this.$refs.urlInput.focus());
-                this.showToast("无法读取剪贴板，请粘贴链接后使用「加入转存队列」", "error");
+                this.showToast("无法读取剪贴板（浏览器限制）：请把链接粘贴到输入框，再点一次「快速转存」", "error");
                 return;
               }
+              this.quickReading = false;
+            }
               this.quickReading = false;
             }
 
@@ -516,7 +530,7 @@
               if (fromClipboard) this.urlToUpload = candidate;
               this.showUrlInput = true;
               this.$nextTick(() => this.$refs.urlInput && this.$refs.urlInput.focus());
-              this.showToast("剪贴板中未找到链接，请粘贴后提交", "error");
+              this.showToast("剪贴板里没有 http(s) 链接：请粘贴「复制链接」得到的完整链接（以 http 开头）", "error");
               return;
             }
 

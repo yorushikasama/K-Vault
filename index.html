@@ -235,10 +235,11 @@
             <button class="btn" type="button" :aria-expanded="showUrlInput" aria-controls="upload-url-form"
               @click="toggleUrlInput"><kv-icon name="link" aria-hidden="true"></kv-icon>从 URL 转存</button>
             <button class="btn" type="button" :disabled="!canAddUploads || urlSubmitting" @click="quickImportFromClipboard"
-              :title="quickReading ? '正在读取剪贴板' : '读取剪贴板链接，自动以最佳清晰度转存，无需手动选择'">
+              :title="quickReading ? '正在读取剪贴板' : '先复制分享链接或文件直链，再点此一键转存，自动选最佳清晰度'">
               <kv-icon name="bolt" aria-hidden="true"></kv-icon>{{ quickReading ? '读取剪贴板中' : '快速转存' }}
             </button>
           </div>
+          <p class="upload-muted">「快速转存」：先复制视频分享链接或文件直链，再点一下即自动选最佳清晰度入库。手机浏览器若无法读剪贴板，会展开输入框——粘贴后再点一次「快速转存」即可（同样跳过清晰度选择）。</p>
           <form id="upload-url-form" class="upload-url-form" v-if="showUrlInput" @submit.prevent="uploadFromUrl">
             <label for="upload-url">文件直链或视频分享链接</label>
             <div class="upload-field-row">
@@ -252,7 +253,7 @@
             </div>
             <p id="upload-url-help" class="upload-muted">
               {{ mediaResolve.available ? '已启用视频解析；如有多个可用清晰度，将先让你选择。' : '当前仅支持文件直链；视频解析以服务端能力为准。' }}
-              「快速转存」直接读取剪贴板链接并自动采用服务端最佳清晰度，跳过选择；失败时链接会回填到这里供改走完整流程。
+
               URL 与视频与本地文件共用队列。远程转存大小由服务端按部署配置、目标与访客限制另行校验，可能低于上方本地上传上限；分片不能绕过此限制。
             </p>
           </form>
@@ -591,7 +592,7 @@
     <script src="/icons-subset.js?v=d8aaa459ac"></script>
     <script src="/icons.js?v=fc3fc216e0"></script>
     <script src="/shell-tools.js?v=7eb454e143"></script>
-<script src="/upload-media.js?v=700433b491"></script>
+<script src="/upload-media.js?v=d930bf5c01"></script>
     <script src="/upload-image.js?v=5a8bb21341"></script>
     <script src="/upload-app.js?v=e8debd9bb1"></script>
 </body>

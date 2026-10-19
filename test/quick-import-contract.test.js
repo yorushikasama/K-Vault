@@ -89,6 +89,26 @@ describe('quick import (one-tap URL transfer) contract', function () {
     );
   });
 
+  it('mobile browsers without the clipboard API get the two-step fallback, not a dead end', function () {
+    const body = methodBody(mediaJs, 'quickImportFromClipboard');
+    // 前置检测：HeyTapBrowser 等国产移动浏览器不暴露 clipboard API，
+    // 不试就知道失败——直接展开表单，别闪「读取中」再报错。
+    assert.ok(
+      /typeof navigator\.clipboard\.readText === "function"/.test(body),
+      '调用 readText 前必须先检测 navigator.clipboard.readText 是否存在',
+    );
+    // 兜底 toast 必须指路「粘贴后再点一次快速转存」（表单优先语义），
+    // 而不是把用户赶去「加入转存队列」的完整三步流程。
+    assert.ok(
+      /再点一次「快速转存」/.test(body),
+      '剪贴板不可用的兜底文案必须引导用户粘贴后再点一次快速转存',
+    );
+    assert.ok(
+      (body.match(/再点一次「快速转存」/g) || []).length >= 2,
+      '前置检测不通过与运行时被拒两条兜底路径都要有此指引',
+    );
+  });
+
   it('a failed quick import leaves the URL in the form for the full flow', function () {
     const body = methodBody(mediaJs, 'quickImportFromClipboard');
     assert.ok(/this\.urlToUpload = submittedUrl;/.test(body),
