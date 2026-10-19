@@ -514,8 +514,7 @@
               }
               this.quickReading = false;
             }
-              this.quickReading = false;
-            }
+
 
             const submittedUrl = this.extractUrlFromText(candidate) || candidate;
             try {
