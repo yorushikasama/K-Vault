@@ -470,13 +470,13 @@
             }
           },
 
-          // 快速转存：一键完成「取链接 → 判定 → 转存」，跳过 URL 表单与
-          // 清晰度选择两步交互。链接来源优先级：表单里已有的内容（用户贴好
-          // 再点快速 = 只想跳过选择器）> 剪贴板文字（extractUrlFromText 兼容
-          // 抖音式分享文案）。分享链接刻意**不做** fetchMediaInfo 预解析——
-          // 那是纯为弹选择器服务的，快速路径直接 submitMediaUpload(url, null)
-          // 让服务端一次调用内完成解析 + 最佳清晰度 + 下载入库，用户感知的
-          // 等待减半；variant 为 null 的语义（服务端取最佳）服务端本就支持。
+          // 快速转存：一键完成「取链接 → 判定 → 转存」，跳过清晰度选择。
+          // 是常驻 URL 表单的主按钮（含回车提交）：输入框有内容用它，为空
+          // 则读剪贴板（extractUrlFromText 兼容抖音式分享文案）。分享链接
+          // 刻意**不做** fetchMediaInfo 预解析——那是纯为弹选择器服务的，
+          // 快速路径直接 submitMediaUpload(url, null) 让服务端一次调用内
+          // 完成解析 + 最佳清晰度 + 下载入库，用户感知的等待减半；variant
+          // 为 null 的语义（服务端取最佳）服务端本就支持。
           async quickImportFromClipboard() {
             if (this.authChecking || this.urlSubmitting || this.urlUploading || this.urlResolving || this.qualityPicker.visible) return;
 
@@ -489,7 +489,7 @@
               const clip = (typeof navigator !== "undefined" && navigator.clipboard
                 && typeof navigator.clipboard.readText === "function") ? navigator.clipboard : null;
               if (!clip) {
-                this.showUrlInput = true;
+
                 this.$nextTick(() => this.$refs.urlInput && this.$refs.urlInput.focus());
                 this.showToast("此浏览器不支持读剪贴板：请把链接粘贴到输入框，再点一次「快速转存」", "error");
                 return;
@@ -507,7 +507,7 @@
                 // 不判死刑——展开 URL 表单，用户粘贴后再点一次快速转存
                 // （表单内容优先于剪贴板），手机上仍是两步最短路径。
                 this.quickReading = false;
-                this.showUrlInput = true;
+
                 this.$nextTick(() => this.$refs.urlInput && this.$refs.urlInput.focus());
                 this.showToast("无法读取剪贴板（浏览器限制）：请把链接粘贴到输入框，再点一次「快速转存」", "error");
                 return;
@@ -527,7 +527,7 @@
               // 没抽出可用链接：剪贴板原文回填表单（可能是分享文案，让用户
               // 自己确认），表单保持展开并聚焦。
               if (fromClipboard) this.urlToUpload = candidate;
-              this.showUrlInput = true;
+
               this.$nextTick(() => this.$refs.urlInput && this.$refs.urlInput.focus());
               this.showToast("剪贴板里没有 http(s) 链接：请粘贴「复制链接」得到的完整链接（以 http 开头）", "error");
               return;
@@ -560,8 +560,7 @@
               // 失败回填：最佳清晰度超限这类失败，改走完整流程手选低档就
               // 能过——把链接留在表单里，别逼用户重新复制。
               this.urlToUpload = submittedUrl;
-              this.showUrlInput = true;
-              this.showToast("快速转存失败：" + err.message + "；可改用「从 URL 转存」选择其他清晰度。", "error");
+              this.showToast("快速转存失败：" + err.message + "；可改用「手动选择」挑选其他清晰度。", "error");
             } finally {
               this.urlSubmitting = false;
               this.stopUrlTicker();

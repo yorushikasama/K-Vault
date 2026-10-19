@@ -29,7 +29,7 @@
             { value: "ubb", label: "UBB" },
           ],
           isDragging: false,
-          showUrlInput: false,
+
           urlToUpload: "",
           urlSubmitting: false,
           clockNow: Date.now(),
@@ -553,10 +553,6 @@
             }
           },
 
-          toggleUrlInput() {
-            this.showUrlInput = !this.showUrlInput;
-            if (this.showUrlInput) this.$nextTick(() => this.$refs.urlInput && this.$refs.urlInput.focus());
-          },
 
           handleWorkbenchKeydown(event) {
             const name = this.activeUploadDialog;
