@@ -4,10 +4,7 @@ import { checkHuggingFaceConnection, hasHuggingFaceConfig } from '../utils/huggi
 import { checkGitHubConnection, hasGitHubConfig } from '../utils/github.js';
 import { getGuestConfig } from '../utils/guest.js';
 import { buildTelegramBotApiUrl, getTelegramApiBase } from '../utils/telegram.js';
-
-const MB = 1024 * 1024;
-const DIRECT_UPLOAD_THRESHOLD = 20 * MB;
-const CHUNK_UPLOAD_LIMIT = 100 * MB;
+import { getUploadLimits } from '../utils/upload-limits.js';
 
 /**
  * 单个后端探测的上限。
@@ -307,43 +304,7 @@ export async function onRequestGet(context) {
     headers: {
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache',
-    },
-  });
+     },
+   });
 }
 
-function getUploadLimits() {
-  return {
-    telegram: {
-      maxBytes: DIRECT_UPLOAD_THRESHOLD,
-      directThreshold: DIRECT_UPLOAD_THRESHOLD,
-      supportsChunkUpload: false,
-      message: 'Cloudflare Pages 上的 Telegram 网页上传限制为 20MB。较大的浏览器上传请使用 R2、S3 或 GitHub，或直接把文件发到 Telegram 后使用 Webhook 回链。',
-    },
-    r2: {
-      maxBytes: CHUNK_UPLOAD_LIMIT,
-      directThreshold: DIRECT_UPLOAD_THRESHOLD,
-      supportsChunkUpload: true,
-    },
-    s3: {
-      maxBytes: CHUNK_UPLOAD_LIMIT,
-      directThreshold: DIRECT_UPLOAD_THRESHOLD,
-      supportsChunkUpload: true,
-    },
-    discord: {
-      maxBytes: 25 * MB,
-      directThreshold: DIRECT_UPLOAD_THRESHOLD,
-      supportsChunkUpload: true,
-      message: 'Discord 上传上限受服务器加成影响，YoruVault 默认按 25MB 保守处理。',
-    },
-    huggingface: {
-      maxBytes: 35 * MB,
-      directThreshold: DIRECT_UPLOAD_THRESHOLD,
-      supportsChunkUpload: true,
-    },
-    github: {
-      maxBytes: CHUNK_UPLOAD_LIMIT,
-      directThreshold: DIRECT_UPLOAD_THRESHOLD,
-      supportsChunkUpload: true,
-    },
-  };
-}

@@ -1069,6 +1069,13 @@
             );
           },
 
+          // 服务端 /api/status 下发的 uploadLimits 是上限的单一来源；下面这套
+          // fallback 只在 status 尚未到达（或加载失败）时兜底校验，因此数值
+          // 刻意取两种部署形态的最小值：telegram 20MB 是 Pages 形态的平台限制
+          // （Docker 端云 Bot API 为 50MB / 自建 --local 2GB），discord 25MB 与
+          // huggingface 35MB 是对方平台的固定限制。兜底宁可保守也不放开——
+          // 宁可 status 到达后放宽，也不让一个注定失败的大文件进入队列。
+          // UI 文案已注明「这不是已确认的服务端上限，最终以上传响应为准」。
           getUploadLimit(storageMode) {
             const fallback = {
               telegram: {

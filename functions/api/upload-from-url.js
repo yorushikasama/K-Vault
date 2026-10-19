@@ -13,10 +13,9 @@ import {
   shouldWriteTelegramMetadata,
 } from "../utils/telegram.js";
 import { MAX_REDIRECTS, validateRedirectLocation, validateRemoteUrl } from "../utils/ssrf-guard.js";
+import { resolveUrlImportMaxSize, validateStorageSize } from "../utils/upload-limits.js";
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024;
 const FETCH_TIMEOUT = 30000;
-const MB = 1024 * 1024;
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -49,6 +48,10 @@ export async function onRequestPost(context) {
       );
     }
 
+    // The same import cap fetchRemote just enforced, restated here so the
+    // error message names the real ceiling rather than a stale constant.
+    const maxImportBytes = resolveUrlImportMaxSize(env);
+
     // A share link answers a plain GET with the platform's own page. Saving
     // those bytes stores a web page that looks like a file — the Node runtime
     // rejects it with REMOTE_CONTENT_HTML too, and the front end turns that
@@ -70,9 +73,9 @@ export async function onRequestPost(context) {
     if (!fileSize) {
       return jsonResponse({ error: "Remote file is empty" }, 400);
     }
-    if (fileSize > MAX_FILE_SIZE) {
+    if (fileSize > maxImportBytes) {
       return jsonResponse(
-        { error: `文件过大（${formatSize(fileSize)}），最大允许 ${formatSize(MAX_FILE_SIZE)}。` },
+        { error: `文件过大（${formatSize(fileSize)}），最大允许 ${formatSize(maxImportBytes)}。` },
         413
       );
     }
@@ -129,18 +132,7 @@ export async function onRequestPost(context) {
 }
 
 /**
- * URL 导入的内存上限，与 Docker 端 resolveUrlImportMaxSize 语义一致：
- * 显式 URL_IMPORT_MAX_SIZE 优先，缺省回落 UPLOAD_MAX_SIZE，再缺省 100MB。
- */
-function resolveUrlImportMaxSize(env) {
-  const explicit = Number(env?.URL_IMPORT_MAX_SIZE);
-  if (Number.isFinite(explicit) && explicit > 0) return explicit;
-  const uploadCap = Number(env?.UPLOAD_MAX_SIZE);
-  if (Number.isFinite(uploadCap) && uploadCap > 0) return uploadCap;
-  return MAX_FILE_SIZE;
-}
 
-/**
  * SSRF-safe remote fetch: the initial URL and every redirect hop go through
  * ssrf-guard validation before any request leaves, and the body is read under
  * the import size cap instead of being buffered unconditionally. Mirrors the
@@ -309,30 +301,6 @@ function jsonResponse(data, status = 200) {
   });
 }
 
-function validateStorageSize(storageMode, fileSize) {
-  const limits = {
-    telegram: {
-      maxBytes: 20 * MB,
-      status: 413,
-      message: "Cloudflare Pages 上的 Telegram URL 上传限制为 20MB。较大的文件请使用 R2、S3 或 GitHub。",
-    },
-    discord: {
-      maxBytes: 25 * MB,
-      status: 413,
-      message: "Discord 上传上限受服务器加成影响，YoruVault 默认按 25MB 保守处理。",
-    },
-    huggingface: {
-      maxBytes: 35 * MB,
-      status: 413,
-      message: "HuggingFace regular upload is capped at 35MB in YoruVault. Use another storage backend for larger files.",
-    },
-  };
-  const limit = limits[storageMode];
-  if (limit && fileSize > limit.maxBytes) {
-    return { ok: false, status: limit.status, message: limit.message };
-  }
-  return { ok: true };
-}
 
 function normalizeFolderPath(value) {
   const raw = String(value || "").replace(/\\/g, "/").trim();

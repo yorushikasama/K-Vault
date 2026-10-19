@@ -147,6 +147,14 @@ class UploadService {
     this.bufferedBackendMaxSize = Number(config?.bufferedBackendMaxSize) || 0;
     // Where unknown-length remote bodies get staged before the streaming upload.
     this.uploadTempDir = String(config?.uploadTempDir || '').trim();
+    // Fallback for callers that do not pass maxBytes: the same global ceiling
+    // the endpoints compute (URL_IMPORT_MAX_SIZE falling back to
+    // UPLOAD_MAX_SIZE, 100MB default) instead of a magic 20MB. Callers that
+    // know the target backend pass the layered cap from resolveImportCap.
+    this.defaultImportMaxBytes = Math.min(
+      Number(config?.urlImportMaxSize) || 100 * 1024 * 1024,
+      Number(config?.uploadMaxSize) || 100 * 1024 * 1024,
+    );
   }
 
   resolveStorage({ storageId, storageMode }) {
@@ -283,10 +291,16 @@ class UploadService {
     storageId,
     storageMode,
     folderPath,
-    maxBytes = 20 * 1024 * 1024,
+    maxBytes = null,
     headers = null,
     timeoutMs = 30000,
   }) {
+    // Callers normally pass the layered cap (global + import + backend) from
+    // the endpoint; this default just keeps a forgotten argument from silently
+    // becoming the old magic 20MB.
+    if (!Number.isFinite(maxBytes) || maxBytes <= 0) {
+      maxBytes = this.defaultImportMaxBytes;
+    }
     // A malformed or unsupported URL is a client error, so it must not fall
     // through to the generic 502 the upload error classifier produces. Without
     // an explicit code/status the caller is told "network error, retry" for

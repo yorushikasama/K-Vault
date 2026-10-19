@@ -1265,6 +1265,25 @@ function createApp() {
     };
   }
 
+  // The ceiling every URL-based import must honour: the import knob, the global
+  // upload cap, and whatever the target backend itself accepts. A transfer must
+  // not see a different limit just because it arrived via a URL instead of a
+  // multipart form — without the backend layer, a 30MB file sails past the
+  // 100MB global cap for Discord and only dies when Discord refuses it, after
+  // the whole body was fetched. /api/upload-from-url and /api/resolve-url both
+  // resolve their cap here so the two can never drift.
+  function resolveImportCap({ uploadService, storageId, storageMode }) {
+    let cap = Math.min(container.config.urlImportMaxSize, container.config.uploadMaxSize);
+    try {
+      const targetStorage = uploadService.resolveStorage({ storageId, storageMode });
+      const backendLimit = getUploadLimits()[String(targetStorage.type || '').toLowerCase()];
+      if (backendLimit) cap = Math.min(cap, backendLimit.maxBytes);
+    } catch {
+      // Nothing configured yet; the upload call below reports that accurately.
+    }
+    return cap;
+  }
+
   function normalizeTelegramReplyResult(result, chatId) {
     if (!chatId) {
       return {
@@ -2766,7 +2785,11 @@ function createApp() {
         storageMode: asString(payload.storageMode || payload.storage),
         storageId: asString(payload.storageId || payload.storage_config_id),
         folderPath: normalizeFolderPath(payload.folderPath || payload.folder || ''),
-        maxBytes: Math.min(container.config.urlImportMaxSize, container.config.uploadMaxSize),
+        maxBytes: resolveImportCap({
+          uploadService,
+          storageId: asString(payload.storageId || payload.storage_config_id),
+          storageMode: asString(payload.storageMode || payload.storage),
+        }),
         tempDir: container.config.uploadTempDir,
       });
     } catch (error) {
@@ -2916,15 +2939,7 @@ function createApp() {
     // telegramMaxUploadSize, which is derived from the configured API base: 50MB
     // against the cloud Bot API, up to 2GB against a self-hosted --local server.
     // Discord / HuggingFace are fixed platform limits.
-    const storageLimits = getUploadLimits();
-    let importCap = Math.min(container.config.urlImportMaxSize, container.config.uploadMaxSize);
-    try {
-      const targetStorage = uploadService.resolveStorage({ storageId, storageMode });
-      const backendLimit = storageLimits[String(targetStorage.type || '').toLowerCase()];
-      if (backendLimit) importCap = Math.min(importCap, backendLimit.maxBytes);
-    } catch {
-      // Nothing configured yet; the upload call below reports that accurately.
-    }
+    const importCap = resolveImportCap({ uploadService, storageId, storageMode });
 
     // Resolve-only: return the direct URL plus metadata so callers can preview
     // or decide for themselves before anything is written to storage.
