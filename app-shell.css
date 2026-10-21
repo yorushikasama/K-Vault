@@ -30,9 +30,11 @@
    不在本文件。
 
    注意选择器写成 header.workspace-header（而不是 .workspace-header）：
-   admin.html 同时加载 admin-imgtc.css，那里面有一批给「旧浮动页头」写的
-   .header-content 规则（position: fixed / border-radius / 白底 / hover）。
-   同优先级时后加载的会赢，所以这里提高一档优先级，让外壳的定义说了算。
+   它是一档元素+类选择器，比任何裸类规则（.header、.card…）都高一级，
+   同优先级时后加载的也压不过它。历史成因是 admin.html 曾同时加载
+   admin-imgtc.css，那里面有给「旧浮动页头」写的 .header-content 规则
+   （position: fixed / border-radius / 白底 / hover）；那个文件已不存在，
+   但保留元素+类这一档没有任何代价，就不退回裸类了。
    ========================================================================= */
 
 header.workspace-header {
@@ -40,7 +42,7 @@ header.workspace-header {
   align-items: center;
   gap: 28px;
   /* sticky + 贴满宽度：顶栏是应用外框，不跟着内容区一起居中收窄。
-     left/right 显式写 auto，是为了压掉 admin 遗留的浮动定位。 */
+     left/right 显式写 auto，是为了压掉 legacy 样式可能残留的浮动定位。 */
   position: sticky;
   top: 0;
   left: auto;
@@ -48,17 +50,21 @@ header.workspace-header {
   width: 100%;
   height: auto;
   min-height: 68px;
-  padding: 12px 28px !important;
+  /* 这一组原本全带 !important，唯一理由是压 admin-imgtc.css 里一条
+     .header-content 的浮动页头规则。该文件与那个类都已不在仓库里
+     （全站零引用，已用浏览器实测确认它命中不到 .workspace-header），
+     所以撤掉 !important —— 外壳仍靠元素+类那一档优先级说了算。 */
+  padding: 12px 28px;
   margin: 0;
   /* 吸顶层。取 --ui-z-sticky：与页面级的批量操作栏同一档，二者不会
      互相穿插（此前两者都是裸 100，批量栏滚上去会钻到顶栏下面）。 */
   z-index: var(--ui-z-sticky);
   box-sizing: border-box;
-  background: var(--card-bg) !important;
-  border: 0 !important;
-  border-bottom: 1px solid var(--ui-line-strong) !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
+  background: var(--card-bg);
+  border: 0;
+  border-bottom: 1px solid var(--ui-line-strong);
+  border-radius: 0;
+  box-shadow: none;
   /* 2026-10-17：顶栏原是裸 var(--ui-surface) + backdrop-filter: none ——
      「卡片透明度」「模糊强度」两个旋钮对四个分区页的顶栏全部无效
      （同款消费链断裂，见 css-single-source-contract 的守卫注释）。
@@ -83,7 +89,7 @@ header.workspace-header {
   flex-shrink: 0;
   color: var(--ui-ink);
   font-size: 1.125rem;
-  font-weight: 650;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -159,10 +165,10 @@ header.workspace-header {
   padding: 8px;
 }
 
-/* 图标尺寸收口。admin-imgtc.css 在没有 !important 的情况下给
-   .header-content .actions svg.lucide 设了 clamp 字号与 #333 颜色；
-   这里靠 .workspace-tools 这一档把优先级提到它上面，否则夜间模式下
-   页头图标会被压成深色（看不清）。 */
+/* 图标尺寸收口。顶栏图标统一 18px，颜色继承所在按钮（不写死色值）。
+   历史成因：admin-imgtc.css 曾给 .header-content .actions svg.lucide
+   设过 clamp 字号与 #333，把夜间模式的页头图标压成深色看不清；那个文件
+   已不存在，这条现在只负责尺寸统一。 */
 header.workspace-header .workspace-tools :is(i, svg.lucide),
 header.workspace-header .workspace-brand :is(i, svg.lucide),
 header.workspace-header .workspace-nav :is(i, svg.lucide) {
@@ -190,7 +196,7 @@ header.workspace-header .workspace-nav :is(i, svg.lucide) {
     flex-wrap: wrap;
     gap: 8px 12px;
     row-gap: 6px;
-    padding: 10px 14px !important;
+    padding: 10px 14px;
     /* 移动端禁用高消耗效果（全站断点惯例，mobile-refactor 同款） */
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -235,7 +241,7 @@ header.workspace-header .workspace-nav :is(i, svg.lucide) {
 
 @media (max-width: 480px) {
   header.workspace-header {
-    padding: 8px 12px !important;
+    padding: 8px 12px;
   }
 
   /* 极窄屏保留 logo 但收起文字品牌名：省下约 62px，让导航和工具不用挤成两行。

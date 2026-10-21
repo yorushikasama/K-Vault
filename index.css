@@ -438,7 +438,7 @@
         gap: 12px;
         color: var(--text-primary);
         font-size: 1.18em;
-        font-weight: 800;
+        font-weight: 700;
       }
 
             .compress-confirm-title i,
@@ -643,10 +643,6 @@
           padding: 14px 18px;
         }
 
-        .header-title {
-          font-size: 1.25em;
-        }
-
         .nav-links {
           width: 100%;
           justify-content: center;
@@ -669,19 +665,11 @@
           gap: 16px;
         }
 
-        .folder-create-row {
-          grid-template-columns: 1fr;
-        }
-
         .compress-format-grid,
         .compress-settings-grid,
         .compress-confirm-stats,
         .compress-mode-grid {
           grid-template-columns: 1fr;
-        }
-
-        .storage-options {
-          justify-content: center;
         }
 
         .file-info {
@@ -702,13 +690,7 @@
           margin-bottom: 16px;
         }
 
-        .header-title {
-          font-size: 1.1em;
-          gap: 8px;
-        }
-
-                .header-title i,
-        .header-title svg.lucide {
+                .header-title svg.lucide{
           font-size: 1em;
         }
 
@@ -731,16 +713,6 @@
         .card {
           padding: 16px;
           border-radius: 12px;
-        }
-
-        .storage-options {
-          gap: 6px;
-        }
-
-        .storage-option {
-          padding: 8px 14px;
-          font-size: 0.82em;
-          border-radius: var(--ui-radius-control);
         }
 
         .file-name {

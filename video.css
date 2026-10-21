@@ -93,6 +93,13 @@
       gap: 2px;
       padding: 8px;
       margin-bottom: 12px;
+      /* 收缩到内容宽度，不铺满整行。
+         目录树是一个自成一体的导航块：原先 width 铺满（实测 1398px），
+         根目录下只有一个目录时就成了一条 1398px 宽、里面只有四个字的
+         空框，与下方工具栏直接拼在一起，看起来像布局没做完。
+         fit-content + 上限，目录多时也不会横向拉长整行。 */
+      width: fit-content;
+      max-width: 100%;
       background: var(--card-bg);
       backdrop-filter: var(--ui-card-backdrop-filter);
       -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
@@ -105,7 +112,12 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      width: 100%;
+      /* 容器已收缩到内容宽度，这里改为填满容器而不是 100% 视口宽度：
+         width:100% 与父级的 fit-content 会形成循环依赖，浏览器按
+         「内容宽度」解，但目录名长短不同会各占一条不同的宽度。
+         用 align-self: stretch + min-width: 0 让每一项与最宽的那项对齐。 */
+      align-self: stretch;
+      min-width: 0;
       min-height: 36px;
       padding: 8px 10px;
       border: none;

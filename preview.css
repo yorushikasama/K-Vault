@@ -419,7 +419,7 @@
     .pill {
       border-radius: var(--radius-md);
       background: var(--surface-3);
-      font-weight: 650;
+      font-weight: 600;
     }
 
     .viewer {
@@ -497,7 +497,7 @@
       place-items: center;
 
       font-size: 27px;
-      font-weight: 800;
+      font-weight: 700;
     }
 
     .audio-title {
@@ -757,7 +757,7 @@
       color: #101828;
       background: #ccfbf1;
       font-size: 24px;
-      font-weight: 800;
+      font-weight: 700;
     }
 
     .summary-page h2,

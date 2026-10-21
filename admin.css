@@ -88,7 +88,7 @@
     .preview-filename {
       color: rgba(255, 255, 255, 0.82);
       font-size: 13px;
-      font-weight: 650;
+      font-weight: 600;
       min-width: 0;
       max-width: 62vw;
       overflow: hidden;
@@ -421,7 +421,7 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-weight: 650;
+      font-weight: 600;
     }
     .move-folder-option-meta {
       color: var(--ui-ink-muted);

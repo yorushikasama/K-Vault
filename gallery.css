@@ -488,17 +488,6 @@
         bottom: 12px;
       }
 
-      /* 预览弹窗优化 */
-      .preview-overlay .preview-content {
-        max-width: 95%;
-        max-height: 85%;
-      }
-      
-      .preview-actions {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 8px;
-      }
     }
 
     @media (max-width: 480px) {
@@ -590,10 +579,6 @@
         right: 5%;
         padding: 12px 16px;
         font-size: 0.85em;
-      }
-      
-            .loading-indicator svg.lucide{
-        font-size: 2em;
       }
 
       /* 移动端禁用高消耗效果。背景原先硬编码 #ffffff：暗色模式下移动端

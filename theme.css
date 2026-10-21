@@ -582,8 +582,17 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
 
   /* -- 全局字体（原先只有 mobile-refactor.css 的 --m-font/--m-title-font
      两个私有定义，亮暗双源问题同源） */
-  --ui-font-body: "Manrope", "Noto Sans SC", "PingFang SC", "Segoe UI", sans-serif;
-  --ui-font-display: "Sora", "Manrope", "Noto Sans SC", sans-serif;
+  /* 字体栈。此前这里写的是 "Manrope" / "Sora" —— 但那两个字体在全站
+     没有任何 @font-face 或 <link> 引入（实测 document.fonts 为空），
+     于是它们从来只是栈首的无效名字，实际渲染一直落到 Noto Sans SC /
+     系统字体上。更麻烦的是它们让 `font-weight: 650` / `800` 看起来
+     "有可变字重可用"，而在系统字体上这些值会被吸附成 700 —— 视觉上
+     与显式写 700 没有区别，却让人误以为存在更细的层级。
+
+     这里不再假装加载它们：栈只列真实可用的字体。若将来要接入可变字体，
+     补 @font-face 后再把名字加回来，并重新审视那些 650。 */
+  --ui-font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --ui-font-display: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
 html[data-theme="dark"] {
@@ -1020,6 +1029,32 @@ html[data-theme="dark"] .stats-bar {
 
   /* 页面纵向节奏：容器留白共用同一组值，避免有的页面顶到边、有的页面留一大片。 */
   --ui-page-pad: 16px;
+
+  /* -- Spacing ----------------------------------------------------------
+     间距没有做全量 token 化，也不打算现在做：全站 234 条 padding、247 条
+     gap、179 条 margin 声明里，只有 3 条引用 token，而实际在用的不同数值
+     有 96 种 padding / 23 种 gap / 64 种 margin。把它们一次性收编会触碰
+     每一张样式表的每一块布局，收益（可维护性）远小于风险（整站错位）。
+
+     取而代之的是一条**冻结规则**：新增与改动代码只用下面这六档，
+     现有的 5/6/7/9/11/13 等值保持不动（它们已经渲染成这样，改它们
+     只会制造无谓的视觉位移）。
+
+       4   紧贴元素内部（图标与文字的间距、徽标内边距）
+       8   同组元素之间
+       12  同组元素与组边框之间
+       16  组与组之间
+       24  区块之间
+       32  页面级大分段
+
+     这条规则由 test/spacing-scale-contract.test.js 对**新增代码**把关；
+     历史遗留值不在检查范围内。 */
+  --ui-space-1: 4px;
+  --ui-space-2: 8px;
+  --ui-space-3: 12px;
+  --ui-space-4: 16px;
+  --ui-space-5: 24px;
+  --ui-space-6: 32px;
 }
 
 /* Dark is a value swap: no rule is duplicated per theme. */

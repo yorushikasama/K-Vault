@@ -40,8 +40,8 @@
 .kv-workbench *, .kv-workbench *::before, .kv-workbench *::after { box-sizing: border-box; }
 .kv-workbench #app { width: 100%; max-width: none; margin: 0; padding: 0 !important; }
 .kv-workbench h1, .kv-workbench h2, .kv-workbench h3, .kv-workbench p, .kv-workbench dl { margin: 0; }
-.kv-workbench h1 { font-size: 1.75rem; line-height: 1.3; font-weight: 650; letter-spacing: -.02em; }
-.kv-workbench h2 { font-size: 1.125rem; line-height: 1.45; font-weight: 650; }
+.kv-workbench h1 { font-size: 1.75rem; line-height: 1.3; font-weight: 600; letter-spacing: -.02em; }
+.kv-workbench h2 { font-size: 1.125rem; line-height: 1.45; font-weight: 600; }
 .kv-workbench h3 { font-size: 1rem; line-height: 1.5; font-weight: 600; }
 .kv-workbench button, .kv-workbench input, .kv-workbench select, .kv-workbench textarea { font: inherit; }
 .kv-workbench button { cursor: pointer; }
@@ -109,7 +109,7 @@
 .kv-workbench .upload-limit { display: flex; gap: 8px 24px; align-items: center; flex-wrap: wrap; background: var(--wb-subtle); padding: 12px 16px; border-radius: var(--radius-sm); margin-top: 16px; }
 .kv-workbench .upload-limit dl { display: flex; gap: 12px; align-items: baseline; }
 .kv-workbench .upload-limit dt { color: var(--wb-muted); font-size: 13px; }
-.kv-workbench .upload-limit dd { margin: 0; font-weight: 650; }
+.kv-workbench .upload-limit dd { margin: 0; font-weight: 600; }
 .kv-workbench .upload-limit p { flex: 1 1 280px; color: var(--wb-muted); font-size: 13px; }
 .kv-workbench .upload-dropzone { display: flex; align-items: center; gap: 20px; padding: 28px; min-height: 150px; border: 1px dashed var(--wb-border); border-radius: var(--radius-md); background: var(--wb-subtle); }
 .kv-workbench .upload-dropzone.is-dragging { border-color: var(--wb-accent); background: var(--wb-accent-soft); }
@@ -211,7 +211,7 @@
 .kv-workbench .compress-confirm-card.upload-dialog { width: min(100%, 760px); max-height: min(86vh, 760px); padding: 24px; }
 .kv-workbench .upload-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .kv-workbench .upload-dialog-heading h2 { font-size: 1.0625rem; }
-.kv-workbench .upload-dialog-title { font-weight: 650; overflow-wrap: anywhere; }
+.kv-workbench .upload-dialog-title { font-weight: 600; overflow-wrap: anywhere; }
 .kv-workbench .upload-dialog-status { display: flex; align-items: center; gap: 8px; color: var(--wb-muted); font-size: .8125rem; }
 .kv-workbench .upload-dialog-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; padding-top: 4px; }
 .kv-workbench .quality-picker-options { display: grid; gap: 8px; margin: 0; padding: 0; border: 0; }
