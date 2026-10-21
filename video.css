@@ -7,81 +7,17 @@
  */
     /* 跨页别名（--primary/--card-bg/--shadow 等）已于 2026-10-17 集中到
        theme.css 的 back-compat 区统一管理，本页不再重复定义。 */
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background: var(--bg);
-      background-attachment: fixed;
-      min-height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
-    }
-
     #app {
       max-width: var(--ui-width-wide);
       margin: 0 auto;
       padding: var(--ui-page-pad);
     }
 
-    .header-search {
-      flex: 1 1 200px;
-      max-width: 360px;
-      min-width: 160px;
-    }
-
-    .header-search input {
-      width: 100%;
-      min-height: 40px;
-      padding: 8px 14px;
-      border: 1px solid var(--ui-line-strong);
-      border-radius: var(--ui-radius-sm);
-      background: var(--surface-2);
-      color: var(--ui-ink);
-      font: inherit;
-      font-size: 0.9rem;
-    }
-
-    .header-search input:focus {
-      border-color: var(--ui-brand);
-      outline: 2px solid var(--ui-focus-ring);
-      outline-offset: 1px;
-    }
-
-    /* ---------- 工具栏 ---------- */
-
-    .toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 24px;
-      background: var(--card-bg);
-      backdrop-filter: var(--ui-card-backdrop-filter);
-      -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
-      border-radius: var(--radius-md);
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      gap: 12px;
-      border: 1px solid var(--ui-line);
-      box-shadow: var(--shadow);
-    }
-
-    .toolbar-left, .toolbar-right { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-
-    .stat-badge {
-      padding: 8px 16px;
-      background: color-mix(in srgb, var(--ui-brand) 8%, transparent);
-      border-radius: var(--radius-sm);
-      font-size: 0.88em;
-      color: #555;
-      font-weight: 500;
-    }
-
-    .stat-badge strong { color: var(--primary); margin-left: 4px; }
-
-    .format-label {
-      font-size: 0.85em;
-      color: var(--ui-ink-muted);
-    }
+    /* ---------- 工具栏 ----------
+       .toolbar / .toolbar-left / .toolbar-right / .header-search /
+       .stat-badge / .format-label / .batch-bar / 分页 / 空状态 / 加载态
+       都已收进 media-list.css（与图库页共用）。本文件只保留视频页
+       特有的部分，以及各断点里对共用值的**差异**覆盖。 */
 
     /* ---------- 目录树 ----------
        与文件工作台的目录侧栏同构：竖排、可点、当前项高亮、右侧带计数。
@@ -319,65 +255,6 @@
 
     /* ---------- 批量操作栏 ---------- */
 
-    .batch-bar {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #333333;
-      padding: 12px 24px;
-      border-radius: var(--radius-md);
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      box-shadow: var(--shadow-2);
-      z-index: var(--ui-z-sticky);
-    }
-
-    .batch-bar-count {
-      color: white;
-      font-size: 0.9em;
-    }
-
-    .batch-bar-count strong { color: var(--accent); }
-
-    /* ---------- 分页 ---------- */
-
-    .pagination {
-      display: flex;
-      justify-content: center;
-      margin-top: 24px;
-      gap: 8px;
-    }
-
-    /* ---------- 空状态 / 加载 ---------- */
-
-    .empty-state {
-      text-align: center;
-      padding: 80px 20px;
-      color: var(--ui-ink-muted);
-    }
-
-    .empty-state i { font-size: 4em; margin-bottom: 20px; color: var(--ui-line-strong); }
-
-    .loading-state {
-      text-align: center;
-      padding: 60px;
-      color: #666;
-    }
-
-    .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid #eee;
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 16px;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
     /* ---------- 响应式 ---------- */
 
     @media (max-width: 768px) {
@@ -393,33 +270,13 @@
         -webkit-backdrop-filter: none;
       }
 
-      .header-search {
-        max-width: none;
-        flex: 1 1 100%;
-      }
-
+      /* 工具栏与搜索框的窄屏规则（含 .toolbar-left/.toolbar-right/
+         .stat-badge）在 media-list.css 的 768px 档里，两页共用。 */
       .toolbar {
         flex-direction: column;
         gap: 12px;
         align-items: stretch;
         padding: 14px;
-      }
-
-      .toolbar-left {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 8px;
-      }
-
-      .toolbar-right {
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .stat-badge {
-        padding: 6px 12px;
-        font-size: 0.82em;
       }
 
       .segmented { justify-content: center; }
@@ -452,36 +309,11 @@
 
       .video-card-actions { gap: 8px; }
 
-      .batch-bar {
-        flex-wrap: wrap;
-        width: calc(100% - 24px);
-        justify-content: center;
-        gap: 8px;
-        padding: 12px;
-        left: 12px;
-        bottom: 12px;
-      }
+      /* 批量条与搜索框的窄屏取值在 media-list.css（与图库页共用）。 */
     }
 
     @media (max-width: 480px) {
       #app { padding: 8px; }
-
-      .header-search input {
-        font-size: 0.9rem;
-        padding: 8px 12px;
-      }
-
-      .toolbar {
-        padding: 12px;
-        gap: 10px;
-      }
-
-      .toolbar-left { gap: 6px; }
-
-      .stat-badge {
-        padding: 5px 10px;
-        font-size: 0.75em;
-      }
 
       /* 竖屏手机上一行只放得下一张 320px 卡，横向滚动比压到 200px
          以下更合理 —— 再窄播放器控件就挤不下了。 */
@@ -491,41 +323,6 @@
       }
 
       .video-card-name { font-size: 0.78em; }
-
-      /* 竖排会让批量条长到盖住整张卡片：4 个按钮各占满一行，390px 宽下
-         实测接近 300px 高，比一张视频卡还高。改成横向换行 —— 触摸目标
-         仍由 ui-buttons.css 的 44px 下限负责，按钮不因换行而变小。
-
-         注意 mobile-refactor.css 用 `left/right: 10px !important` 把批量条
-         钉在视口两端，覆盖了这里设置的 left/bottom。所以靠 padding 留出
-         安全区，而不是靠定位偏移 —— 定位在这里说了不算。 */
-      .batch-bar {
-        width: auto;
-        left: 10px;
-        right: 10px;
-        bottom: 10px;
-        padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: center;
-      }
-
-      .batch-bar-count {
-        width: 100%;
-        text-align: center;
-      }
-
-      .batch-bar .btn {
-        flex: 0 1 auto;
-        min-width: 84px;
-      }
-
-      .toast {
-        max-width: 90%;
-        right: 5%;
-        padding: 12px 16px;
-        font-size: 0.85em;
-      }
 
       .video-card:hover { transform: none; }
     }

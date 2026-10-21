@@ -85,9 +85,9 @@ const TARGETS = [
   'ui-buttons.css',
   'gallery.css',
   'video.css',
+  'media-list.css',
   'preview.css',
-  'block-img.css',
-  'whitelist-on.css',
+  'notice.css',
   'login.css',
   'admin.css',
 ].filter((f) => fs.existsSync(path.join(ROOT, f)));

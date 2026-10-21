@@ -19,9 +19,8 @@
 
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    /* box-sizing / margin / padding 的全局复位在 theme.css（:where 选择器，
+       优先级为 0，可被本文件任何显式声明覆盖）。这里不再重复。 */
 
     html,
     body {
@@ -32,7 +31,9 @@
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", Arial, sans-serif;
+      /* 字体栈统一由 theme.css 的 --ui-font-body 提供，本页不再自带一份
+         —— 原先第四份私有栈里多了 Roboto/Arial，预览页的 Latin 字形
+         因此与其它页不同。 */
       letter-spacing: 0;
     }
 

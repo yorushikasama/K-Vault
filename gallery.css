@@ -3,16 +3,6 @@
         （历史注记：这里原先还定义过 --bg: #ffd7e4 —— 那是 --accent 的值，
         复制粘贴错位。body 背景已被 theme.css 接管，错值从未生效，随别名
         集中一并删除。） */
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background: var(--bg);
-      background-attachment: fixed;
-      min-height: 100vh;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
-    }
-
     /* 宽度与留白引用 theme.css 的版面 token：原先各页自己写死
        （gallery 1600 / index 1400 / waterfall 1460），
        页面之间跳转时内容区会横向错位。 */
@@ -27,67 +17,10 @@
        （标题「图片浏览器」+ 上传/管理/首页 + 页面级主题按钮），
        导航项文字与其它页不同，切换时像跳到了别处。 */
 
-    /* 搜索框：原本在顶栏中央，顶栏统一后移入工具栏，功能不变。 */
-    .header-search {
-      flex: 1 1 200px;
-      max-width: 360px;
-      min-width: 160px;
-    }
-
-    .header-search input {
-      width: 100%;
-      min-height: 40px;
-      padding: 8px 14px;
-      border: 1px solid var(--ui-line-strong);
-      border-radius: var(--ui-radius-sm);
-      background: var(--surface-2);
-      color: var(--ui-ink);
-      font: inherit;
-      font-size: 0.9rem;
-    }
-
-    .header-search input:focus {
-      border-color: var(--ui-brand);
-      outline: 2px solid var(--ui-focus-ring);
-      outline-offset: 1px;
-    }
-
-    /* 工具栏 */
-    .toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 24px;
-      background: var(--card-bg);
-      backdrop-filter: var(--ui-card-backdrop-filter);
-      -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
-      border-radius: var(--radius-md);
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      gap: 12px;
-      border: 1px solid var(--ui-line);
-      box-shadow: var(--shadow);
-    }
-
-    .toolbar-left, .toolbar-right { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-
-    .stat-badge {
-      padding: 8px 16px;
-      background: color-mix(in srgb, var(--ui-brand) 8%, transparent);
-      border-radius: var(--radius-sm);
-      font-size: 0.88em;
-      color: #555;
-      font-weight: 500;
-    }
-
-    .stat-badge strong { color: var(--primary); margin-left: 4px; }
-
-    /* 链接格式选择器。控件本体是 ui-buttons.css 的 .segmented，
-       这里只定义它左侧的说明文字。 */
-    .format-label {
-      font-size: 0.85em;
-      color: var(--ui-ink-muted);
-    }
+    /* 工具栏骨架（.toolbar / .toolbar-left / .toolbar-right）、搜索框、
+       计数徽标、链接格式说明文字、批量条、分页、空态与加载态，都收在
+       media-list.css（与视频页共用）。本文件只保留图库独有的部分：
+       网格与瀑布流轨道、卡片内部、以及各断点里的差异覆盖。 */
 
     /* 图片网格 */
     .image-grid {
@@ -263,28 +196,6 @@
     }
 
     /* 批量操作栏 */
-    .batch-bar {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #333333;
-      padding: 12px 24px;
-      border-radius: var(--radius-md);
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      box-shadow: var(--shadow-2);
-      z-index: var(--ui-z-sticky);
-    }
-
-    .batch-bar-count {
-      color: white;
-      font-size: 0.9em;
-    }
-
-    .batch-bar-count strong { color: var(--accent); }
-
     /* 品牌/语义实心按钮上的文字一律用 token：--ui-brand-ink 随主题翻转，
        success/danger 用各自的 -strong 档（亮色档压白字只有 2.9:1）。 */
 
@@ -368,41 +279,6 @@
       font-size: 0.85em;
     }
 
-    /* 分页 */
-    .pagination {
-      display: flex;
-      justify-content: center;
-      margin-top: 24px;
-      gap: 8px;
-    }
-
-    /* 空状态 */
-    .empty-state {
-      text-align: center;
-      padding: 80px 20px;
-      /* 原先 #999 压在近白底色上只有 2.7:1，低于 AA 的 4.5:1。 */
-      color: var(--ui-ink-muted);
-    }
-
-    .empty-state i { font-size: 4em; margin-bottom: 20px; color: var(--ui-line-strong); }
-
-    /* 加载状态 */
-    .loading-state {
-      text-align: center;
-      padding: 60px;
-      color: #666;
-    }
-
-    .loading-spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid #eee;
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 16px;
-    }
-
     /* Toast 的入场动画统一在 theme.css（fadeUp）。这里曾有一份同名的
        slideIn，与 theme.css 那份撞名 —— 同名 keyframes 由后加载的定义
        覆盖，于是同一页里 toast 播的是从右侧滑入，与首页不同。已删除。 */
@@ -414,12 +290,9 @@
          顶栏只有 374px 宽），与其它三页不一致。 */
       #app { padding: 12px; }
 
-      /* 顶栏的窄屏处理在 app-shell.css（各分区页共用），这里不用再管。 */
-
-      .header-search {
-        max-width: none;
-        flex: 1 1 100%;
-      }
+      /* 顶栏的窄屏处理在 app-shell.css（各分区页共用），这里不用再管。
+         工具栏与搜索框的窄屏规则（含 .toolbar-left/.toolbar-right/
+         .stat-badge）在 media-list.css 的 768px 档里，两页共用。 */
 
       .toolbar {
         flex-direction: column;
@@ -427,24 +300,7 @@
         align-items: stretch;
         padding: 14px;
       }
-      
-      .toolbar-left {
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 8px;
-      }
-      
-      .toolbar-right {
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-      }
-      
-      .stat-badge {
-        padding: 6px 12px;
-        font-size: 0.82em;
-      }
-      
+
       .segmented {
         justify-content: center;
       }
@@ -478,41 +334,16 @@
          统一负责（四个一行：4×44 + 3×8(gap) = 200px，320px 屏也放得下）。 */
       .image-card-actions { gap: 8px; }
       
-      .batch-bar { 
-        flex-wrap: wrap; 
-        width: calc(100% - 24px); 
-        justify-content: center;
-        gap: 8px;
-        padding: 12px;
-        left: 12px;
-        bottom: 12px;
-      }
-
+      /* 批量条与搜索框的窄屏取值在 media-list.css（与视频页共用）。 */
     }
 
     @media (max-width: 480px) {
       /* 同上：留白给内容容器，别给 body —— 顶栏需要保持全宽贴边。 */
       #app { padding: 8px; }
 
-      .header-search input {
-        font-size: 0.9rem;
-        padding: 8px 12px;
-      }
-
+      /* 搜索框与徽标的 480px 取值在 media-list.css（与视频页共用）。 */
       .toolbar {
-        padding: 12px;
         border-radius: var(--radius-md);
-        gap: 10px;
-      }
-      
-      .toolbar-left {
-        gap: 6px;
-      }
-      
-      .stat-badge {
-        padding: 5px 10px;
-        font-size: 0.75em;
-        border-radius: var(--radius-sm);
       }
 
       .image-grid {
@@ -548,38 +379,8 @@
       
       /* 原来竖排 + 每个按钮 width:100%，实测在 390px 宽下批量条高 249px ——
          比一张图片卡还高，几乎盖住整个视口底部，用户看不见自己选了什么。
-         改成横向换行，高度降到 ~100px。触摸目标由 ui-buttons.css 的 44px
-         下限保证，按钮不因换行而变小。定位偏移在这里说了不算
-         （mobile-refactor.css 用 !important 把批量条钉在视口两端），
-         所以左右用 left/right 配合。 */
-      .batch-bar {
-        width: auto;
-        left: 10px;
-        right: 10px;
-        bottom: 10px;
-        padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: center;
-        border-radius: var(--radius-md);
-      }
-
-      .batch-bar-count {
-        width: 100%;
-        text-align: center;
-      }
-
-      .batch-bar .btn {
-        flex: 0 1 auto;
-        min-width: 84px;
-      }
-      
-      .toast {
-        max-width: 90%;
-        right: 5%;
-        padding: 12px 16px;
-        font-size: 0.85em;
-      }
+         批量条横向换行、计数独占一行，取值都在 media-list.css
+         （与视频页共用）。 */
 
       /* 移动端禁用高消耗效果。背景原先硬编码 #ffffff：暗色模式下移动端
          工具栏会被钉成白底，改回 --card-bg（跟随透明度旋钮，JS 未执行时

@@ -47,7 +47,8 @@
   border-radius: var(--ui-radius-lg);
   box-shadow: var(--ui-shadow-soft);
   color: var(--ui-ink);
-  font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif;
+  /* 字体栈跟 body 共用同一个 token（原先此处是第四份私有栈）。 */
+  font-family: var(--ui-font-body);
   font-size: 14px;
   line-height: 1.6;
 }

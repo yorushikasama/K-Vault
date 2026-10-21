@@ -74,9 +74,10 @@ header.workspace-header {
   backdrop-filter: var(--ui-card-backdrop-filter);
   -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
   /* 品牌名、导航、工具按钮都按这一档字号排，四个页面因此长得一样。
-     各页 body 的字体栈不同（图库用 system 栈、旧 WebDAV 页用 Manrope），
-     顶栏作为共用组件不能跟着飘。 */
-  font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif;
+     字体栈跟 body 共用同一个 token：顶栏原先硬编码了第五份私有栈
+     （system-ui 打头，还带两个 Linux 专用字体名），在 Windows 上
+     同样落到 Segoe UI，但那是巧合而非保证。 */
+  font-family: var(--ui-font-body);
   font-size: 14px;
   line-height: 1.6;
   color: var(--ui-ink);

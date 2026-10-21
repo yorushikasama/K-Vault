@@ -1,0 +1,107 @@
+/* ===========================================================================
+   提示页（共用）
+   ---------------------------------------------------------------------------
+   两页共用同一套标记与布局，只在文案、图标、强调色三处不同：
+     block-img.html     图片已屏蔽       ban     danger
+     whitelist-on.html  白名单已开启     shield  warning
+
+   为什么收成一份：这两张样式表此前是 83 行对 83 行、只差 `background`
+   一个值（实测 diff 只有第 34 行）。各自的 `*` 重置、body 居中、卡片、
+   图标圆底、标题、正文、页脚逐字相同 —— 任何一个页面的排版修正都要
+   改两遍，漏一遍就是两页长得不一样。
+
+   强调色用修饰类表达，不再复制整张表：
+     <div class="notice notice--danger">    图片已屏蔽
+     <div class="notice notice--warning">   白名单已开启
+
+   依赖 theme.css 的 token（--ui-canvas / --card-bg / --ui-ink …），
+   因此夜间模式、壁纸取色、UI 面板里的圆角与透明度都会自动跟随。
+   ========================================================================= */
+
+body.notice-page {
+  min-height: 100vh;
+  background: var(--ui-canvas);
+  /* 字体栈与其他页面一致：此前这里写死 -apple-system 前缀栈，与
+     theme.css 的 --ui-font-body 是两套，同一个字在提示页与主站
+     可能落到不同字体上。 */
+  font-family: var(--ui-font-body);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.notice {
+  background: var(--card-bg);
+  backdrop-filter: var(--ui-card-backdrop-filter);
+  -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
+  border-radius: var(--ui-radius-lg);
+  padding: 48px 40px;
+  max-width: var(--ui-width-prose);
+  text-align: center;
+  box-shadow: var(--ui-elev-1);
+  border: 1px solid var(--ui-line);
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* 图标圆底。颜色由修饰类决定 —— 这是两页唯一的实质差异。 */
+.notice-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  font-size: 2.5rem;
+  color: var(--ui-brand-ink);
+  box-shadow: var(--ui-elev-1);
+}
+
+.notice--danger .notice-icon { background: var(--ui-danger); }
+.notice--warning .notice-icon { background: var(--ui-warning); }
+
+.notice-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ui-ink);
+  margin-bottom: 16px;
+}
+
+.notice-message {
+  color: var(--ui-ink-secondary);
+  line-height: 1.8;
+  margin-bottom: 24px;
+  font-size: 0.95rem;
+}
+
+.notice-message-en {
+  color: var(--ui-ink-muted);
+  font-size: 0.85rem;
+  margin-bottom: 32px;
+}
+
+.notice-footer {
+  color: var(--ui-ink-muted);
+  font-size: 0.85rem;
+}
+
+.notice-footer a {
+  color: var(--ui-brand);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 180ms ease-out;
+}
+
+.notice-footer a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .notice { padding: 32px 24px; }
+  .notice-icon { width: 64px; height: 64px; font-size: 2rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notice { animation: none; }
+}

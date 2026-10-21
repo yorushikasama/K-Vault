@@ -55,17 +55,53 @@ function spacingDeclarations(src) {
   return decls;
 }
 
-/** 某文件在基线提交里的内容；没有 git 或文件是新增的，返回 null。 */
-function baselineContent(file) {
+/**
+ * 基线提交里全部样式表的内容（按文件逐个读取并缓存）。
+ *
+ * 缓存是关键：原先对每个文件、每条声明都现取一次 `git show`，Windows 上
+ * 单次 spawn 约 100ms，直接吃满 10s 的测试超时。现在整个测试期间每个文件
+ * 只取一次。
+ */
+let baselineSheets = null;
+function loadBaselineSheets() {
+  if (baselineSheets) return baselineSheets;
+  const map = new Map();
+  let names = [];
   try {
-    return execFileSync('git', ['show', `${BASELINE_REF}:${file}`], {
+    names = execFileSync('git', ['ls-tree', '--name-only', BASELINE_REF], {
       cwd: root,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
-    });
+    })
+      .split('\n')
+      .map((s) => s.trim())
+      .filter((f) => f.endsWith('.css'));
   } catch {
-    return null;
+    baselineSheets = map;
+    return map;
   }
+  for (const name of names) {
+    try {
+      map.set(
+        name,
+        execFileSync('git', ['show', `${BASELINE_REF}:${name}`], {
+          cwd: root,
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+          maxBuffer: 32 * 1024 * 1024,
+        })
+      );
+    } catch {
+      /* 该文件在基线里不存在 —— 视为新增 */
+    }
+  }
+  baselineSheets = map;
+  return map;
+}
+
+/** 某文件在基线提交里的内容；没有 git 或文件是新增的，返回 null。 */
+function baselineContent(file) {
+  return loadBaselineSheets().get(file) ?? null;
 }
 
 /** 文件在当前工作区的内容。 */
@@ -74,17 +110,49 @@ function currentContent(file) {
 }
 
 /**
+ * 基线里出现过的全部间距声明（跨文件的多重集）。
+ *
+ * 为什么要有这一层：把一批规则从页面表迁到共用表（例如把 gallery/video
+ * 的工具栏收进 media-list.css）时，新文件在基线里当然「不存在」，
+ * 但里面的每条声明都是搬过来的旧值，不是新写的间距。只按文件比对会把
+ * 整批移动误判成新增。
+ */
+let baselineGlobalCounts = null;
+function globalBaselineCounts(getBaselineFiles) {
+  if (baselineGlobalCounts) return baselineGlobalCounts;
+  const counts = new Map();
+  for (const file of getBaselineFiles()) {
+    const src = baselineContent(file);
+    if (src === null) continue;
+    for (const d of spacingDeclarations(src)) {
+      const key = `${d.prop}|${d.value}`;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+  }
+  baselineGlobalCounts = counts;
+  return counts;
+}
+
+/**
  * 仅在新增行上出现的间距声明。
  * 用「当前声明集合 − 基线声明集合」的多重集差来判定：同一文件里
  * 重复出现的同一条声明不会被算作新增。
  */
-function newDeclarations(file) {
+function newDeclarations(file, globalCounts) {
   const base = baselineContent(file);
   const now = currentContent(file);
   const nowDecls = spacingDeclarations(now);
   if (base === null) {
-    // 整个文件都是新增的
-    return nowDecls.map((d) => ({ ...d, file }));
+    // 基线里没有这个文件 —— 它要么是新增的，要么是移动/拆分产生的。
+    // 用全局基线扣除：在别处出现过的同值声明算作搬迁，不算新增。
+    const fresh = [];
+    for (const d of nowDecls) {
+      const key = `${d.prop}|${d.value}`;
+      const left = globalCounts.get(key) || 0;
+      if (left > 0) globalCounts.set(key, left - 1);
+      else fresh.push({ ...d, file });
+    }
+    return fresh;
   }
   const counts = new Map();
   for (const d of spacingDeclarations(base)) {
@@ -146,10 +214,12 @@ describe('spacing scale contract (freeze the increments)', function () {
 
   it('no newly written spacing value falls outside the scale', function () {
     const offenders = [];
+    // 新文件的间距按「全局基线扣除」判定：搬过来的旧值不算新写。
+    const globalCounts = globalBaselineCounts(() => sheets);
     for (const sheet of sheets) {
       let fresh;
       try {
-        fresh = newDeclarations(sheet);
+        fresh = newDeclarations(sheet, globalCounts);
       } catch {
         continue;
       }

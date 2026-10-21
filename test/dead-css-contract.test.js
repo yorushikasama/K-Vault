@@ -166,8 +166,8 @@ describe('dead CSS contract', function () {
     // 都会静默吞掉后面的样式。
     const prunedSheets = [
       'mobile-refactor.css', 'index.css', 'theme.css',
-      'gallery.css', 'preview.css', 'block-img.css',
-      'whitelist-on.css', 'login.css', 'admin.css',
+      'gallery.css', 'preview.css', 'notice.css',
+      'login.css', 'admin.css',
     ];
     for (const sheet of prunedSheets) {
       it(`${sheet} has balanced braces and closed comments`, function () {

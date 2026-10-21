@@ -29,20 +29,12 @@
       html[data-theme="dark"] .batch-links::placeholder {
         color: var(--text-muted);
       }
-
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-
       body {
         background: var(--bg-gradient);
         background-attachment: fixed;
         min-height: 100vh;
-        font-family:
-          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC",
-          sans-serif;
+        /* 字体栈由 theme.css 的 --ui-font-body 统一给（原来这里写着第三份
+           私有栈）。背景与文字色仍归本页：这是首页独有的渐变底。 */
         color: var(--text-primary);
       }
 

@@ -1,0 +1,270 @@
+/* ===========================================================================
+   媒体列表页骨架（图库 / 视频共用）
+   ---------------------------------------------------------------------------
+   图库页与视频页是同一套结构：一个搜索/筛选工具栏、一组计数徽标、一个媒体
+   网格、一个批量操作栏、分页与空状态。两页的样式表曾各自完整写了一遍
+   —— 逐字相同的规则有 9 条（工具栏、搜索框、徽标、左/右分组、批量按钮），
+   另有若干只差数值的同名规则。
+
+   为什么单独成文件而不是塞进 theme.css：这些类只有这两个页面会用到，
+   放进全站权威层等于让上传页、登录页、预览页都下载一份用不上的规则。
+   这个文件只被 gallery.html 与 video.html 加载。
+
+   什么留在这里、什么留在页面里：
+     这里  两页逐字相同、或语义上必须一致的部分（工具栏外壳、搜索框、
+           计数徽标、分组容器、批量栏骨架）。
+     页面  真正的差异 —— 网格轨道（图库 220px 方格 / 视频 280px 卡片）、
+           卡片内部、瀑布流的列逻辑、以及各自断点的微调。
+
+   取值全部引用 theme.css 的 token，因此夜间模式、壁纸取色、圆角与透明度
+   都会自动跟随，本文件不需要任何 html[data-theme] 覆盖块。
+   ========================================================================= */
+
+/* --- 工具栏 ------------------------------------------------------------- */
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px;
+  background: var(--card-bg);
+  backdrop-filter: var(--ui-card-backdrop-filter);
+  -webkit-backdrop-filter: var(--ui-card-backdrop-filter);
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+  border: 1px solid var(--ui-line);
+  box-shadow: var(--shadow);
+}
+
+.toolbar-left,
+.toolbar-right {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* --- 搜索框 ------------------------------------------------------------- */
+
+.header-search {
+  flex: 1 1 200px;
+  max-width: 360px;
+  min-width: 160px;
+}
+
+.header-search input {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--ui-line-strong);
+  border-radius: var(--ui-radius-sm);
+  background: var(--surface-2);
+  color: var(--ui-ink);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.header-search input:focus {
+  border-color: var(--ui-brand);
+  outline: 2px solid var(--ui-focus-ring);
+  outline-offset: 1px;
+}
+
+/* --- 计数徽标 ----------------------------------------------------------- */
+
+.stat-badge {
+  padding: 8px 16px;
+  background: color-mix(in srgb, var(--ui-brand) 8%, transparent);
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  color: var(--ui-ink-secondary);
+  font-weight: 500;
+}
+
+.stat-badge strong {
+  color: var(--primary);
+  margin-left: 4px;
+}
+
+/* 链接格式控件左侧的说明文字。控件本体是 ui-buttons.css 的 .segmented。 */
+.format-label {
+  font-size: 0.85rem;
+  color: var(--ui-ink-muted);
+}
+
+/* --- 批量操作栏 --------------------------------------------------------- */
+
+.batch-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333333;
+  padding: 12px 24px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--shadow-2);
+  z-index: var(--ui-z-sticky);
+}
+
+.batch-bar-count {
+  color: #ffffff;
+  font-size: 0.9rem;
+}
+
+.batch-bar-count strong {
+  color: var(--accent);
+}
+
+/* --- 分页与空状态 ------------------------------------------------------- */
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--ui-ink-muted);
+}
+
+.empty-state i,
+.empty-state .kv-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  color: var(--ui-line-strong);
+}
+
+.loading-state {
+  text-align: center;
+  padding: 60px;
+  color: var(--ui-ink-muted);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 16px;
+  border: 3px solid var(--ui-line);
+  border-top-color: var(--ui-brand);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: none;
+  }
+}
+
+/* --- 窄屏 ---------------------------------------------------------------
+   两页在这一档的取值逐字相同，此前各写一遍。页面自己的断点块只保留
+   真正的差异（网格轨道、卡片内距、目录树形态等）。
+
+   注意 mobile-refactor.css 收尾加载，它在这个断点为 .toolbar-left /
+   .toolbar-right 追加了 width:100% 与 !important 的 justify-content，
+   那是全站移动端基线；这里给的是这两个组件本身的窄屏形态。 */
+
+@media (max-width: 768px) {
+  /* 移动端禁用高耗效果（全站惯例，见各页断点）。.toolbar 的模糊随本表
+     一起搬来，禁用规则也得跟过来，否则窄屏上这一条的 backdrop-filter
+     会只剩两页各自的覆盖在兜。 */
+  .toolbar {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .header-search {
+    max-width: none;
+    flex: 1 1 100%;
+  }
+
+  .toolbar-left {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .toolbar-right {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .stat-badge {
+    padding: 6px 12px;
+    font-size: 0.82rem;
+  }
+
+  .batch-bar {
+    flex-wrap: wrap;
+    width: calc(100% - 24px);
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    left: 12px;
+    bottom: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-search input {
+    font-size: 0.9rem;
+    padding: 8px 12px;
+  }
+
+  .toolbar {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .toolbar-left {
+    gap: 6px;
+  }
+
+  .stat-badge {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    border-radius: var(--radius-sm);
+  }
+
+  /* 竖排会让批量条长到盖住整张卡片，改成横向换行 —— 触摸目标仍由
+     ui-buttons.css 的 44px 下限负责，按钮不因换行而变小。
+
+     注意 mobile-refactor.css 用 `left/right: 10px !important` 把批量条
+     钉在视口两端，覆盖了这里设置的 left/bottom。所以靠 padding 留出
+     安全区，而不是靠定位偏移 —— 定位在这里说了不算。 */
+  .batch-bar {
+    width: auto;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    border-radius: var(--radius-md);
+  }
+
+  /* 最窄档才需压按钮：84px 下限在 480px 以上是自然的按钮宽度，
+     到了手机竖屏才成为"别把按钮挤成图标"的保障。 */
+  .batch-bar .btn {
+    flex: 0 1 auto;
+    min-width: 84px;
+  }
+
+  /* 计数独占一行居中：横向换行后它与按钮同排会把按钮推到第二行，
+     独占一行反而更整齐。 */
+  .batch-bar-count {
+    width: 100%;
+    text-align: center;
+  }
+}

@@ -30,7 +30,10 @@
   --wb-danger: var(--ui-danger-strong);
   --wb-success: var(--ui-success-strong);
   margin: 0; padding: 0; color: var(--wb-ink);
-  font: 14px/1.6 system-ui, -apple-system, "Segoe UI", "Noto Sans CJK SC", "WenQuanYi Micro Hei", sans-serif;
+  /* 字体栈走全局 token。原先这里用 font: 简写内联了第五份私有栈
+     （system-ui 打头 + 两个 Linux 专用字体名），工作台页的 Latin
+     字形因此与列表页不同。简写会把 font-family 一并复写，所以拆开写。 */
+  font: 14px/1.6 var(--ui-font-body);
 }
 /* 文件页原先自带一支青色 accent（#0f766e / 暗色 #0f8f8a），用来和上传区区分。
    但全站现在没有主题色 —— 强调色是壁纸算出来的，页面自己钉一支色就又是

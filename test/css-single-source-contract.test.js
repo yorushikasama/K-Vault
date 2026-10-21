@@ -128,14 +128,19 @@ describe('card blur consumer chain', function () {
   const BLUR_CONSUMERS = {
     'index.css': 2,       // .header / .card（另有弹窗）
     'workbench.css': 2,   // files-query / file-tile 等
-    'gallery.css': 2,     // .toolbar / .image-card
-    'video.css': 3,       // .toolbar / .video-folders / .video-card
+    /* 媒体列表页（图库 / 视频）的工具栏外壳 2026-10-21 收进 media-list.css，
+       两页共用一份；各自只剩卡片。加起来必须仍覆盖两页原先的消费数。 */
+    'media-list.css': 1,  // .toolbar（两页共用）
+    'gallery.css': 1,     // .image-card
+    'video.css': 2,       // .video-folders / .video-card
     'login.css': 1,       // .login-card
     'preview.css': 3,     // .topbar / .file-panel / .viewer
     'app-shell.css': 1,   // header.workspace-header（四分区页共用顶栏）
     'shell-panels.css': 1, // .shell-panel（系统连接 / UI 设计浮层）
-    'block-img.css': 1,   // .container
-    'whitelist-on.css': 1, // .container
+    /* 提示页（图片已屏蔽 / 白名单已开启）原本各有一份 .container，
+       现已合并为 notice.css 的 .notice —— 两页共用一张表。
+       见 notice.css 顶部注释。 */
+    'notice.css': 1,
     'theme.css': 3,       // el-dialog + toast
   };
 
@@ -156,7 +161,7 @@ describe('card blur consumer chain', function () {
   it('mobile breakpoints keep disabling backdrop-filter (perf convention)', function () {
     // 移动端禁用高耗效果是全站惯例。各页自己断点内关闭；login 的
     // .login-card 由 mobile-refactor.css 的 900px 断点兜住。
-    const selfDisabling = ['index.css', 'gallery.css', 'video.css', 'preview.css', 'app-shell.css', 'mobile-refactor.css'];
+    const selfDisabling = ['index.css', 'gallery.css', 'video.css', 'preview.css', 'app-shell.css', 'mobile-refactor.css', 'media-list.css'];
     for (const sheet of selfDisabling) {
       const src = stripComments(readSheet(sheet));
       assert.ok(
@@ -168,15 +173,16 @@ describe('card blur consumer chain', function () {
 
   it('top-level card surfaces do not regress to bare --ui-surface', function () {
     // 2026-10-17 同款断链的第三批修复：app-shell 顶栏 / shell-panels 浮层 /
-    // block-img / whitelist-on 卡片曾裸引 var(--ui-surface)，对「卡片透明度」
-    // 旋钮完全无感。这些顶层卡片面必须走 --card-bg（theme-effects.js 写的
-    // color-mix 版；嵌套小控件保持实色是 workbench --wb-subtle 的既有决策，
-    // 不在本断言范围）。
+    // 提示页卡片曾裸引 var(--ui-surface)，对「卡片透明度」旋钮完全无感。
+    // 这些顶层卡片面必须走 --card-bg（theme-effects.js 写的 color-mix 版；
+    // 嵌套小控件保持实色是 workbench --wb-subtle 的既有决策，不在本断言范围）。
+    //
+    // 提示页原本是 block-img.css / whitelist-on.css 两份，2026-10-21 合并为
+    // notice.css 的 .notice（两张表只差一个图标底色，见 notice.css 注释）。
     const MUST_USE_CARD_BG = [
       'app-shell.css',     // header.workspace-header
       'shell-panels.css',  // .shell-panel
-      'block-img.css',     // .container
-      'whitelist-on.css',  // .container
+      'notice.css',        // .notice（图片已屏蔽 / 白名单已开启共用）
     ];
     for (const sheet of MUST_USE_CARD_BG) {
       const src = stripComments(readSheet(sheet));
@@ -261,5 +267,72 @@ describe('card blur consumer chain', function () {
       `--wb-subtle 必须消费 --ui-card-opacity（现为「${def[1].trim()}」），` +
       `否则拖放区/限额条/空态对透明度旋钮无感`
     );
+  });
+
+  it('every page takes its font stack from --ui-font-body', function () {
+    // 2026-10-21：字体栈曾是全站最分散的一处 —— 图库、视频、首页、登录、
+    // 预览、顶栏、浮层各写一份私有栈，字宽与字形因此逐页不同。收编后
+    // 只有 theme.css 定义真值，其余文件要么不声明（继承 body），要么
+    // 转发 var(--ui-font-body) / var(--ui-font-display)。
+    //
+    // 例外只有等宽栈：代码块要的是字形固定的 monospace，不是"正文字体"，
+    // 强行转发会让代码与正文同宽，失去对齐能力。
+    const MONOSPACE_OK = new Set(['gallery.css', 'preview.css']);
+    const sheets = fs.readdirSync(root)
+      .filter((f) => f.endsWith('.css'))
+      .filter((f) => f !== AUTHORITATIVE);
+
+    for (const sheet of sheets) {
+      const src = stripComments(readSheet(sheet));
+      // font-family 一律检查；font: 简写同时声明了字号/行高/字族，也要查。
+      const fa = /font-family:\s*([^;]+);/g;
+      const shorthand = /(?:^|[;{]\s*)font:\s*([^;]+);/g;
+      let m;
+      while ((m = fa.exec(src)) !== null) {
+        const value = m[1].trim();
+        if (/^var\(--ui-font-/.test(value)) continue;
+        if (MONOSPACE_OK.has(sheet) && /monospace/i.test(value)) continue;
+        assert.fail(
+          `${sheet} 声明了私有字体栈「${value}」—— 必须转发 var(--ui-font-body)，` +
+          `否则该页字形与字宽会与全站其它页不一致`
+        );
+      }
+      while ((m = shorthand.exec(src)) !== null) {
+        const value = m[1].trim();
+        if (/var\(--ui-font-/.test(value)) continue;
+        // 同 font-family 的例外：代码块要字形固定的等宽栈。
+        if (MONOSPACE_OK.has(sheet) && /monospace/i.test(value)) continue;
+        // 只关心显式列了字族的简写；纯尺寸简写（font: 14px/1.6）不涉及字形。
+        if (!/["']/.test(value) && !/\b(system-ui|sans-serif|serif)\b/.test(value)) continue;
+        assert.fail(
+          `${sheet} 的 font: 简写内联了私有字体栈「${value}」—— ` +
+          `简写会一并复写 font-family，必须改用 font: <size>/<lh> var(--ui-font-body)`
+        );
+      }
+    }
+  });
+
+  it('the authoritative font stack keeps the Latin-first order', function () {
+    // 顺序本身就是契约。字体栈首位决定 Latin 字形：若把 CJK 字体提到
+    // "Segoe UI" 之前，Windows 上连拉丁字母也改用 Noto Sans SC ——
+    // 输入框固有宽度随之变化，工具栏会从两行塌成一行（实测
+    // .toolbar-left 554px → 585px）。-apple-system / BlinkMacSystemFont
+    // 只在 Apple 平台解析，其余平台跳过，留在栈首无害。
+    const src = stripComments(readSheet(AUTHORITATIVE));
+    const def = /--ui-font-body:\s*([^;]+);/.exec(src);
+    assert.ok(def, 'theme.css 缺少 --ui-font-body 定义');
+    const stack = def[1];
+    const segPos = stack.search(/"Segoe UI"|Segoe UI/);
+    assert.ok(segPos > -1, `--ui-font-body 必须显式列出 "Segoe UI"（现为「${stack}」）`);
+
+    for (const cjk of ['"Noto Sans SC"', '"PingFang SC"', '"Microsoft YaHei"']) {
+      const pos = stack.indexOf(cjk);
+      if (pos === -1) continue;
+      assert.ok(
+        pos > segPos,
+        `--ui-font-body 里 ${cjk} 必须排在 "Segoe UI" 之后（现为「${stack}」）——` +
+        `CJK 字体前置会让 Windows 上的拉丁字形也改用它，页面宽度整体漂移`
+      );
+    }
   });
 });

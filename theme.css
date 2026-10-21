@@ -1,3 +1,28 @@
+/* ===== Reset =========================================================
+   全局盒模型与默认间距复位。theme.css 是唯一被每一页加载的样式表，
+   它是这条规则的唯一归属。
+
+   此前有七个页面文件各写一份，而且写得并不一样：
+     gallery / video / login / index / block-img / whitelist-on
+        `* { box-sizing: border-box; margin: 0; padding: 0 }`
+     preview
+        `* { box-sizing: border-box }`   ← 没有清零 margin/padding
+   于是同一段标记在预览页与其它页的默认间距不同。收在这里以后，
+   页面只要不重复声明就自动一致。
+
+   用 :where() 把优先级压到 0：任何页面或组件的显式声明都能直接覆盖，
+   不需要 !important，也不必担心这条 reset 抢在页面规则后面生效。
+
+   注意 margin/padding 的清零范围：原来那六份写的是裸 `*`，等于把
+   表格、列表、按钮、输入框的默认内外边距一并清零。这里用同范围
+   （裸 * 的 margin/padding），保持与既有渲染逐像素一致 —— 减少范围
+   会让某些浏览器默认值回来，那才是真正的行为变化。 */
+:where(*, *::before, *::after) {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 /* ===== Icons (Lucide) =====
    Lucide covers everything except brand icons (github/telegram/discord/
    android/markdown), which it does not ship; those are inlined as SVG by
@@ -589,15 +614,24 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
      两个私有定义，亮暗双源问题同源） */
   /* 字体栈。此前这里写的是 "Manrope" / "Sora" —— 但那两个字体在全站
      没有任何 @font-face 或 <link> 引入（实测 document.fonts 为空），
-     于是它们从来只是栈首的无效名字，实际渲染一直落到 Noto Sans SC /
-     系统字体上。更麻烦的是它们让 `font-weight: 650` / `800` 看起来
-     "有可变字重可用"，而在系统字体上这些值会被吸附成 700 —— 视觉上
-     与显式写 700 没有区别，却让人误以为存在更细的层级。
+     于是它们从来只是栈首的无效名字，实际渲染一直落到系统字体上。
+     更麻烦的是它们让 `font-weight: 650` / `800` 看起来"有可变字重
+     可用"，而在系统字体上这些值会被吸附成 700 —— 视觉上与显式写 700
+     没有区别，却让人误以为存在更细的层级。
 
-     这里不再假装加载它们：栈只列真实可用的字体。若将来要接入可变字体，
-     补 @font-face 后再把名字加回来，并重新审视那些 650。 */
-  --ui-font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --ui-font-display: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Segoe UI", system-ui, -apple-system, sans-serif;
+     顺序必须与收编前各页实际生效的那份一致，否则会静默改变字宽：
+     四个页面此前写的都是 -apple-system / BlinkMacSystemFont / "Segoe UI"
+     打头，Latin 落在 Segoe UI、汉字再落到 Noto Sans SC。若把 CJK 字体
+     提到栈首，Windows 上连 Latin 也会改用 Noto Sans SC —— 工具栏的
+     搜索框按输入框固有宽度参与伸缩，字宽一变整行就换行（实测
+     .toolbar-left 从 554px 变 585px，工具栏从两行塌成一行）。
+     -apple-system 与 BlinkMacSystemFont 只在 Apple 平台解析，其余平台
+     跳过，落到 "Segoe UI"，因此保留在栈首是无害且必要的。
+
+     这里不再假装加载 Manrope/Sora：栈只列真实可用的字体。若将来要接入
+     可变字体，补 @font-face 后再把名字加回来，并重新审视那些 650。 */
+  --ui-font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --ui-font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
 }
 
 html[data-theme="dark"] {
@@ -628,6 +662,13 @@ body {
   background: var(--ui-page-bg) !important;
   background-color: var(--ui-page-bg) !important;
   background-image: none !important;
+  /* 字体栈统一到权威层。
+     图库页与视频页此前各自在 body 上写死一份
+     `-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif`，
+     与这里的 --ui-font-body 是两套：同一段文字在两个页面可能落到不同字体，
+     也与 app-shell.css 里顶栏硬编码的第三份栈不一致。现在页面不再声明，
+     全部走这一个值。 */
+  font-family: var(--ui-font-body);
 }
 
 body::before {
