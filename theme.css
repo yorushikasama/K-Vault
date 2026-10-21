@@ -35,7 +35,6 @@
   flex-shrink: 0;
 }
 
-
 /* Shared keyframes (de-duplicated from per-page copies). */
 @keyframes spin {
   to { transform: rotate(360deg); }
@@ -44,7 +43,11 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
-@keyframes slideIn {
+/* 名字带方向，是因为 index.css / gallery.css 历史上各写了一个同名的
+   slideIn，但那条是从右侧滑入（translateX），本文件这条是淡入上移
+   （translateY）。后加载的页面副本会赢，于是 toast 的入场动画取决于
+   你在哪个页面。改名后两个动画各归各处，页面那两份副本也可以删掉。 */
+@keyframes fadeUp {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
@@ -55,7 +58,10 @@
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 9999;
+  /* --ui-z-toast 高于 --ui-z-modal：消息提示要能在灯箱/弹窗开着时
+     仍然可见。此前这里是 9999 而灯箱是 1000，但在 admin 页灯箱是
+     9999，于是同一件事在三个页面是三种叠放结果。 */
+  z-index: var(--ui-z-toast);
 }
 .toast {
   padding: 12px 20px;
@@ -71,12 +77,21 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  animation: slideIn 0.3s ease;
+  /* ease-out 而不是 ease：ease 起步慢、收尾拖，消息提示要立刻出现。
+     时长保持在 150-250ms 档内。 */
+  animation: fadeUp 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
+/* 状态区分靠图标着色，不靠左侧色条。
+   原先三条 `border-left: 4px solid …` 是一根贴在面板边上的装饰色带：
+   它不承载信息（图标已经在表达成功/失败/提示），却让一个中性浮层长出
+   一条与自身圆角、阴影都不相关的竖线。DESIGN.md 的「accent 只用于动作
+   与状态、修饰色一律去掉」说的就是这种情况。
+   改成图标取语义色 + 一个中性的整体描边，信息量不减，装饰去掉。 */
 .toast .lucide { flex-shrink: 0; }
-.toast.success { border-left: 4px solid var(--ui-success, #67c23a); }
-.toast.error { border-left: 4px solid var(--danger-color, #f56c6c); }
-.toast.info { border-left: 4px solid var(--ui-brand); }
+.toast { border: 1px solid var(--ui-line-strong); }
+.toast.success .lucide { color: var(--ui-success); }
+.toast.error .lucide { color: var(--ui-danger); }
+.toast.info .lucide { color: var(--ui-brand); }
 @media (max-width: 768px) {
   .toast { max-width: 90%; padding: 12px 16px; font-size: 0.85em; }
 }
@@ -199,7 +214,12 @@ html[data-theme="dark"] .el-message-box__message p {
   color: var(--ui-ink-secondary) !important;
 }
 
-html[data-theme="dark"] a {
+/* 夜间模式的链接色。必须排除 .btn —— 用 <a> 做的按钮（图库/视频空态的
+   「去上传」、部分退出链接）首先命中这条 (0,2,1)，权重高于 ui-buttons.css
+   的 .btn-primary (0,1,0)。结果实心按钮的底色还是品牌色，文字却被换成
+   链接色：实测白底 + rgb(158,158,158)，对比度 2.4:1。
+   按钮的配色由按钮层说了算，链接层不碰它。 */
+html[data-theme="dark"] a:not(.btn) {
   color: var(--ui-link);
 }
 html[data-theme="dark"] .container,
@@ -274,6 +294,24 @@ html:not([data-theme="dark"]) .el-button--danger:hover {
   border-color: var(--ui-danger) !important;
 }
 
+/* 分页：当前页是"实心品牌底 + 反相文字"的按钮。
+   只接 --el-color-primary 还不够，两点原因：
+   1) 组件库把分页那条规则在编译期就写成了 `background-color:#409EFF;color:#FFF`
+      （不是 var(--el-color-primary)），改根变量对它无效；
+   2) 无壁纸时 --ui-brand 是纯白（深色档）或纯黑（浅色档），而它给当前页
+      写死 #fff 文字 —— 深色档下就是白底白字，与主按钮当初是同一个坑。
+   所以这里要 !important 覆盖，文字取 --ui-brand-ink。 */
+.el-pagination.is-background .el-pager li:not(.disabled).active,
+.el-pagination.is-background .el-pager li:not(.disabled):hover {
+  background-color: var(--ui-brand) !important;
+  color: var(--ui-brand-ink) !important;
+}
+
+html[data-theme="dark"] .el-pagination.is-background .el-pager li:not(.disabled):not(.active) {
+  background-color: var(--ui-surface-raised);
+  color: var(--ui-ink-secondary);
+}
+
 html[data-theme="dark"] .el-button:not(.el-button--primary):not(.el-button--danger) {
   background: var(--ui-surface-raised) !important;
   color: var(--ui-ink) !important;
@@ -283,11 +321,20 @@ html[data-theme="dark"] .el-button:not(.el-button--primary):not(.el-button--dang
 html[data-theme="dark"] .el-button--primary {
   background: var(--ui-brand) !important;
   border-color: transparent !important;
+  /* 深色档的 --ui-brand 是浅色（无壁纸时就是 #ffffff）。此前这一组只写了
+     background，没写 color，于是文字沿用组件库默认的 #fff —— 白压白，
+     三个主按钮（上传文件 / 创建 / 移动到所选目录）在夜间模式下是空白胶囊。
+     亮色那组从第一版就带着 color，这里是同一条规则漏了一半。 */
+  color: var(--ui-brand-ink) !important;
 }
 
 html[data-theme="dark"] .el-button--danger {
   background: var(--ui-danger) !important;
   border-color: transparent !important;
+  /* 同一个根因的另一半：深色档 --ui-danger 是 #f87171（浅红），组件库默认
+     的白字压在上面只有 2.78:1，低于 AA。--ui-danger-strong 才是深红档，
+     但深色主题选浅红是为了在深底上可辨，所以反过来的解法是文字取深色。 */
+  color: var(--ui-brand-ink) !important;
 }
 
 html[data-theme="dark"] .preview-modal .preview-btn-default {
@@ -303,7 +350,7 @@ html[data-theme="dark"] textarea::placeholder {
   position: fixed;
   top: 18px;
   right: 18px;
-  z-index: 9999;
+  z-index: var(--ui-z-toast);
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -470,8 +517,6 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
   --ui-card-opacity: 1;
   --ui-card-blur: 0px;
   --ui-card-backdrop-filter: none;
-
-
 
   /* Wallpaper strength. These two multiply: the layer shows the picture at
      --ui-wall-opacity, then a canvas-colored scrim washes it back down. The
@@ -764,16 +809,6 @@ html[data-theme="dark"] .stats-bar {
   ) !important;
 }
 
-html[data-theme="dark"] .el-button--primary {
-  background: var(--ui-brand) !important;
-  border-color: transparent !important;
-}
-
-html[data-theme="dark"] .el-button--danger {
-  background: var(--ui-danger) !important;
-  border-color: transparent !important;
-}
-
 /* ===== Design Tokens v2 — the single source of truth =====
 
    Why this section exists
@@ -799,6 +834,26 @@ html[data-theme="dark"] .el-button--danger {
    editing one block rather than thirteen sheets. */
 
 :root {
+  /* -- Element UI 主题色 -------------------------------------------------
+     组件库整套配色都读 --el-color-primary（分页当前页、开关、滑块、输入框
+     聚焦环、loading 转圈…）。此前只对齐了 .el-button 的颜色，于是同一页
+     里按钮是站点色、分页页码还是组件库的 #409EFF 蓝 —— 实测分页当前页
+     仍是 rgb(64,158,255)。把根变量接过来，其余组件自动跟随。
+
+     这里是"转发"而不是新值：真值仍然只有一个（--ui-brand）。 */
+  --el-color-primary: var(--ui-brand);
+  --el-color-primary-light-3: var(--ui-brand-hover);
+  --el-color-primary-light-5: var(--ui-brand-ring);
+  --el-color-primary-light-7: var(--ui-brand-soft);
+  --el-color-primary-light-8: var(--ui-brand-soft);
+  --el-color-primary-light-9: var(--ui-brand-soft);
+  --el-color-primary-dark-2: var(--ui-brand-active);
+  --el-color-success: var(--ui-success);
+  --el-color-warning: var(--ui-warning);
+  --el-color-danger: var(--ui-danger);
+  --el-color-error: var(--ui-danger);
+  --el-color-info: var(--ui-info);
+
   /* -- Brand ------------------------------------------------------------
      这里没有主题色。强调色是**算出来的**：theme-effects.js 读壁纸像素的
      主要色相，再由 accent-color.js 对当前底色搜索出一个达标明度，写进
@@ -915,12 +970,39 @@ html[data-theme="dark"] .el-button--danger {
   --ui-radius-md: 10px;
   --ui-radius-lg: 14px;
 
-
   /* -- Elevation -------------------------------------------------------- */
   --ui-elev-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
   --ui-elev-2: 0 4px 8px -2px rgba(16, 24, 40, 0.1), 0 2px 4px -2px rgba(16, 24, 40, 0.06);
   --ui-elev-3: 0 12px 16px -4px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.03);
 
+  /* -- Stacking ---------------------------------------------------------
+     层级的语义阶梯。此前全站有 15 个散落的字面量（-3、1、2、100、1000、
+     1200、1998、1999、2100、9999、10000、10001、12000），其中三处
+     互相打架：
+
+       .toast(9999) 高于 .preview-modal(1000) —— 灯箱开着时消息压在它上面
+       .batch-bar(100) 与 .workspace-header(100) 同值 —— 滚动时批量栏钻到吸顶栏下
+       .preview-modal 在 index/gallery 是 1000、在 admin 是 9999 —— 同一个弹层两种层级
+
+     阶梯按"谁该压住谁"排，不按数字大小留余地：跳过 10 的倍数间隔是为了
+     以后能在相邻两层之间插入新层，而不必重排全部。 */
+  --ui-z-base: 0;
+  --ui-z-sticky: 100;      /* 吸顶顶栏、批量操作栏（页面级） */
+  --ui-z-dropdown: 200;    /* 下拉、弹出菜单 */
+  --ui-z-overlay: 300;     /* 抽屉遮罩、页内浮层 */
+  --ui-z-modal: 400;       /* 预览灯箱、确认弹窗 */
+  --ui-z-toast: 500;       /* 消息提示（永远在最上面，但低于系统级跳转） */
+  --ui-z-skip-link: 600;   /* 跳转锚点：键盘用户要先看到它 */
+
+  /* -- Scrims -----------------------------------------------------------
+     遮罩色。此前同一种"盖住页面"被五处各写一遍，alpha 还各不相同：
+     index rgba(0,0,0,.92) / gallery rgba(0,0,0,.9) / admin rgba(5,10,18,.94)
+     / workbench rgba(9,12,20,.55) / index 的 0.5。
+
+     定成两档：stage 是媒体台（灯箱里看图/看片，尽量压掉背景），modal 是
+     对话框（仍需看清背后一层的上下文）。 */
+  --ui-scrim-stage: rgba(0, 0, 0, 0.9);
+  --ui-scrim-modal: rgba(0, 0, 0, 0.55);
 
   /* -- Layout -----------------------------------------------------------
      内容宽度原先各页自定，从 900px 到 1600px 都有（admin 900、旧 webdav 980、
@@ -975,7 +1057,6 @@ html[data-theme="dark"] {
   --ui-elev-2: 0 4px 8px -2px rgba(0, 0, 0, 0.45);
   --ui-elev-3: 0 12px 16px -4px rgba(0, 0, 0, 0.5);
 }
-
 
 body.login-page {
   min-height: 100dvh !important;

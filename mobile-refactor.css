@@ -38,23 +38,21 @@
   }
 
   .header,
-  .toolbar,
-  .card,
-  .preview-card,
-  .login-card,
-  .header-content,
-  .batch-toolbar {
+.toolbar,
+.card,
+.login-card,
+.header-content,
+.batch-toolbar{
     border-radius: var(--radius-md) !important;
     border: 1px solid var(--ui-line) !important;
     box-shadow: var(--ui-elev-1) !important;
   }
 
   .header,
-  .toolbar,
-  .card,
-  .preview-card,
-  .login-card,
-  .header-content {
+.toolbar,
+.card,
+.login-card,
+.header-content{
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
     /* --card-bg 由 theme-effects.js 写入（携带用户卡片透明度的 color-mix），
@@ -63,15 +61,13 @@
     background: var(--card-bg) !important;
   }
 
-  .header-title,
-  .title {
+  .title{
     font-family: var(--ui-font-display);
     letter-spacing: 0.01em;
   }
 
   .nav-links,
-  .header-actions,
-  .header-content .actions {
+.header-content .actions{
     overflow: visible;
   }
 
@@ -79,20 +75,15 @@
      那是为了压过各页各自为政的按钮样式；统一层之后没有需要压过的对手。
      这里只剩尚未迁移到 .btn 的旧类名。 */
   .nav-links a,
-  .nav-btn,
-  .batch-btn,
-  .action-btn {
+.batch-btn{
     min-height: 40px;
     border-radius: var(--ui-radius-control) !important;
     font-weight: 600 !important;
   }
   .image-card:hover,
-  .video-card:hover,
-  .audio-card:hover,
-  .file-card:hover,
-  .nav-links a:hover,
-  .nav-btn:hover,
-  .btn:hover {
+.video-card:hover,
+.nav-links a:hover,
+.btn:hover{
     transform: none !important;
   }
 }
@@ -109,13 +100,6 @@
     padding: 14px !important;
     margin-bottom: 14px !important;
     gap: 10px !important;
-  }
-
-  .header-title {
-    width: 100%;
-    justify-content: flex-start;
-    padding-right: 92px;
-    font-size: 1.08rem !important;
   }
 
   .nav-links {
@@ -135,67 +119,12 @@
     justify-content: center;
   }
 
-  .header-actions > * {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
   .main-container {
     gap: 14px !important;
   }
 
   .card {
     padding: 16px !important;
-  }
-
-  .upload-icon {
-    font-size: 2.65em !important;
-    margin-bottom: 12px !important;
-  }
-
-  .upload-text {
-    font-size: 1em !important;
-  }
-
-  .upload-hint {
-    font-size: 0.82em !important;
-    line-height: 1.45 !important;
-  }
-
-  .storage-options {
-    width: 100%;
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px !important;
-  }
-
-  .upload-item,
-  .result-item {
-    align-items: flex-start !important;
-    padding: 10px !important;
-  }
-
-  .result-item-actions {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    width: 100%;
-    gap: 6px !important;
-  }
-
-  .result-item-actions .action-btn {
-    width: 100% !important;
-    justify-content: center;
-  }
-
-  .stats-bar {
-    grid-template-columns: 1fr !important;
-    gap: 8px !important;
-    padding: 10px !important;
-  }
-
-  .history-list,
-  .result-list {
-    max-height: 320px !important;
   }
 
   .toolbar {
@@ -249,18 +178,10 @@
     cursor: default !important;
   }
 
-  .header-actions {
-    width: 100%;
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px !important;
-  }
-
-  .btn {
-    justify-content: center !important;
-    padding: 10px 8px !important;
-    font-size: 0.82rem !important;
-  }
+  /* 按钮尺寸与触摸下限由 ui-buttons.css 的单一来源定义（含 768px 的
+     44px 抬升）。这里曾用 !important 改 padding / font-size，会把首页
+     （不加载本文件）与其余页面渲染成两种尺寸 —— 同一个 .btn 在 390px 下
+     是 0 16px/14px 还是 8px 10px/12.8px，取决于你在哪一页。 */
 
   .preview-card {
     padding: 16px !important;
@@ -273,49 +194,13 @@
     gap: 12px !important;
   }
 
-  .file-details h2 {
-    font-size: 0.98rem !important;
-    line-height: 1.35 !important;
-  }
-
   .file-meta {
     justify-content: flex-start !important;
     font-size: 0.75rem !important;
   }
 
-  .preview-area {
-    min-height: 240px !important;
-  }
-
-  .preview-text {
-    font-size: 12px !important;
-    line-height: 1.5 !important;
-    height: 42vh !important;
-    padding: 12px !important;
-  }
-
-  .preview-pdf,
-  .preview-office,
-  .iframe-preview-container {
+  .preview-pdf{
     height: 52vh !important;
-  }
-
-  .settings-panel {
-    margin-top: 14px !important;
-    padding: 12px !important;
-  }
-
-  .setting-item {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 10px !important;
-  }
-
-  .setting-label {
-    flex: 1;
-    min-width: 0;
-    font-size: 0.84rem !important;
   }
 
   .login-card {
@@ -323,14 +208,18 @@
     border-radius: var(--radius-lg) !important;
   }
 
+  /* 输入框的 44px 下限与圆角归 ui-buttons / theme 的那一档 token。
+     这里曾写死 border-radius: 11px —— 全站唯一的 11px，既不在
+     --ui-radius-sm(6) 也不在 --ui-radius-control(12) 上。padding 保留，
+     因为它是登录页专属的三段式（左留图标位、右留给眼睛按钮）。 */
   .form-input {
     min-height: 44px;
-    padding: 10px 12px 10px 40px !important;
-    border-radius: 11px !important;
+    padding: 10px 12px 10px 40px;
+    border-radius: var(--ui-radius-control);
   }
 
   .form-input.has-toggle {
-    padding-right: 50px !important;
+    padding-right: 50px;
   }
 
     .input-wrapper i,
@@ -364,10 +253,6 @@
     margin-right: 0 !important;
     min-height: 36px;
     padding: 4px 10px !important;
-  }
-
-  .stats-text {
-    display: none !important;
   }
 
   .header-content .search-card {
@@ -440,32 +325,6 @@
     aspect-ratio: 1 / 1 !important;
   }
 
-  .video-content,
-  .audio-content,
-  .file-content {
-    min-height: 180px !important;
-    padding: 10px !important;
-  }
-
-  .audio-avatar,
-  .file-avatar {
-    width: 36px;
-    height: 36px;
-    margin-right: 8px !important;
-  }
-
-  .video-controls,
-  .audio-controls,
-  .file-controls {
-    gap: 6px !important;
-    margin-top: 8px !important;
-  }
-
-  .control-btn {
-    width: 32px !important;
-    height: 32px !important;
-  }
-
   .preview-modal {
     padding: 12px !important;
   }
@@ -530,27 +389,13 @@
 }
 
 @media (max-width: 560px) {
-  .storage-options,
   .content,
-  .image-grid {
+.image-grid{
     grid-template-columns: 1fr !important;
-  }
-
-  .result-item {
-    flex-wrap: wrap !important;
-  }
-
-  .result-item-preview {
-    width: 52px !important;
-    height: 52px !important;
   }
 
   .el-main.main-container {
     margin-top: 214px !important;
-  }
-
-  .header-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
   .header-actions .btn:last-child {
@@ -560,28 +405,23 @@
 
 @media (max-width: 480px) {
   .header,
-  .toolbar,
-  .card,
-  .preview-card,
-  .login-card,
-  .header-content {
+.toolbar,
+.card,
+.login-card,
+.header-content{
     border-radius: 14px !important;
   }
 
-  .header-title,
-  .title {
+  .title{
     font-size: 1rem !important;
   }
 
-  .nav-links a,
-  .nav-btn,
-  .btn {
+  /* .btn 同样移出本组：尺寸归 ui-buttons.css。nav-links / nav-btn 是旧版
+     独立页面的导航，仍由本文件负责。 */
+  .nav-links a{
     font-size: 0.8rem !important;
     padding: 8px 10px !important;
     gap: 6px !important;
-  }
-  .gallery-theme-toggle [data-theme-label] {
-    display: inline !important;
   }
 
   .batch-bar,
@@ -602,15 +442,8 @@
 }
 
 @media (max-width: 360px) {
-  .header-title {
-    padding-right: 92px;
-  }
 
   .nav-links {
-    grid-template-columns: 1fr !important;
-  }
-
-  .header-actions {
     grid-template-columns: 1fr !important;
   }
 
@@ -702,10 +535,8 @@
 
 @media (pointer: coarse) {
   .card:hover,
-  .image-card:hover,
-  .video-card:hover,
-  .audio-card:hover,
-  .file-card:hover {
+.image-card:hover,
+.video-card:hover{
     box-shadow: var(--ui-elev-1) !important;
   }
 }
@@ -738,22 +569,12 @@
   white-space: nowrap;
 }
 
-.search-card {
-  flex: 1 1 220px;
-  min-width: 160px;
-  max-width: 360px;
-  margin-left: 12px !important;
-  margin-right: 10px !important;
-}
-
 .search-card .el-input__inner,
 .search-card .el-input__inner:focus {
   width: 100% !important;
 }
 
-.stats,
-.stats-text,
-.stats-loaded {
+.stats{
   white-space: nowrap;
 }
 
@@ -871,14 +692,6 @@ html[data-theme="dark"] .el-image__placeholder {
     margin-left: auto !important;
     margin-right: 0 !important;
     padding: 8px 12px !important;
-  }
-
-  .search-card {
-    order: 3;
-    flex: 1 1 320px;
-    max-width: none;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
   }
 
   .header-content .actions {

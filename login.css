@@ -72,13 +72,13 @@
     .title {
       font-size: 1.9em;
       font-weight: 700;
-      color: #333;
+      color: var(--ui-ink);
       margin-bottom: 10px;
       letter-spacing: -0.5px;
     }
 
     .subtitle {
-      color: #666;
+      color: var(--ui-ink-secondary);
       margin-bottom: 36px;
       font-size: 0.95em;
       line-height: 1.5;
@@ -92,7 +92,7 @@
     .form-group label {
       display: block;
       font-size: 0.9em;
-      color: #666;
+      color: var(--ui-ink-secondary);
       margin-bottom: 8px;
       font-weight: 500;
     }
@@ -107,18 +107,24 @@
       left: 16px;
       top: 50%;
       transform: translateY(-50%);
-      color: #999;
+      color: var(--ui-ink-muted);
       font-size: 1em;
     }
 
     .form-input {
       width: 100%;
       padding: 14px 16px 14px 44px;
-      border: 1px solid #eee;
+      border: 1px solid var(--ui-line-strong);
       border-radius: var(--radius-sm);
       font-size: 1em;
       transition: border-color 0.2s ease-out, box-shadow 0.2s ease-out;
-      background: white;
+      /* 本文件历史上是唯一没有任何 html[data-theme="dark"] 规则、却带着
+         #333/#666/#999/#eee/white 一整套浅色字面量的样式表，而 theme.css
+         只救了 .title / .subtitle 两个类。于是夜间模式下是「深色卡片里三个
+         纯白输入框」，label 与图标停在浅色档的灰上。改成 token 后不再需要
+         成对的暗色覆盖块。 */
+      background: var(--ui-surface-raised);
+      color: var(--ui-ink);
     }
 
     .form-input.has-toggle {
@@ -126,13 +132,13 @@
     }
 
     .form-input:focus {
-      border-color: var(--primary-color);
+      border-color: var(--ui-brand);
       outline: none;
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-brand) 10%, transparent);
     }
 
     .form-input::placeholder {
-      color: #bbb;
+      color: var(--ui-ink-muted);
     }
 
     .password-toggle {
@@ -151,7 +157,7 @@
          而不是全站按钮档（12px）—— 34px 的方块配 12px 会比它的容器更圆，
          看起来像贴错了一个角。它是输入框的一部分，不是独立按钮。 */
       border-radius: var(--ui-radius-sm);
-      color: #999;
+      color: var(--ui-ink-muted);
       cursor: pointer;
       padding: 0;
       z-index: 2;
@@ -179,13 +185,13 @@
       gap: 8px;
       cursor: pointer;
       font-size: 0.9em;
-      color: #666;
+      color: var(--ui-ink-secondary);
     }
 
     .remember-label input {
       width: 18px;
       height: 18px;
-      accent-color: var(--primary-color);
+      accent-color: var(--ui-brand);
     }
 
     /* 登录按钮的视觉定义已移到 ui-buttons.css（.btn .btn-primary .btn-lg
@@ -201,9 +207,12 @@
     }
 
     .error-message {
-      background: #fff0f0;
-      border: 1px solid #ffcccc;
-      color: #d32f2f;
+      /* 原来是 #fff0f0 / #ffcccc / #d32f2f 三个死值：夜间模式下是一块
+         发光的浅粉面板压在深色卡片上。改成 danger token 的透明档，两套
+         主题都成立，也不必再补一份 dark 覆盖。 */
+      background: color-mix(in srgb, var(--ui-danger) 12%, transparent);
+      border: 1px solid color-mix(in srgb, var(--ui-danger) 40%, transparent);
+      color: var(--ui-danger);
       padding: 12px 16px;
       border-radius: var(--radius-md);
       margin-bottom: 20px;
@@ -219,7 +228,7 @@
 
     .footer-text {
       margin-top: 24px;
-      color: #999;
+      color: var(--ui-ink-muted);
       font-size: 0.85em;
     }
 
@@ -264,7 +273,9 @@
       }
 
       .form-input {
-        padding: 14px 18px;
+        /* 左侧 44px 是图标位（图标绝对定位在 left:16px）。原来这里写成
+           `14px 18px`，把图标位一并收掉了 —— 图标会压住用户输入的第一个字。 */
+        padding: 14px 18px 14px 44px;
         font-size: 1em;
       }
 
@@ -310,11 +321,6 @@
         font-size: 0.85em;
       }
 
-      .login-form {
-        gap: 16px;
-        margin-top: 24px;
-      }
-
       .form-group {
         margin-bottom: 0;
       }
@@ -325,7 +331,8 @@
       }
 
       .form-input {
-        padding: 12px 14px;
+        /* 同上一档：保留左侧图标位，否则绝对定位的图标压在输入文字上。 */
+        padding: 12px 14px 12px 40px;
         font-size: 0.95em;
         border-radius: var(--radius-sm);
       }
@@ -339,13 +346,6 @@
         width: 30px;
         height: 30px;
         font-size: 0.9em;
-      }
-
-      .submit-btn {
-        padding: 12px;
-        font-size: 0.95em;
-        border-radius: var(--ui-radius-control);
-        margin-top: 4px;
       }
 
       .links {
@@ -391,11 +391,6 @@
 
       .form-input {
         padding: 10px 12px;
-        font-size: 0.9em;
-      }
-
-      .submit-btn {
-        padding: 10px;
         font-size: 0.9em;
       }
     }

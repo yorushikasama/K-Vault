@@ -55,7 +55,7 @@
    的页面生效。图库页与旧 WebDAV 页此前因为 body 上没有这个类，各自长了一套
    顶栏，导航项文字都不一样。现在顶栏只有 app-shell.css 那一份定义。 */
 .kv-workbench .upload-sr-only, .kv-workbench .files-search-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
-.kv-workbench .upload-skip-link { position: fixed; top: 8px; left: 12px; z-index: 12000; transform: translateY(-160%); background: var(--wb-surface); color: var(--wb-ink); border: 1px solid var(--wb-border); padding: 10px 16px; }
+.kv-workbench .upload-skip-link { position: fixed; top: 8px; left: 12px; z-index: var(--ui-z-skip-link); transform: translateY(-160%); background: var(--wb-surface); color: var(--wb-ink); border: 1px solid var(--wb-border); padding: 10px 16px; }
 .kv-workbench .upload-skip-link:focus { transform: none; }
 /* overflow-wrap: anywhere 是必需的，不是保险：路径片段（尤其是用户自建的
    目录名）可能整段没有空格也不带连字符，默认的 overflow-wrap: normal
@@ -198,8 +198,8 @@
 @keyframes kv-upload-spin { to { transform: rotate(360deg); } }
 .kv-workbench .upload-queue { margin-top: 4px; }
 .kv-workbench .upload-modal-overlay {
-  position: fixed; inset: 0; z-index: 2100; display: flex; align-items: center; justify-content: center;
-  padding: 24px; background: rgba(9, 12, 20, .55); overflow: auto; overscroll-behavior: contain;
+  position: fixed; inset: 0; z-index: var(--ui-z-modal); display: flex; align-items: center; justify-content: center;
+  padding: 24px; background: var(--ui-scrim-modal); overflow: auto; overscroll-behavior: contain;
 }
 .kv-workbench .upload-dialog {
   width: min(100%, 560px); max-height: min(88vh, 780px); overflow: auto; overscroll-behavior: contain;
@@ -443,11 +443,24 @@
 .kv-files .file-tile-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--wb-muted); font-size: .75rem; }
 .kv-files .file-tile-folder { display: inline-flex; align-items: center; gap: 5px; min-width: 0; color: var(--wb-muted); font-size: .75rem; }
 .kv-files .file-tile-folder span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.kv-files .file-tile-actions { display: flex; align-items: center; gap: 4px; margin-top: auto; padding-top: 8px; border-top: 1px solid var(--wb-border); }
+/* 卡片底部操作条：文字按钮（预览 / 复制）固定单行，图标按钮（收藏 /
+   删除 / 重命名）收进第二排。
+   实测 209px 宽的卡片里，这一行 width 183 / scrollWidth 194 —— 横向溢出
+   被裁掉 11px，而「预览」只有 52px 可用宽，中文两字折成两行、按钮从设定的
+   32px 撑到 50px，整排跟着变高。
+   收进第二排而不是全部挤一排：文字按钮承担主要动作且可读性要求高（不能
+   断行），图标按钮本来就只有 32px，换行代价最小。 */
+.kv-files .file-tile-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; row-gap: 4px; margin-top: auto; padding-top: 8px; border-top: 1px solid var(--wb-border); }
 .kv-files .file-text-action {
   display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 4px 8px;
   border: 0; border-radius: var(--ui-radius-control); background: transparent; color: var(--wb-accent-ink); font-size: .8125rem;
+  /* 文字标签是短词，断行没有任何收益；让它保持单行，装不下时由容器的
+     flex-wrap 把整块推到下一行。 */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
+/* 图标按钮组：始终整组换行，不与文字按钮争同一排。 */
+.kv-files .file-tile-actions .file-icon-action { flex: 0 0 auto; }
 .kv-files .file-text-action:hover { background: var(--wb-subtle); }
 .kv-files .file-text-action > .kv-icon:last-child:not(:first-child) { width: 13px; height: 13px; }
 

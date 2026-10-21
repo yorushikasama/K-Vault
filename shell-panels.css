@@ -18,7 +18,9 @@
 
 .shell-popover {
   position: fixed;
-  z-index: 1200;
+  /* 顶层工具浮层，压在吸顶栏之上、模态之下。原先写死 1200，
+     与 index.css 的 .compress-confirm-modal 同值、靠加载顺序分胜负。 */
+  z-index: var(--ui-z-dropdown);
   display: flex;
   flex-direction: column;
   gap: 10px;

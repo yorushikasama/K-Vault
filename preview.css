@@ -876,7 +876,6 @@
       box-shadow: var(--shadow);
     }
 
-
     .media-frame .preview-video {
       background: var(--ui-stage);
       box-shadow: var(--shadow-2);
@@ -904,7 +903,6 @@
     .audio-wave span {
       background: #7bb8ad;
     }
-
 
     .email-view,
     .enhanced-view {

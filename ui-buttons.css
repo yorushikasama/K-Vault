@@ -230,6 +230,53 @@
   color: var(--ui-brand-ink);
 }
 
+/* --- 独立按钮的选中态 ---------------------------------------------------- */
+
+/* 上面那条只覆盖 .segmented 容器内部的按钮。页面上还有一批直接用
+   .btn + 状态类表达的互斥选择，它们此前一条样式都没有：
+     上传页  存储目标 / 上传目录 / 图片处理方式 / 复制链接格式（.is-selected）
+     图库·视频页  分页当前页（.is-active）
+   实测四个值（background / border / color / font-weight）与未选中项完全相同，
+   用户看不出当前选的是哪一项。而这四个控件决定上传落到哪个后端、哪个目录。
+
+   为什么同时挂 .is-selected / .is-active / .active / [aria-pressed="true"]：
+   四种写法在仓库里都真实存在（上传页用 is-selected、图库分页用 is-active、
+   压缩格式用 active，存储目标与图片处理方式另带 aria-pressed），且都已和
+   读屏状态同步。收成一个视觉定义，比让每个页面各挑一种写法更稳。
+
+   辨识靠边框 + 字重 + 底色三重差异，而不是只换底色：无壁纸时 --ui-brand 是
+   纯白/纯黑，--ui-brand-soft 只有 10% 混色，单独使用几乎看不见（对比度约
+   1.05:1）。混向 --ui-surface-raised 而不是画布，才能让选中块从所在表面上
+   浮起来一层。
+
+   :where(.segmented *) 把分段控件内部排在外面：那里底色由容器承担，内部按钮
+   必须保持透明，只换块色。不排除的话下面这条 (0,2,0) 会压掉
+   .segmented > .btn 的透明底 (0,1,1)，分段控件会长出 40 个带框的方块。 */
+.btn:where(:not(.segmented *)).is-selected,
+.btn:where(:not(.segmented *)).is-active,
+.btn:where(:not(.segmented *)).active,
+.btn:where(:not(.segmented *))[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--ui-brand) 14%, var(--ui-surface-raised));
+  border-color: var(--ui-brand);
+  color: var(--ui-ink);
+  font-weight: 600;
+}
+
+.btn:where(:not(.segmented *)).is-selected:hover:not(:disabled):not([aria-disabled="true"]),
+.btn:where(:not(.segmented *)).is-active:hover:not(:disabled):not([aria-disabled="true"]),
+.btn:where(:not(.segmented *)).active:hover:not(:disabled):not([aria-disabled="true"]),
+.btn:where(:not(.segmented *))[aria-pressed="true"]:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: var(--ui-brand);
+}
+
+/* 分段控件内部仍然走品牌实底：底色由容器承担，内部只换块色。 */
+.segmented > .btn.is-selected,
+.segmented > .btn[aria-pressed="true"],
+.segmented > .btn.is-active {
+  background: var(--ui-brand);
+  color: var(--ui-brand-ink);
+}
+
 /* --- 按钮组 -------------------------------------------------------------- */
 
 /* 相邻按钮的间距由容器给，页面不用管。

@@ -275,7 +275,7 @@
       align-items: center;
       gap: 16px;
       box-shadow: var(--shadow-2);
-      z-index: 100;
+      z-index: var(--ui-z-sticky);
     }
 
     .batch-bar-count {
@@ -292,11 +292,13 @@
     .preview-modal {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.9);
+      /* 遮罩与层级取统一定义的 token：此前 index/gallery 是 1000、
+         admin 是 9999，同一个弹层在三处是三档。 */
+      background: var(--ui-scrim-stage);
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 1000;
+      z-index: var(--ui-z-modal);
       padding: 20px;
     }
 
@@ -401,12 +403,9 @@
       margin: 0 auto 16px;
     }
 
-    /* Toast */
-
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
+    /* Toast 的入场动画统一在 theme.css（fadeUp）。这里曾有一份同名的
+       slideIn，与 theme.css 那份撞名 —— 同名 keyframes 由后加载的定义
+       覆盖，于是同一页里 toast 播的是从右侧滑入，与首页不同。已删除。 */
 
     /* 响应式 */
     @media (max-width: 768px) {
@@ -593,13 +592,7 @@
         font-size: 0.85em;
       }
       
-      /* 加载状态 */
-      .loading-indicator {
-        padding: 30px;
-      }
-      
-            .loading-indicator i,
-      .loading-indicator svg.lucide {
+            .loading-indicator svg.lucide{
         font-size: 2em;
       }
 

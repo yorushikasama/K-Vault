@@ -50,7 +50,9 @@ header.workspace-header {
   min-height: 68px;
   padding: 12px 28px !important;
   margin: 0;
-  z-index: 100;
+  /* 吸顶层。取 --ui-z-sticky：与页面级的批量操作栏同一档，二者不会
+     互相穿插（此前两者都是裸 100，批量栏滚上去会钻到顶栏下面）。 */
+  z-index: var(--ui-z-sticky);
   box-sizing: border-box;
   background: var(--card-bg) !important;
   border: 0 !important;
