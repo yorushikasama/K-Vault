@@ -93,7 +93,12 @@
 .toast.error .lucide { color: var(--ui-danger); }
 .toast.info .lucide { color: var(--ui-brand); }
 @media (max-width: 768px) {
-  .toast { max-width: 90%; padding: 12px 16px; font-size: 0.85em; }
+  /* 0.85rem 而不是 0.85em。toast 是全站共用的（theme.css 被每一页加载），
+     而各页的基准字号不同：列表页（图库/视频）body 是 16px，工作台页
+     （上传/文件）是 14px。同一条 0.85em 因此渲染成 13.6px 与 11.9px ——
+     同一个提示在换页后字号变了。rem 相对根元素，两处一致。
+     取 0.85rem = 13.6px，即列表页原来的值（也是两者中更易读的那个）。 */
+  .toast { max-width: 90%; padding: 12px 16px; font-size: 0.85rem; }
 }
 
 html[data-theme="light"] {
@@ -359,7 +364,7 @@ html[data-theme="dark"] textarea::placeholder {
   border: 1px solid color-mix(in srgb, var(--ui-brand) 25%, transparent);
   background: #ffffff;
   color: #2f3243;
-  font-size: 0.88em;
+  font-size: 0.88rem;
   font-weight: 600;
   line-height: 1;
   cursor: pointer;
@@ -387,7 +392,7 @@ html[data-theme="dark"] textarea::placeholder {
   border: 1px solid color-mix(in srgb, var(--ui-brand) 25%, transparent);
   background: #ffffff;
   color: #2f3243;
-  font-size: 0.86em;
+  font-size: 0.86rem;
   font-weight: 600;
   cursor: pointer;
   transition: border-color 0.18s ease, background-color 0.18s ease;
@@ -464,7 +469,7 @@ html[data-theme="dark"] .theme-admin-toggle svg.lucide {
     top: 12px;
     right: 12px;
     padding: 8px 12px;
-    font-size: 0.82em;
+    font-size: 0.82rem;
   }
 
   /* 手机上的输入框抬到 44px：桌面端 36–40px 是给鼠标的，手指点不准，
