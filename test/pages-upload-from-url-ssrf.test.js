@@ -52,18 +52,19 @@ describe('Pages /api/upload-from-url SSRF wiring', function () {
     };
   }
 
-  function buildRequest(payload) {
+  function buildRequest(payload, headers = {}) {
     return new Request('https://example.com/api/upload-from-url', {
       method: 'POST',
+      headers,
       body: JSON.stringify(payload),
     });
   }
 
-  async function callEndpoint(payload, env) {
+  async function callEndpoint(payload, env, headers = {}) {
     const { onRequestPost } = await import('../functions/api/upload-from-url.js');
     return onRequestPost({
       env,
-      request: buildRequest(payload),
+      request: buildRequest(payload, headers),
     });
   }
 
@@ -351,5 +352,109 @@ describe('Pages /api/upload-from-url SSRF wiring', function () {
         mocked.restore();
       }
     });
+  });
+});
+/**
+ * 鉴权与访客限额闸门（2026-10-21 补）。
+ *
+ * 此前 Pages 端 /api/upload-from-url 整个裸奔：Docker 端同名端点先认证、
+ * 未认证走访客限额（server/app.js 同名路由），Pages 端却没有任何闸门，
+ * 任何人可让服务器代为拉取 URL 并写入存储。与已删除的
+ * functions/api/r2/upload.js 同类，同一天一并修掉。
+ *
+ * 闸门语义与主上传端点 /upload 一致：先 checkAuthentication；未配置
+ * BASIC_USER/PASS 时全站本就匿名（no-auth-required 放行），配置了则
+ * 未认证请求走访客限额——GUEST_UPLOAD 未开启即 401。
+ */
+describe('Pages /api/upload-from-url auth gate', function () {
+  this.timeout(10000);
+
+  const authHeader = () => `Basic ${Buffer.from('admin:secret123').toString('base64')}`;
+
+  // 上一层的 mock fixture 在 SSRF wiring 的 describe 作用域里，这里拿不到，
+  // 本块自备同款最小实现（mock fetch 的行为由各用例传入）。
+  function createMockR2() {
+    return { async put() { return {}; } };
+  }
+
+  function withMockedFetch(handler) {
+    const calls = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (input, init) => {
+      calls.push({ url: String(input instanceof Request ? input.url : input), init });
+      return handler(url0(), calls.length);
+    };
+    return { calls, restore() { globalThis.fetch = realFetch; } };
+  }
+
+  function url0() { return 'https://mocked.invalid/'; }
+
+  function buildRequest(payload, headers = {}) {
+    return new Request('https://example.com/api/upload-from-url', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async function callEndpoint(payload, env, headers = {}) {
+    const { onRequestPost } = await import('../functions/api/upload-from-url.js');
+    return onRequestPost({ env, request: buildRequest(payload, headers) });
+  }
+
+  it('配置了凭据时，匿名请求返回 401 且不产生任何外发请求', async function () {
+    const mocked = withMockedFetch(() => Promise.reject(new Error('must not be called')));
+    try {
+      const response = await callEndpoint(
+        { url: 'https://example.com/file.zip', storageMode: 'r2' },
+        { R2_BUCKET: createMockR2(), BASIC_USER: 'admin', BASIC_PASS: 'secret123' }
+      );
+      assert.strictEqual(response.status, 401);
+      assert.strictEqual(mocked.calls.length, 0, '鉴权拒绝后不得有任何外发请求');
+    } finally {
+      mocked.restore();
+    }
+  });
+
+  it('配置了凭据时，带合法 Basic 凭据的请求通过闸门进入 SSRF 流程', async function () {
+    const mocked = withMockedFetch(() => Promise.reject(new Error('blocked-host-probe')));
+    try {
+      // 用一个会被 SSRF 守卫拦下的地址：能走到 403 SSRF_BLOCKED 说明闸门放行了。
+      const response = await callEndpoint(
+        { url: 'http://169.254.169.254/latest/meta-data', storageMode: 'r2' },
+        { R2_BUCKET: createMockR2(), BASIC_USER: 'admin', BASIC_PASS: 'secret123' },
+        { Authorization: authHeader() }
+      );
+      const payload = await response.json();
+      assert.strictEqual(response.status, 403);
+      assert.strictEqual(payload.errorCode, 'SSRF_BLOCKED');
+    } finally {
+      mocked.restore();
+    }
+  });
+
+  it('开启访客上传时，匿名请求放行进 SSRF 流程（与 Docker 端访客语义一致）', async function () {
+    const mocked = withMockedFetch(() => Promise.reject(new Error('blocked-host-probe')));
+    try {
+      const response = await callEndpoint(
+        { url: 'http://169.254.169.254/latest/meta-data', storageMode: 'r2' },
+        { R2_BUCKET: createMockR2(), BASIC_USER: 'admin', BASIC_PASS: 'secret123', GUEST_UPLOAD: 'true' }
+      );
+      const payload = await response.json();
+      assert.strictEqual(response.status, 403);
+      assert.strictEqual(payload.errorCode, 'SSRF_BLOCKED');
+    } finally {
+      mocked.restore();
+    }
+  });
+
+  it('关闭访客上传时，匿名请求 401（带引导登录的文案）', async function () {
+    const response = await callEndpoint(
+      { url: 'https://example.com/file.zip', storageMode: 'r2' },
+      { R2_BUCKET: createMockR2(), BASIC_USER: 'admin', BASIC_PASS: 'secret123', GUEST_UPLOAD: 'false' }
+    );
+    assert.strictEqual(response.status, 401);
+    const payload = await response.json();
+    assert.match(String(payload.error || ''), /登录/);
   });
 });

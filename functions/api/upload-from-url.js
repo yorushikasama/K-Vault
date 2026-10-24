@@ -14,11 +14,26 @@ import {
 } from "../utils/telegram.js";
 import { MAX_REDIRECTS, validateRedirectLocation, validateRemoteUrl } from "../utils/ssrf-guard.js";
 import { resolveUrlImportMaxSize, validateStorageSize } from "../utils/upload-limits.js";
+import { checkAuthentication } from "../utils/auth.js";
+import { checkGuestUpload } from "../utils/guest.js";
 
 const FETCH_TIMEOUT = 30000;
 
 export async function onRequestPost(context) {
   const { request, env } = context;
+
+  // 鉴权与访客限额——对齐 Docker 端 server/app.js 的同名端点：先认证，
+  // 未认证走访客限额兜底。此前 Pages 端整个裸奔（与已删除的
+  // functions/api/r2/upload.js 同类）：任何人可让服务器代为拉取 URL 并
+  // 写入存储，额度黑洞。size 传 0 与 chunked-upload/init.js 的用法一致
+  // ——远端体积在 fetch 前未知，上限由 fetchRemote 的流式预检负责。
+  const auth = await checkAuthentication(context);
+  if (!auth.authenticated) {
+    const guestCheck = await checkGuestUpload(request, env, 0);
+    if (!guestCheck.allowed) {
+      return jsonResponse({ error: guestCheck.reason }, guestCheck.status || 403);
+    }
+  }
 
   try {
     const body = await request.json();
