@@ -54,9 +54,13 @@ export function getSessionFromCookie(request) {
 
   const cookies = cookieHeader.split(';').map(c => c.trim());
   for (const cookie of cookies) {
-    const [name, value] = cookie.split('=');
+    // 只在第一个 = 处切开：cookie 值本身可以含 =（base64 填充、JWT）。
+    // `cookie.split('=')` 解构会把值里第一个 = 之后的部分整个丢掉，
+    // 与 server/lib/utils/auth.js 的 rest.join('=') 不一致——同一段
+    // Cookie 头在两个后端会解析出不同的会话令牌。
+    const [name, ...rest] = cookie.split('=');
     if (name === SESSION_COOKIE_NAME || name === LEGACY_SESSION_COOKIE_NAME) {
-      return value;
+      return rest.join('=');
     }
   }
   return null;
