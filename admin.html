@@ -26,8 +26,8 @@
        为 js.sentry-cdn.com 付一次 DNS + TLS + 脚本往返 —— 切页延迟里它是
        实打实的一块。真要上报时调 window.Sentry.captureException() 即可。 -->
   <script src="https://js.sentry-cdn.com/219f636ac7bde5edab2c3e16885cb535.min.js" data-lazy crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="/mobile-refactor.css?v=cc42653903">
-  <link rel="stylesheet" href="/admin.css?v=571122b096">
+  <link rel="stylesheet" href="/mobile-refactor.css?v=59b4a989c9">
+  <link rel="stylesheet" href="/admin.css?v=e3800858a3">
 <script src="/kv-shared.js?v=f480f6145a"></script>
   <link rel="stylesheet" href="/workbench.css?v=639e556b5b">
 </head>
@@ -84,9 +84,9 @@
             </div>
             <div class="folder-head-actions" aria-label="目录管理">
               <el-button size="mini" icon="el-icon-plus" title="新建目录" :disabled="folderMutating" :loading="folderMutatingAction === 'create'" @click="createFolder">新建</el-button>
-              <el-button size="mini" icon="el-icon-refresh" title="刷新目录与文件" aria-label="刷新目录与文件" :disabled="folderMutating" :loading="folderLoading" @click="refreshFolderResources"></el-button>
-              <el-button size="mini" icon="el-icon-edit" title="重命名当前目录" aria-label="重命名当前目录" :disabled="folderMutating || !folderPath" :loading="folderMutatingAction === 'rename'" @click="renameCurrentFolder"></el-button>
-              <el-button size="mini" icon="el-icon-delete" title="删除当前目录" aria-label="删除当前目录" :disabled="folderMutating || !folderPath" :loading="folderMutatingAction === 'delete'" @click="deleteCurrentFolder"></el-button>
+              <el-button size="mini" class="folder-icon-action" icon="el-icon-refresh" title="刷新目录与文件" aria-label="刷新目录与文件" :disabled="folderMutating" :loading="folderLoading" @click="refreshFolderResources"></el-button>
+              <el-button size="mini" class="folder-icon-action" icon="el-icon-edit" title="重命名当前目录" aria-label="重命名当前目录" :disabled="folderMutating || !folderPath" :loading="folderMutatingAction === 'rename'" @click="renameCurrentFolder"></el-button>
+              <el-button size="mini" class="folder-icon-action" icon="el-icon-delete" title="删除当前目录" aria-label="删除当前目录" :disabled="folderMutating || !folderPath" :loading="folderMutatingAction === 'delete'" @click="deleteCurrentFolder"></el-button>
             </div>
             <div class="folder-current">{{ scopeLabel }}</div>
             <div class="folder-drop-hint" v-if="dragState.active">

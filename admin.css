@@ -187,16 +187,32 @@
     .folder-head-actions {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 8px;
       flex: 0 0 auto;
       white-space: nowrap;
       margin-left: auto;
     }
-    .folder-head .el-button {
-      width: 28px;
-      height: 28px;
-      padding: 0;
+    /* 目录操作按钮的尺寸。
+       选择器必须是 .folder-head-actions 而不是 .folder-head：84abbff 把
+       「新建 / 刷新 / 重命名 / 删除」从 .folder-head 内部挪到了与它平级的
+       .folder-head-actions 里，而这条规则仍写着 .folder-head .el-button，
+       于是永远匹配不到——四个按钮一直是 Element 默认的 mini 尺寸
+       （min-width:50px + 15px 内边距），在 270px 宽的侧栏里又大又重，
+       与「新建」的文字宽度也对不齐。 */
+    .folder-head-actions .el-button {
+      height: 30px;
+      padding: 0 12px;
       margin: 0 !important;
+      border-radius: var(--ui-radius-sm);
+      font-size: 12px;
+    }
+    /* 纯图标按钮收成方钮，与带文字的「新建」同高。
+       这里按类名判定而不是 :has()：图标钮和文字钮在标记上本来就不同
+       （前者无 <span> 文字），给前者加 .folder-icon-action 比让 CSS 去
+       猜结构更直接，也不依赖 :has() 的浏览器支持。 */
+    .folder-head-actions .el-button.folder-icon-action {
+      width: 30px;
+      padding: 0;
     }
     .folder-current {
       padding: 8px 12px;

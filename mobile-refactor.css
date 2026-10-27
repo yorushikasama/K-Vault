@@ -771,16 +771,30 @@ html[data-theme="dark"] .el-image__placeholder {
 
   .folder-head-actions {
     width: 100%;
-    display: grid !important;
-    grid-template-columns: repeat(4, 36px);
-    justify-content: start;
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
     gap: 8px !important;
     margin-left: 0 !important;
   }
 
-  .folder-head .el-button {
-    width: 36px !important;
-    height: 36px !important;
+  /* 触摸下限保住 44px，但只抬图标钮与文字钮的高度：
+     原先这里写 grid-template-columns: repeat(4, 36px)，会把带文字的
+     「新建」也压成 36px 宽的方格——文字被挤出去或折行。改成 flex
+     让文字钮按内容取宽，图标钮固定 44px 方钮。 */
+  .folder-head-actions .el-button {
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .folder-head-actions .el-button.folder-icon-action {
+    width: 44px !important;
+    padding: 0 !important;
+  }
+
+  .folder-head-actions .el-button:not(.folder-icon-action) {
+    padding: 0 16px !important;
   }
 }
 
