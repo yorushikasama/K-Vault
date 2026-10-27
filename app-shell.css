@@ -261,8 +261,8 @@ header.workspace-header .workspace-nav :is(i, svg.lucide) {
      顺带把下拉箭头也收起来。上一条规则只藏得住 <span> 文字，而箭头是
      kv-icon 渲出来的 <svg>，于是 480px 以下会出现「只剩一个图标、还挂着
      下拉箭头」的按钮——暗示这里能展开点什么，可整页又确实没有菜单。
-     外壳工具区现在只有主题 / 系统连接 / UI设计 / 退出，都不带箭头；
-     这条规则是为了以后再有人往里加下拉时不会踩到这个坑。 */
+     外壳工具区现在只有快速转存 / 主题 / 系统连接 / UI设计 / 退出，
+     都不带箭头；这条规则是为了以后再有人往里加下拉时不会踩到这个坑。 */
   .workspace-tool > span,
   .workspace-tool > .lucide-chevron-down {
     display: none;

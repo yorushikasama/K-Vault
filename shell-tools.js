@@ -642,7 +642,49 @@
       });
   }
 
-  // ---------- 接线 ----------
+  // ---------- 快速转存 ----------
+
+  /**
+   * 顶栏的「快速转存」：点一下就把剪贴板里的链接转存掉。
+   *
+   * ── 为什么它要跳页 ────────────────────────────────────────────────
+   * 转存是一次真正的上传：要带着当前会话、存储目标（Telegram / R2 / S3…）、
+   * 目标目录，还要能展示进度和失败原因。这些状态只在上传页的 Vue 实例里
+   * 存在（storageMode / folderPath / showToast / 任务队列），另外三页没有
+   * Vue，也没有那套界面。
+   *
+   * 所以这个按钮在四页的标记逐字相同（app-shell-contract 要求），行为按页面
+   * 分两种：
+   *   - 在上传页：直接触发页面里的快速转存，等价于点表单上的主按钮；
+   *   - 在其余三页：跳到上传页并带 #quick-import，由上传页接手执行。
+   *
+   * ── 为什么不在这里自己发请求 ──────────────────────────────────────
+   * 那样会绕开上传页的目标/目录选择，转存到用户没预期的位置；也要在这里
+   * 重复一遍 401 跳登录、体积上限、分享链接解析、失败回填表单等一整套逻辑，
+   * 与页面里那份必然漂开（本仓库已经因为「各处各写一份」吃过多次苦头）。
+   */
+  var QUICK_IMPORT_HASH = "#quick-import";
+
+  function openUploadPageForQuickImport() {
+    // 用 href 跳而不用 location.replace：这是导航，用户应该能按返回键回到
+    // 原来的页面。hash 让上传页知道要接着执行，而不是只把表单展示出来。
+    window.location.href = "./" + QUICK_IMPORT_HASH;
+  }
+
+  function bindQuickImport(button) {
+    if (button.dataset.shellBound === "1") return;
+    button.dataset.shellBound = "1";
+    button.addEventListener("click", function () {
+      // 上传页自己会接管：它通过 setQuickImport 注册了本页的实现。
+      // 其余页面没有实现，跳到上传页并带 hash，由上传页接手执行。
+      if (typeof quickImport === "function") {
+        quickImport();
+        return;
+      }
+      openUploadPageForQuickImport();
+    });
+  }
+
 
   /**
    * 接上退出按钮。
@@ -694,12 +736,26 @@
   function init() {
     document.querySelectorAll("[data-shell-tool]").forEach(bindTrigger);
     document.querySelectorAll("[data-shell-logout]").forEach(bindLogout);
+    document.querySelectorAll("[data-shell-quick-import]").forEach(bindQuickImport);
   }
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {
     init();
+  }
+
+  var quickImport = null;
+
+  /**
+   * 上传页注册自己的快速转存实现。
+   *
+   * 由 upload-app.js 的 mounted 调用（页面拥有 Vue 实例，shell-tools 只负责
+   * 顶栏按钮的接线）。注册后顶栏按钮在本页直接触发转存；未注册的页面点击
+   * 就是跳转，见 bindQuickImport。
+   */
+  function setQuickImport(fn) {
+    quickImport = typeof fn === "function" ? fn : null;
   }
 
   window.KVShellTools = {
@@ -709,6 +765,9 @@
     openDesignPanel: openDesignPanel,
     setLogoutKeys: setLogoutKeys,
     setBeforeLogout: setBeforeLogout,
+    setQuickImport: setQuickImport,
+    getQuickImport: function () { return quickImport; },
+    QUICK_IMPORT_HASH: QUICK_IMPORT_HASH,
     ICONS: ICONS,
   };
 })();

@@ -1940,6 +1940,34 @@
             }
           },
 
+          // 顶栏「快速转存」按钮在本页的实现（另外三页点它只是跳到本页）。
+          // 交给外壳而不在这里绑 @click，是因为四页的顶栏标记必须逐字相同，
+          // 页面里的 @click 会破坏 app-shell-contract，也只有本页有这个方法。
+          registerShellQuickImport() {
+            if (!window.KVShellTools || typeof window.KVShellTools.setQuickImport !== "function") {
+              return;
+            }
+            window.KVShellTools.setQuickImport(() => {
+              // 表单里有内容就用它，为空则读剪贴板——与表单主按钮同一套语义，
+              // 因此直接复用那个方法，不复制一份逻辑。
+              this.quickImportFromClipboard();
+            });
+          },
+
+          /**
+           * 从别的分区页跳过来时（index.html#quick-import），接着把转存做完。
+           *
+           * hash 在这里消费掉：清掉它，避免用户刷新或按返回键时又触发一次
+           * 上传——那会是一次无声的重复转存。
+           */
+          consumeQuickImportHash() {
+            if (!window.location.hash || window.location.hash !== "#quick-import") return;
+            if (window.history && typeof window.history.replaceState === "function") {
+              window.history.replaceState(null, "", window.location.pathname + window.location.search);
+            }
+            this.quickImportFromClipboard();
+          },
+
           // 检查认证状态
           async checkAuth() {
             this.authChecking = true;
@@ -2104,6 +2132,7 @@
         }),
         async mounted() {
           this.registerShellLogout();
+          this.registerShellQuickImport();
           this.loadImageUploadDecision();
           this.loadImageCompressSettings();
           this.syncImageCompressState();
@@ -2126,6 +2155,10 @@
 
           // 检查存储目标
           await this.checkStorageTarget();
+
+          // 从别的分区页点了顶栏「快速转存」跳过来：等目标与目录都就绪
+          // 后再执行，否则会转存到默认目标而不是用户上次选的那个。
+          this.consumeQuickImportHash();
 
           // 读取后台已有上传目录，便于首页一键选择
           this.fetchUploadFolders();

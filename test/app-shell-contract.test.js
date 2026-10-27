@@ -175,7 +175,11 @@ describe('app shell contract', function () {
   }
 
   it('every shell page carries the same tool buttons in the same order', function () {
-    const expected = ['主题', '系统连接', 'UI 设计', '退出'];
+    // 「快速转存」排在主题左侧：它是全站级入口（任何分区都能一键转存），
+    // 与主题 / 系统连接 / UI 设计 / 退出同属外壳。行为分两种：在上传页
+    // 直接转存，其余三页跳到上传页带 #quick-import 由上传页接手执行——
+    // 详见 shell-tools.js 的 bindQuickImport。
+    const expected = ['快速转存', '主题', '系统连接', 'UI 设计', '退出'];
 
     for (const page of SHELL_PAGES) {
       const tools = extractTools(extractHeader(read(page), page), page);
@@ -192,7 +196,7 @@ describe('app shell contract', function () {
       );
 
       const labels = [...tools.matchAll(/aria-label="([^"]*)"/g)].map((m) => m[1]);
-      assert.deepStrictEqual(labels, ['切换主题', '系统连接状态', 'UI 设计设置', '退出登录'], `${page} 的工具按钮与其它分区不一致`);
+      assert.deepStrictEqual(labels, ['快速转存', '切换主题', '系统连接状态', 'UI 设计设置', '退出登录'], `${page} 的工具按钮与其它分区不一致`);
     }
   });
 
@@ -220,6 +224,38 @@ describe('app shell contract', function () {
     assert.match(src, /data-shell-tool/, 'shell-tools.js 没有按 data-shell-tool 接线');
     assert.match(src, /data-shell-logout/, 'shell-tools.js 没有接退出按钮');
     assert.match(src, /KVShared\.logout/, '退出动作应收拢到 KVShared.logout()，而不是各页自己发请求');
+    assert.match(src, /data-shell-quick-import/, 'shell-tools.js 没有接顶栏的快速转存按钮');
+  });
+
+  it('quick import delegates to the upload page instead of reimplementing upload', function () {
+    // 顶栏「快速转存」在四页都有，但转存需要的会话、存储目标、目录、
+    // 进度与错误展示只在上传页的 Vue 实例里。所以外壳不能自己发请求——
+    // 那会绕开用户选的目标/目录，也要在这里再抄一遍 401 跳登录、体积上限、
+    // 分享链接解析、失败回填这一整套（本仓库因「各处各写一份」吃过多轮苦头）。
+    //
+    // 契约：外壳只做两件事——本页有实现就调用，没有就跳到上传页并带 hash
+    // 由上传页接手。这条断言钉住「不重复实现」这条边界。
+    const shell = read('shell-tools.js');
+    // 只禁转存专用接口：UI 设计面板本来就会 fetch("/upload") 传背景图，
+    // 那是另一个既有功能，不该被这条断言波及。
+    assert.doesNotMatch(
+      shell,
+      /resolve-url|upload-from-url|chunked-upload/,
+      'shell-tools.js 不该自己调转存接口——转存必须由上传页执行，' +
+      '否则会绕开用户选定的存储目标与目录'
+    );
+    assert.match(shell, /QUICK_IMPORT_HASH/, '缺少跳转用的 hash 常量');
+    assert.match(shell, /setQuickImport/, '缺少上传页注册实现的入口');
+
+    // 上传页侧：必须注册实现并消费 hash，否则从别的页面跳过来只会看到表单。
+    const app = read('upload-app.js');
+    assert.match(app, /registerShellQuickImport/, '上传页没有向壳注册快速转存实现');
+    assert.match(app, /consumeQuickImportHash/, '上传页没有消费 #quick-import，跳转过来不会执行转存');
+    assert.match(
+      app,
+      /quickImportFromClipboard/,
+      '上传页的快速转存应复用表单主按钮的方法，而不是另写一份'
+    );
   });
 
   it('no shell page reintroduces a page-private control into the header', function () {
